@@ -1,0 +1,20 @@
+pandoc: 3.1.1
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  articles/covariates: covariates.html
+  dashboard: dashboard.html
+  data-model: data-model.html
+  articles/dietview: dietview.html
+  digestion: digestion.html
+  articles/extending: extending.html
+  articles/shiny-app: shiny-app.html
+  articles/species-cards: species-cards.html
+  taxonomy-worms: taxonomy-worms.html
+  articles/technical-reference: technical-reference.html
+  articles/tour: tour.html
+  articles/within-rank-na: within-rank-na.html
+last_built: 2026-07-23T16:52Z
+urls:
+  reference: https://sosthenea.github.io/DietView/reference
+  article: https://sosthenea.github.io/DietView/articles

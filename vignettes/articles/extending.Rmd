@@ -1,0 +1,67 @@
+---
+title: "Adapting DietView to your own survey"
+output: rmarkdown::html_vignette
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+DietView is survey-agnostic. Adapting it is almost entirely a matter of writing a
+different `dv_spec()`. This article collects the extension points.
+
+```{r setup}
+library(DietView)
+```
+
+## 1. Map your columns
+
+Nothing is hard-coded — declare roles once and every function follows:
+
+```{r spec, eval = FALSE}
+spec <- dv_spec(predator = "sp", stomach = "stom", prey_id = "aphia",
+                weight = "wt_g", covariates = c("yr", "zone"))
+```
+
+## 2. Go fully offline and reproducible
+
+Freeze taxonomy into a lineage table and use `taxonomy = "table"` — no `worrms`,
+no network, identical results every run:
+
+```{r offline, eval = FALSE}
+lineage <- read.csv("my_curated_lineage.csv", na.strings = c("NA", ""))
+prep <- dv_prepare(mydata, spec, taxonomy = "table", lineage = lineage)
+```
+
+## 3. Custom ranks
+
+Display fewer or different ranks by passing your own `ranks`:
+
+```{r ranks, eval = FALSE}
+spec <- dv_spec(predator = "sp", stomach = "stom", prey_name = "prey",
+                ranks = c("phylum", "class", "order", "family", "genus"))
+```
+
+## 4. Custom colours
+
+Pass a named vector to `dv_sunburst(colors = )`, or build one with `dv_palette()`:
+
+```{r colours}
+pal <- dv_palette(c("Teleostei", "Malacostraca", "Polychaeta", "NA"))
+pal
+```
+
+## 5. New covariates on the fly
+
+Add columns, list them in `dv_spec(covariates = )`, and derive periods and length
+bins with the helpers:
+
+```{r cov}
+dv_add_period(c(2005, 2012, 2019), breaks = c(2003, 2010, 2020))
+dv_size_bins(c(22, 41, 58), breaks = c(0, 30, 45, 60))
+```
+
+## 6. Non-marine or mixed taxa
+
+WoRMS is marine-focused. For terrestrial or freshwater prey, supply your own
+lineage table (step 2) rather than the `"worms"` path.

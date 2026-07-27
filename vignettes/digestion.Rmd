@@ -1,0 +1,65 @@
+---
+title: "The digestion identification bias"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The digestion identification bias}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5,
+                      warning = FALSE, message = FALSE)
+```
+
+Diet identification is not uniform: heavily digested prey can only be resolved to
+coarse ranks. If that bias is hidden, a diet description silently over-represents
+whatever is easy to identify. `dv_digestion_diagnostic()` makes it explicit.
+
+```{r setup}
+library(DietView)
+
+dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
+                na.strings = c("NA", ""))
+lin <- read.csv(system.file("extdata", "dietview_example_lineage.csv", package = "DietView"),
+                na.strings = c("NA", ""))
+spec <- dv_spec(predator = "predator_species_common_name", stomach = "stomach_id",
+                prey_id = "aphia_id", prey_name = "verified_name",
+                weight = "prey_weight", digestion = "digestion_level_id",
+                covariates = c("period"))
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin)
+```
+
+## The diagnostic
+
+For each digestion level, the share of records (and of weight) whose **finest
+resolved rank** is Kingdom, Phylum, ..., Species, or Unresolved:
+
+```{r diag}
+diag <- dv_digestion_diagnostic(prep)
+head(diag, 12)
+```
+
+## Reading the bias
+
+As the digestion level increases, mass shifts away from Species toward the coarse
+ranks and "Unresolved". A dependency-free stacked bar makes the shift visible:
+
+```{r plot}
+m <- xtabs(p_records ~ finest_rank + digestion, data = diag)
+barplot(m, col = grDevices::hcl.colors(nrow(m), "Blues"),
+        legend.text = TRUE,
+        args.legend = list(x = "topright", cex = 0.7, bg = "white"),
+        xlab = "digestion level", ylab = "% of records")
+```
+
+## Splitting by a covariate
+
+Pass `by =` to see whether the bias differs across, say, periods:
+
+```{r by}
+head(dv_digestion_diagnostic(prep, by = "period"), 12)
+```
+
+Making this bias visible is the point: it is exactly the information a functional
+prey grouping would smooth over.

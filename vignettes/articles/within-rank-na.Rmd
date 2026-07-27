@@ -1,0 +1,95 @@
+---
+title: "Within-rank importance and the explicit-NA philosophy"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Within-rank importance and the explicit-NA philosophy}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 5,
+                      warning = FALSE, message = FALSE)
+```
+
+This article explains the two ideas at the heart of DietView: importance is
+computed **within each taxonomic rank**, and unidentified prey is kept as an
+**explicit "NA" category** rather than dropped. Together they make the sunburst an
+honest partition of the diet.
+
+```{r setup}
+library(DietView)
+
+dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
+                na.strings = c("NA", ""))
+lin <- read.csv(system.file("extdata", "dietview_example_lineage.csv", package = "DietView"),
+                na.strings = c("NA", ""))
+spec <- dv_spec(predator = "predator_species_common_name", stomach = "stomach_id",
+                prey_id = "aphia_id", prey_name = "verified_name",
+                weight = "prey_weight", digestion = "digestion_level_id",
+                covariates = c("period", "size_class", "size_bin", "region"))
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin)
+```
+
+## Building the tree
+
+`dv_build_tree()` aggregates records into a node table spanning all ranks, in two
+currencies (occurrence and weight).
+
+```{r tree}
+tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
+head(tree[, c("rank", "label", "value_occ", "pct_occ", "value_w", "pct_w")], 8)
+```
+
+## Each rank is its own 100 %
+
+Importance is the share of a node **within its own rank**, so every rank sums to
+100 % independently — the explicit `NA` node included.
+
+```{r sums}
+sapply(unique(tree$rank), function(r) round(sum(tree$pct_occ[tree$rank == r]), 3))
+```
+
+`dv_rank_table()` gives the sorted importance table for one rank:
+
+```{r ranktable}
+dv_rank_table(tree, "Class")
+```
+
+## NA is information, not an error
+
+Where identification stops, DietView keeps an explicit `NA` node (white in the
+sunburst) instead of rebasing percentages onto the identified fraction. The `NA`
+row is present at every rank where some prey are unresolved:
+
+```{r na}
+subset(dv_rank_table(tree, "Order"), label == "NA")
+```
+
+## The sunburst
+
+Reading coarse (centre) to fine (edge), with `NA` shown in white:
+
+```{r sunburst-occ}
+dv_sunburst(tree, mode = "occurrence", title = "All predators",
+            subtitle = "occurrence share within each rank")
+```
+
+Occurrence and weight routinely disagree — showing both is part of an honest diet
+description:
+
+```{r sunburst-w}
+dv_sunburst(tree, mode = "weight", title = "All predators",
+            subtitle = "weight share within each rank")
+```
+
+## A stable colour dictionary
+
+`dv_palette()` assigns each taxon a stable colour so it keeps the same colour
+across ranks and covariate cells; `NA` is always white.
+
+```{r palette}
+pal <- dv_palette(tree$label)
+head(pal)
+pal[["NA"]]
+```

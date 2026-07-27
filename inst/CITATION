@@ -1,0 +1,11 @@
+citHeader("To cite DietView in publications, please use:")
+
+bibentry(
+  bibtype  = "Manual",
+  title    = "DietView: An R Package for Interactive, Taxonomically Complete Diet Visualization from Stomach-Content Data",
+  author   = c(person("Sosthene A. V.", "Akia"),
+               person("CADI Gulf Center")),
+  year     = "2026",
+  note     = "R package version 0.1.0",
+  url      = "https://sosthenea.github.io/DietView/"
+)

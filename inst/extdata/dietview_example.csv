@@ -1,0 +1,25 @@
+predator_species_common_name,predator_species_latin_name,stomach_id,aphia_id,verified_name,prey_weight,number_of_prey,digestion_level_id,period,year,somatic_length_cm,size_class,size_bin,region
+Atlantic cod,Gadus morhua,GM001,107649,Pandalus borealis,12.3,3,2,2004-2006,2005,45,adult,[40-50[,Northumberland
+Atlantic cod,Gadus morhua,GM001,126752,Ammodytes dubius,5.1,2,3,2004-2006,2005,45,adult,[40-50[,Northumberland
+Atlantic cod,Gadus morhua,GM001,1130,Decapoda,2,1,4,2004-2006,2005,45,adult,[40-50[,Northumberland
+Atlantic cod,Gadus morhua,GM002,101107,Themisto libellula,0.8,20,2,2004-2006,2005,52,adult,[50-60[,Northumberland
+Atlantic cod,Gadus morhua,GM002,293496,Teleostei,8,1,4,2004-2006,2005,52,adult,[50-60[,Northumberland
+Atlantic cod,Gadus morhua,GM003,107649,Pandalus borealis,9,2,1,2018-2019,2019,38,adult,[30-40[,Magdalen Shallows
+Atlantic cod,Gadus morhua,GM003,1135,Amphipoda,0.3,5,3,2018-2019,2019,38,adult,[30-40[,Magdalen Shallows
+Atlantic cod,Gadus morhua,GM003,NA,unidentified material,1.5,,5,2018-2019,2019,38,adult,[30-40[,Magdalen Shallows
+Atlantic cod,Gadus morhua,GM004,127194,Osmerus mordax,22,1,2,2018-2019,2019,75,adult,[70-100[,Magdalen Shallows
+Atlantic cod,Gadus morhua,GM004,107323,Chionoecetes opilio,15,1,3,2018-2019,2019,75,adult,[70-100[,Magdalen Shallows
+Winter flounder,Pseudopleuronectes americanus,WF001,105,Bivalvia,0.009,1,2,2004-2006,2004,13,juvenile,[10-20[,Northumberland
+Winter flounder,Pseudopleuronectes americanus,WF001,883,Polychaeta,0.503,1,2,2004-2006,2004,13,juvenile,[10-20[,Northumberland
+Winter flounder,Pseudopleuronectes americanus,WF002,101361,Gammaridae,0.05,8,3,2004-2006,2004,22,adult,[20-30[,Northumberland
+Winter flounder,Pseudopleuronectes americanus,WF002,883,Polychaeta,0.2,3,3,2004-2006,2004,22,adult,[20-30[,Northumberland
+Winter flounder,Pseudopleuronectes americanus,WF003,105,Bivalvia,0.02,2,4,2018-2019,2019,18,juvenile,[10-20[,Magdalen Shallows
+Winter flounder,Pseudopleuronectes americanus,WF003,NA,unidentified material,0.1,,5,2018-2019,2019,18,juvenile,[10-20[,Magdalen Shallows
+Winter flounder,Pseudopleuronectes americanus,WF004,1135,Amphipoda,0.08,6,2,2018-2019,2019,31,adult,[30-50[,Magdalen Shallows
+Winter flounder,Pseudopleuronectes americanus,WF004,1131,Mysida,0.15,4,3,2018-2019,2019,31,adult,[30-50[,Magdalen Shallows
+Alewife,Alosa pseudoharengus,AW001,104464,Calanus finmarchicus,0.002,40,1,2004-2006,2005,25,adult,[20-30[,Northumberland
+Alewife,Alosa pseudoharengus,AW001,1080,Copepoda,0.001,60,3,2004-2006,2005,25,adult,[20-30[,Northumberland
+Alewife,Alosa pseudoharengus,AW002,1080,Copepoda,0.0008,80,2,2004-2006,2005,12,juvenile,[0-20[,Northumberland
+Alewife,Alosa pseudoharengus,AW003,1131,Mysida,0.03,10,2,2018-2019,2019,28,adult,[20-30[,Magdalen Shallows
+Alewife,Alosa pseudoharengus,AW003,101107,Themisto libellula,0.05,5,2,2018-2019,2019,28,adult,[20-30[,Magdalen Shallows
+Alewife,Alosa pseudoharengus,AW003,104464,Calanus finmarchicus,0.001,30,4,2018-2019,2019,28,adult,[20-30[,Magdalen Shallows
