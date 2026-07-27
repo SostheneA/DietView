@@ -1,0 +1,28 @@
+# R
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# pkgdown
+docs/
+/doc/
+/Meta/
+
+# build artifacts
+*.tar.gz
+inst/doc/
+/build/
+
+# renv
+renv/
+renv.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# outputs from examples
+outputs/
+images/

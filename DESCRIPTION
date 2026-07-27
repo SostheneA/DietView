@@ -1,0 +1,48 @@
+Package: DietView
+Title: Interactive, Taxonomically Complete Visualization of Predator
+    Diet from Stomach-Content Data
+Version: 0.1.0
+Authors@R: c(
+    person("Sosthene", "A. V. Akia", email = "akiasosthene@gmail.com",
+           role = c("aut", "cre")),
+    person("CADI Gulf Center", role = c("aut", "cph")))
+Description: Turns a long table of stomach-content records into interactive,
+    taxonomically complete sunburst views of predator diet. Prey are resolved
+    to the World Register of Marine Species ('WoRMS') classification, or joined
+    from a user-supplied lineage table. Per-taxon relative importance is
+    computed in occurrence and weight within each taxonomic rank, keeping
+    unidentified prey as an explicit 'NA' category, and the identification bias
+    associated with digestion level is quantified. Diet is rendered across any
+    user-declared covariates (period, year, size class, length bins, region) as
+    a 'shiny' application, a self-contained HTML dashboard, or 'plotly' figures,
+    so that any survey formatted to a common input specification is
+    reproducible.
+License: MIT + file LICENSE
+URL: https://github.com/SostheneA/DietView,
+    https://sosthenea.github.io/DietView/
+BugReports: https://github.com/SostheneA/DietView/issues
+Depends:
+    R (>= 4.1)
+Imports:
+    dplyr,
+    htmltools,
+    jsonlite,
+    knitr,
+    plotly,
+    stats,
+    tools,
+    utils
+Suggests:
+    DT,
+    rmarkdown,
+    shiny,
+    testthat (>= 3.0.0),
+    worrms
+VignetteBuilder:
+    knitr
+Config/testthat/edition: 3
+Encoding: UTF-8
+Language: en-US
+Roxygen: list(markdown = TRUE)
+NeedsCompilation: no
+Config/roxygen2/version: 8.0.0

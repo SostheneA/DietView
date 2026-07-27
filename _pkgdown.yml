@@ -1,0 +1,123 @@
+url: https://sosthenea.github.io/DietView/
+
+template:
+  bootstrap: 5
+  bootswatch: litera
+  bslib:
+    primary: "#1f77b4"
+    base_font: {google: "Source Sans Pro"}
+    heading_font: {google: "Source Sans Pro"}
+    code_font: {google: "Source Code Pro"}
+
+home:
+  title: DietView • taxonomically complete, covariate-aware diet visualization
+  description: >
+    Turn a long table of stomach-content records into interactive,
+    taxonomically complete sunburst views of predator diet, with an explicit
+    "NA" category for unidentified prey, occurrence and weight currencies,
+    covariate stratification, a digestion identification-bias diagnostic, and a
+    self-contained HTML dashboard.
+  sidebar:
+    structure: [links, license, community, citation, authors, dev]
+
+navbar:
+  structure:
+    left:  [reference, articles, news]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: "Get started"
+      - text: Getting started with DietView
+        href: articles/dietview.html
+      - text: "A guided tour: every flagship function, what it does, and why"
+        href: articles/tour.html
+      - text: The DietView data model and input contract
+        href: articles/data-model.html
+      - text: "-------"
+      - text: "Core concepts"
+      - text: Within-rank importance and the explicit-NA philosophy
+        href: articles/within-rank-na.html
+      - text: Covariate stratification
+        href: articles/covariates.html
+      - text: The digestion identification bias
+        href: articles/digestion.html
+      - text: Resolving prey taxonomy with WoRMS
+        href: articles/taxonomy-worms.html
+      - text: "-------"
+      - text: "Outputs & extension"
+      - text: Building a self-contained diet dashboard
+        href: articles/dashboard.html
+      - text: Species identification cards and photos
+        href: articles/species-cards.html
+      - text: The interactive Shiny explorer
+        href: articles/shiny-app.html
+      - text: Adapting DietView to your own survey
+        href: articles/extending.html
+      - text: "-------"
+      - text: Technical reference (package companion)
+        href: articles/technical-reference.html
+
+reference:
+- title: Package overview
+  desc: What DietView is and how the pieces fit together.
+  contents:
+  - DietView-package
+
+- title: 1 · Declare and validate your data
+  desc: >
+    Describe once how your columns map to DietView's roles. Nothing is
+    hard-coded; every other function reads this spec.
+  contents:
+  - dv_spec
+  - dv_validate
+
+- title: 2 · Attach taxonomy
+  desc: >
+    Resolve prey to the WoRMS classification (or join your own lineage), keeping
+    unresolved prey as an explicit NA category and logging every match for review.
+  contents:
+  - dv_prepare
+  - dv_taxonomy_worms
+  - dv_taxonomy_report
+
+- title: 3 · Build covariates
+  desc: Derive periods and length bins to stratify the views.
+  contents:
+  - dv_add_period
+  - dv_size_bins
+
+- title: 4 · Compute within-rank importance
+  desc: >
+    Aggregate records into a multi-rank tree where each rank sums to 100 percent,
+    NA included, in both occurrence and weight currencies.
+  contents:
+  - dv_build_tree
+  - dv_rank_table
+
+- title: 5 · Draw figures
+  desc: Render the multi-rank sunburst and the stable colour dictionary.
+  contents:
+  - dv_sunburst
+  - dv_palette
+
+- title: 6 · Quantify the digestion identification bias
+  contents:
+  - dv_digestion_diagnostic
+
+- title: 7 · Species identification cards
+  contents:
+  - dv_species_card_assets
+
+- title: 8 · Ship a dashboard or explore interactively
+  desc: A self-contained HTML dashboard, a deploy wrapper, and a Shiny explorer.
+  contents:
+  - dv_build_html
+  - dv_deploy
+  - run_dietview
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with

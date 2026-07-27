@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use DietView, please cite it as below."
+title: "DietView: An R Package for Interactive, Taxonomically Complete Diet Visualization from Stomach-Content Data"
+version: 0.1.0
+abstract: >-
+  DietView turns a long table of stomach-content records into interactive,
+  taxonomically complete sunburst views of predator diet. It resolves prey to
+  the WoRMS classification, computes per-taxon relative importance in occurrence
+  and weight within each taxonomic rank (with unidentified prey kept as an
+  explicit NA category), quantifies the identification bias associated with
+  digestion level, and renders the whole diet across any user-declared
+  covariates as a Shiny app, a self-contained HTML dashboard, or plain plotly
+  figures.
+type: software
+authors:
+  - given-names: "Sosthene A. V."
+    family-names: "Akia"
+    email: "akiasosthene@gmail.com"
+  - name: "CADI Gulf Center"
+repository-code: "https://github.com/SostheneA/DietView"
+url: "https://sosthenea.github.io/DietView/"
+license: MIT
+keywords:
+  - diet analysis
+  - stomach contents
+  - trophic ecology
+  - fisheries
+  - WoRMS
+  - taxonomy
+  - data visualization
+  - sunburst
+  - R
