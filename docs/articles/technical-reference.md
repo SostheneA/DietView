@@ -1,8 +1,5 @@
 # DietView technical reference
 
-> **Download:** a formatted PDF of this reference is available at
-> [DietView-technical-reference.pdf](https://sosthenea.github.io/DietView/DietView-technical-reference.pdf).
-
 This is the **technical companion** to DietView. It is distinct from the
 journal article — which argues *why* the package matters — and from the
 auto-generated [function

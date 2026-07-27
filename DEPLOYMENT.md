@@ -45,8 +45,6 @@ You do not need to publish anything to see the site: pkgdown builds it into
 ```r
 install.packages(c("pkgdown", "pagedown"))   # once
 
-# document + build the site + regenerate the technical-reference PDF
-source("dev/build_docs.R")     # or: Rscript dev/build_docs.R
 
 pkgdown::preview_site()        # opens docs/ in your browser
 ```

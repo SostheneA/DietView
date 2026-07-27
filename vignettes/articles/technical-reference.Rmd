@@ -2,7 +2,7 @@
 title: "DietView technical reference"
 subtitle: "Package companion — what DietView contains and why"
 output:
-  rmarkdown::html_vignette:
+  html_document:
     toc: true
     toc_depth: 3
 ---
@@ -11,8 +11,6 @@ output:
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-> **Download:** a formatted PDF of this reference is available at
-> [DietView-technical-reference.pdf](../DietView-technical-reference.pdf).
 
 This is the **technical companion** to DietView. It is distinct from the journal
 article — which argues *why* the package matters — and from the auto-generated

@@ -125,20 +125,20 @@ so every rank sums to 100%.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> No digestion column: digestion diagnostics disabled.</span>
 <span class="r-in"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu">dv_build_tree</span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">data</span>, <span class="va">prep</span><span class="op">$</span><span class="va">ranks</span>, weight_col <span class="op">=</span> <span class="va">spec</span><span class="op">$</span><span class="va">weight</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">tree</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                    id      label   parent    rank value_occ value_w   pct_occ</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1            Animalia   Animalia          Kingdom        22 75.5968 91.666667</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2                  NA         NA          Kingdom         2  1.6000  8.333333</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   Animalia|Annelida   Annelida Animalia  Phylum         2  0.7030  8.333333</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Animalia|Arthropoda Arthropoda Animalia  Phylum        15 39.7648 62.500000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Animalia|Chordata   Chordata Animalia  Phylum         3 35.1000 12.500000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   Animalia|Mollusca   Mollusca Animalia  Phylum         2  0.0290  8.333333</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         pct_w</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 97.92737523</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  2.07262477</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.91065951</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 51.51094346</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 45.46820594</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  0.03756632</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    id      label   parent    rank value_item value_occ value_w</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1            Animalia   Animalia          Kingdom         14        22 75.5968</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2                  NA         NA          Kingdom          1         2  1.6000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   Animalia|Annelida   Annelida Animalia  Phylum          1         2  0.7030</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Animalia|Arthropoda Arthropoda Animalia  Phylum          9        15 39.7648</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Animalia|Chordata   Chordata Animalia  Phylum          3         3 35.1000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   Animalia|Mollusca   Mollusca Animalia  Phylum          1         2  0.0290</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pct_occ       pct_w</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 91.666667 97.92737523</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  8.333333  2.07262477</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  8.333333  0.91065951</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 62.500000 51.51094346</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 12.500000 45.46820594</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6  8.333333  0.03756632</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

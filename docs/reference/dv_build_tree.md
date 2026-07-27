@@ -76,18 +76,18 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
 #> No digestion column: digestion diagnostics disabled.
 tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
 head(tree)
-#>                    id      label   parent    rank value_occ value_w   pct_occ
-#> 1            Animalia   Animalia          Kingdom        22 75.5968 91.666667
-#> 2                  NA         NA          Kingdom         2  1.6000  8.333333
-#> 3   Animalia|Annelida   Annelida Animalia  Phylum         2  0.7030  8.333333
-#> 4 Animalia|Arthropoda Arthropoda Animalia  Phylum        15 39.7648 62.500000
-#> 5   Animalia|Chordata   Chordata Animalia  Phylum         3 35.1000 12.500000
-#> 6   Animalia|Mollusca   Mollusca Animalia  Phylum         2  0.0290  8.333333
-#>         pct_w
-#> 1 97.92737523
-#> 2  2.07262477
-#> 3  0.91065951
-#> 4 51.51094346
-#> 5 45.46820594
-#> 6  0.03756632
+#>                    id      label   parent    rank value_item value_occ value_w
+#> 1            Animalia   Animalia          Kingdom         14        22 75.5968
+#> 2                  NA         NA          Kingdom          1         2  1.6000
+#> 3   Animalia|Annelida   Annelida Animalia  Phylum          1         2  0.7030
+#> 4 Animalia|Arthropoda Arthropoda Animalia  Phylum          9        15 39.7648
+#> 5   Animalia|Chordata   Chordata Animalia  Phylum          3         3 35.1000
+#> 6   Animalia|Mollusca   Mollusca Animalia  Phylum          1         2  0.0290
+#>     pct_occ       pct_w
+#> 1 91.666667 97.92737523
+#> 2  8.333333  2.07262477
+#> 3  8.333333  0.91065951
+#> 4 62.500000 51.51094346
+#> 5 12.500000 45.46820594
+#> 6  8.333333  0.03756632
 ```

@@ -95,8 +95,6 @@ you see there are real output.
 >
 > **[Read it
 > online](https://sosthenea.github.io/DietView/articles/technical-reference.html)**
-> · **[Download the
-> PDF](https://sosthenea.github.io/DietView/DietView-technical-reference.pdf)**
 
 ## Installation
 

@@ -37,7 +37,11 @@ Suggests:
     rmarkdown,
     shiny,
     testthat (>= 3.0.0),
-    worrms
+    worrms,
+    pagedown,
+    servr,
+    pkgdown,
+    devtools
 VignetteBuilder:
     knitr
 Config/testthat/edition: 3

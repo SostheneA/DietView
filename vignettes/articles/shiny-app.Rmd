@@ -1,6 +1,6 @@
 ---
 title: "The interactive Shiny explorer"
-output: rmarkdown::html_vignette
+output: html_document
 ---
 
 ```{r, include = FALSE}

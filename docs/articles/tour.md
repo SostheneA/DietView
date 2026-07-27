@@ -187,7 +187,7 @@ prep <- dv_prepare(
 class(prep)
 #> [1] "dietview_prep"
 names(prep)
-#> [1] "data"  "spec"  "ranks"
+#> [1] "data"         "spec"         "ranks"        "taxonomy_log"
 ```
 
 **What you get back.** A `dietview_prep` list with four components:
@@ -294,16 +294,16 @@ tree <- dv_build_tree(
 )
 
 head(tree, 4)
-#>                    id      label   parent    rank value_occ value_w   pct_occ
-#> 1            Animalia   Animalia          Kingdom        22 75.5968 91.666667
-#> 2                  NA         NA          Kingdom         2  1.6000  8.333333
-#> 3   Animalia|Annelida   Annelida Animalia  Phylum         2  0.7030  8.333333
-#> 4 Animalia|Arthropoda Arthropoda Animalia  Phylum        15 39.7648 62.500000
-#>        pct_w
-#> 1 97.9273752
-#> 2  2.0726248
-#> 3  0.9106595
-#> 4 51.5109435
+#>                    id      label   parent    rank value_item value_occ value_w
+#> 1            Animalia   Animalia          Kingdom         14        22 75.5968
+#> 2                  NA         NA          Kingdom          1         2  1.6000
+#> 3   Animalia|Annelida   Annelida Animalia  Phylum          1         2  0.7030
+#> 4 Animalia|Arthropoda Arthropoda Animalia  Phylum          9        15 39.7648
+#>     pct_occ      pct_w
+#> 1 91.666667 97.9273752
+#> 2  8.333333  2.0726248
+#> 3  8.333333  0.9106595
+#> 4 62.500000 51.5109435
 ```
 
 **What you get back.** A `dietview_tree` data.frame: `id`, `label`,
@@ -361,13 +361,13 @@ share, with the explicit NA row included.
 
 ``` r
 dv_rank_table(tree, "Class")
-#>           label value_occ   pct_occ value_w        pct_w
-#> 10 Malacostraca        11 45.833333 39.7600 51.504725584
-#> 9      Copepoda         4 16.666667  0.0048  0.006217874
-#> 11    Teleostei         3 12.500000 35.1000 45.468205936
-#> 8    Polychaeta         2  8.333333  0.7030  0.910659509
-#> 12     Bivalvia         2  8.333333  0.0290  0.037566324
-#> 13           NA         2  8.333333  1.6000  2.072624772
+#>           label value_item value_occ   pct_occ value_w        pct_w
+#> 10 Malacostraca          7        11 45.833333 39.7600 51.504725584
+#> 9      Copepoda          2         4 16.666667  0.0048  0.006217874
+#> 11    Teleostei          3         3 12.500000 35.1000 45.468205936
+#> 8    Polychaeta          1         2  8.333333  0.7030  0.910659509
+#> 12     Bivalvia          1         2  8.333333  0.0290  0.037566324
+#> 13           NA          1         2  8.333333  1.6000  2.072624772
 ```
 
 **Nuances.** Rank labels are title-case (`"Class"`, `"Family"`,

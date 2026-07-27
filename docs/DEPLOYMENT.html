@@ -87,8 +87,6 @@
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pkgdown"</span>, <span class="st">"pagedown"</span><span class="op">)</span><span class="op">)</span>   <span class="co"># once</span></span>
 <span></span>
-<span><span class="co"># document + build the site + regenerate the technical-reference PDF</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"dev/build_docs.R"</span><span class="op">)</span>     <span class="co"># or: Rscript dev/build_docs.R</span></span>
 <span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/preview_site.html" class="external-link">preview_site</a></span><span class="op">(</span><span class="op">)</span>        <span class="co"># opens docs/ in your browser</span></span></code></pre></div>
 <p><code>dev/build_docs.R</code> re-renders <code>docs/DietView-technical-reference.pdf</code> <strong>from the built article</strong>, so the PDF can never drift from the web version. The same step runs in the <code>pkgdown</code> GitHub Action, so the published PDF is refreshed on every deploy. (<code>pagedown</code> uses headless Chrome – no LaTeX required. If Chrome is missing the site still builds and only the PDF is skipped.)</p>

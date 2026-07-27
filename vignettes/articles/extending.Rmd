@@ -1,6 +1,6 @@
 ---
 title: "Adapting DietView to your own survey"
-output: rmarkdown::html_vignette
+output: html_document
 ---
 
 ```{r, include = FALSE}

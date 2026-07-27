@@ -78,6 +78,9 @@ dv_species_card_assets("Atlantic cod", use_wiki = FALSE,
 #> $desc
 #> NULL
 #> 
+#> $credit
+#> NULL
+#> 
 if (FALSE) { # \dontrun{
 # online: fetch a Wikipedia thumbnail by Latin name
 dv_species_card_assets("Atlantic cod", latin = "Gadus morhua",

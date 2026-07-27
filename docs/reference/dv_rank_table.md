@@ -41,11 +41,11 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
 #> No digestion column: digestion diagnostics disabled.
 tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
 dv_rank_table(tree, "Class")
-#>           label value_occ   pct_occ value_w        pct_w
-#> 10 Malacostraca        11 45.833333 39.7600 51.504725584
-#> 9      Copepoda         4 16.666667  0.0048  0.006217874
-#> 11    Teleostei         3 12.500000 35.1000 45.468205936
-#> 8    Polychaeta         2  8.333333  0.7030  0.910659509
-#> 12     Bivalvia         2  8.333333  0.0290  0.037566324
-#> 13           NA         2  8.333333  1.6000  2.072624772
+#>           label value_item value_occ   pct_occ value_w        pct_w
+#> 10 Malacostraca          7        11 45.833333 39.7600 51.504725584
+#> 9      Copepoda          2         4 16.666667  0.0048  0.006217874
+#> 11    Teleostei          3         3 12.500000 35.1000 45.468205936
+#> 8    Polychaeta          1         2  8.333333  0.7030  0.910659509
+#> 12     Bivalvia          1         2  8.333333  0.0290  0.037566324
+#> 13           NA          1         2  8.333333  1.6000  2.072624772
 ```
