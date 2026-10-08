@@ -45,6 +45,8 @@ navbar:
         href: articles/digestion.html
       - text: Resolving prey taxonomy with WoRMS
         href: articles/taxonomy-worms.html
+      - text: Exploring and aggregating diet data
+        href: articles/exploration.html
       - text: "-------"
       - text: "Outputs & extension"
       - text: Building a self-contained diet dashboard
@@ -116,6 +118,20 @@ reference:
   - dv_build_html
   - dv_deploy
   - run_dietview
+
+- title: 9 · Explore, aggregate, and export
+  desc: >
+    Describe the sample, check sampling sufficiency, report classical
+    frequency of occurrence, aggregate rare prey upward to a reproducible
+    threshold, and export the sampling-unit by prey-category matrix for
+    downstream multivariate analysis.
+  contents:
+  - dv_summary
+  - dv_prey_accumulation
+  - dv_fo_table
+  - dv_aggregate_threshold
+  - dv_threshold_sweep
+  - dv_matrix
 
 footer:
   structure:

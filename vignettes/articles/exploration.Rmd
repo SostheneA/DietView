@@ -1,0 +1,169 @@
+---
+title: "Exploring and aggregating diet data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Exploring and aggregating diet data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#>",
+  fig.width = 7, fig.height = 4.5,
+  warning = FALSE, message = FALSE
+)
+```
+
+Before a diet is displayed it is explored, and before it is explored the
+reporting resolution has to be chosen. This article covers the functions that
+serve those two steps: a small set of descriptive explorers, and a
+resolution-robust aggregator. Everything here runs offline on the bundled
+example data.
+
+```{r setup}
+library(DietView)
+
+csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
+lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
+dat <- read.csv(csv, na.strings = c("NA", ""))
+lineage <- read.csv(lin, na.strings = c("NA", ""))
+
+spec <- dv_spec(
+  predator   = "predator_species_common_name",
+  stomach    = "stomach_id",
+  prey_id    = "aphia_id",
+  prey_name  = "verified_name",
+  weight     = "prey_weight",
+  count      = "number_of_prey",
+  digestion  = "digestion_level_id",
+  covariates = c("period", "size_class", "region")
+)
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
+                   verbose = FALSE)
+```
+
+## 1. Describe the sample first
+
+`dv_summary()` answers the questions you ask before anything else: how many
+stomachs and records each predator contributed, how many distinct prey taxa
+were seen, and the mean prey records per stomach. Pass `by` to break it down by
+a covariate.
+
+```{r summary}
+dv_summary(prep)
+dv_summary(prep, by = "region")
+```
+
+A long prey-record table holds only non-empty stomachs, so there is no
+vacuity (percent-empty) column -- that has to come from the full sampling frame
+upstream.
+
+## 2. Is the diet adequately sampled?
+
+`dv_prey_accumulation()` builds the cumulative prey curve: prey richness against
+the number of stomachs, averaged over random stomach orderings. A curve that
+flattens means more stomachs would reveal little new; a still-rising curve is a
+warning.
+
+```{r accumulation}
+acc <- dv_prey_accumulation(prep, permutations = 50, seed = 1)
+acc
+
+plot(acc$n_stomachs, acc$mean_richness, type = "b",
+     xlab = "Stomachs examined", ylab = "Cumulative prey taxa",
+     main = "Prey accumulation (pooled)")
+```
+
+Pass `by = spec$predator` for one curve per predator. Keep `permutations`
+modest while exploring; raise it for a figure.
+
+## 3. Frequency of occurrence, the classical way
+
+`dv_build_tree()` gives `pct_occ`, a share of prey *records* that is additive so
+it can be drawn as a sunburst. That is **not** the classical frequency of
+occurrence. `dv_fo_table()` computes the real percent-F -- the share of
+non-empty stomachs containing each taxon -- independently at each rank, which is
+the nested-hierarchy layout recommended for cross-study comparison
+(Buckland et al., 2017).
+
+```{r fo}
+dv_fo_table(prep, rank = "class")
+```
+
+These values are non-additive across ranks on purpose: a parent's percent-F is
+recomputed from stomach presence, not summed from its children. Leave `rank =
+NULL` to stack every rank, and pass `by` for a covariate breakdown.
+
+## 4. Resolution-robust aggregation
+
+Keeping the finest rank with explicit NA is the default, but a diet is only
+comparable across studies if the reporting resolution is a stated, reproducible
+choice rather than an analyst's habit. `dv_aggregate_threshold()` collapses prey
+seen in fewer than `threshold` stomachs into their parent, walking up the
+hierarchy until every retained category clears the threshold.
+
+```{r aggregate}
+agg <- dv_aggregate_threshold(prep, threshold = 3)
+table(agg$data$prey_rank, useNA = "ifany")
+```
+
+The returned object is a pruned `dietview_prep`: ranks finer than the settled
+rank are set to NA, so it drops straight back into the normal pipeline, and the
+sunburst then has no leaf rarer than the threshold.
+
+```{r aggregate-tree}
+tree <- dv_build_tree(agg$data, agg$ranks, weight_col = spec$weight)
+dv_rank_table(tree, "Class")
+```
+
+Three architectures, two arguments:
+
+```{r architectures, eval = FALSE}
+dv_aggregate_threshold(prep, 100)                      # pooled (primary)
+dv_aggregate_threshold(prep, 100, min_predators = 2)   # pooled cross-predator
+dv_aggregate_threshold(prep, 50, scope = "per_predator")
+```
+
+To reproduce the "resolutions" bookkeeping -- how category count responds to the
+threshold -- sweep it:
+
+```{r sweep}
+dv_threshold_sweep(prep, thresholds = c(2, 3, 5, 8))
+# the paper's grids: seq(10, 1000, 10) -> 100 resolutions;
+#                    seq(5, 250, 5) per_predator -> 50 resolutions
+```
+
+Reporting a statistic as a mean across resolutions is done in the analysis that
+consumes these; DietView only produces the aggregation, not the test.
+
+## 5. Handoff to multivariate analysis
+
+`dv_matrix()` reshapes records into the sampling-unit by prey-category matrix
+that ordination, PERMANOVA and compositional regression expect. If you
+aggregated first, it uses the `prey_category` column automatically.
+
+```{r matrix}
+m <- dv_matrix(agg, currency = "occurrence")
+dim(m)
+m[1:3, 1:min(5, ncol(m))]
+```
+
+`currency` is `"weight"` (summed mass), `"occurrence"` (record counts) or
+`"fo"` (presence per unit). Use `unit` to aggregate to something coarser than a
+stomach, such as a trawl set, and `include_na = FALSE` to drop the unidentified
+column for a clean analysis matrix.
+
+```{r downstream, eval = FALSE}
+# DietView stops here; the analysis lives in your own tooling
+mm <- vegan::decostand(m, "total")
+d  <- vegan::vegdist(mm, "bray")
+# vegan::adonis2(d ~ period, data = set_covariates)
+```
+
+## Where this fits
+
+These functions cover the exploration and aggregation layers. Inference --
+diversity tests, PERMANOVA, dispersion, classification of change -- is
+deliberately left to the packages built for it; `dv_matrix()` is the bridge to
+them.

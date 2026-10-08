@@ -1,36 +1,28 @@
 # DietView 0.1.0
 
-First public release.
+First release.
 
-## Data model
-* `dv_spec()` declares how your columns map to DietView's roles; nothing is
-  hard-coded. `dv_validate()` checks the table against the spec and reports which
-  currencies and diagnostics will be available.
+## Core pipeline
+* `dv_spec()`, `dv_validate()`, `dv_prepare()` — column contract, validation,
+  and taxonomy resolution against WoRMS or a supplied lineage, with a
+  provenance log.
+* `dv_build_tree()`, `dv_rank_table()` — within-rank importance in occurrence
+  and weight, with unidentified prey kept explicit.
+* `dv_sunburst()`, `dv_palette()` — taxonomically complete sunbursts with a
+  shared palette and the explicit-NA category in white.
+* `dv_add_period()`, `dv_size_bins()` — covariate helpers.
+* `dv_digestion_diagnostic()` — the identification-bias diagnostic.
+* `dv_species_card_assets()`, `dv_build_html()`, `dv_deploy()`,
+  `run_dietview()` — species cards, a self-contained dashboard, deployment,
+  and the Shiny explorer.
 
-## Taxonomy
-* `dv_prepare()` attaches a taxonomic lineage from WoRMS (`"worms"`), from a
-  lineage lookup you supply (`"table"`), from existing rank columns
-  (`"columns"`), or automatically (`"auto"`). Unresolved prey are kept as an
-  explicit `NA` category, never dropped.
-* `dv_taxonomy_worms()` resolves prey to WoRMS with an id / exact / fuzzy /
-  unresolved strategy, follows unaccepted names to their valid AphiaID, caches to
-  disk, and records full provenance. `dv_taxonomy_report()` returns the fuzzy and
-  unresolved matches for review.
-
-## Metrics and figures
-* `dv_build_tree()` builds the multi-rank tree with within-rank importance in
-  occurrence and weight (each rank sums to 100 %, NA included).
-* `dv_rank_table()` extracts the importance table for one rank.
-* `dv_sunburst()` renders the multi-rank sunburst with a fixed orientation for
-  comparable covariate cells; `dv_palette()` gives a stable colour dictionary.
-
-## Covariates and diagnostics
-* `dv_add_period()` and `dv_size_bins()` derive period and length-bin covariates.
-* `dv_digestion_diagnostic()` quantifies the identification bias linked to
-  digestion level.
-
-## Outputs
-* `dv_build_html()` and `dv_deploy()` render a self-contained HTML dashboard with
-  searchable predator cards; `dv_species_card_assets()` resolves identification
-  photos and descriptions.
-* `run_dietview()` launches an interactive Shiny explorer.
+## Exploration & aggregation
+* `dv_summary()` — sample overview by predator and covariate.
+* `dv_prey_accumulation()` — cumulative prey curve for sample sufficiency.
+* `dv_fo_table()` — classical per-rank frequency of occurrence (percent-F),
+  the nested-hierarchy layout; distinct from the additive `pct_occ`.
+* `dv_aggregate_threshold()`, `dv_threshold_sweep()` — resolution-robust
+  aggregation: collapse prey below a stomach-frequency threshold upward through
+  the hierarchy (pooled, cross-predator, and per-predator architectures).
+* `dv_matrix()` — sampling-unit by prey-category matrix for downstream
+  multivariate analysis.
