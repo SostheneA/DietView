@@ -6,6 +6,7 @@ compare diets across covariate levels with a fixed, comparable sunburst
 orientation.
 
 ``` r
+
 library(DietView)
 
 dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
@@ -24,6 +25,7 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin)
 Turn a year into a period, or a length into bins. Labels are auto-built.
 
 ``` r
+
 dv_add_period(c(2004, 2006, 2010, 2018), breaks = c(2003, 2007, 2020))
 #> [1] 2003-2007 2003-2007 2007-2020 2007-2020
 #> Levels: 2003-2007 2007-2020
@@ -35,6 +37,7 @@ dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60))
 These feed straight back as covariate columns, e.g.:
 
 ``` r
+
 dat$period   <- dv_add_period(dat$year, breaks = c(2003, 2007, 2020))
 dat$size_bin <- dv_size_bins(dat$somatic_length_cm, breaks = c(0, 40, 50, 60))
 ```
@@ -47,6 +50,7 @@ cells are directly comparable. Here we compare periods by building a
 tree per level:
 
 ``` r
+
 d <- prep$data
 periods <- sort(unique(d$period))
 periods
@@ -54,11 +58,13 @@ periods
 ```
 
 ``` r
+
 t1 <- dv_build_tree(d[d$period == periods[1], ], prep$ranks, weight_col = spec$weight)
 dv_sunburst(t1, mode = "occurrence", title = paste("Period", periods[1]))
 ```
 
 ``` r
+
 t2 <- dv_build_tree(d[d$period == periods[2], ], prep$ranks, weight_col = spec$weight)
 dv_sunburst(t2, mode = "occurrence", title = paste("Period", periods[2]))
 ```
@@ -67,6 +73,7 @@ Sharing one colour dictionary keeps colours consistent across the two
 figures:
 
 ``` r
+
 pal <- dv_palette(unlist(lapply(prep$ranks, function(r) prep$data[[r]])))
 dv_sunburst(t1, mode = "occurrence", colors = pal, title = periods[1])
 ```
@@ -79,6 +86,7 @@ same in both periods? Build one tree per combination and compare the
 cells.
 
 ``` r
+
 d <- prep$data
 combos <- expand.grid(size = sort(unique(d$size_class)),
                       per  = sort(unique(d$period)),
@@ -94,6 +102,7 @@ combos
 ```
 
 ``` r
+
 sub <- d[d$size_class == combos$size[1] & d$period == combos$per[1], ]
 tc  <- dv_build_tree(sub, prep$ranks, weight_col = spec$weight)
 dv_sunburst(tc, mode = "occurrence", colors = pal,
@@ -118,6 +127,7 @@ periods). See the dashboard article.
 per level of `outer`, one sunburst per level of `inner` within it.
 
 ``` r
+
 dv_deploy(prep, dir = "outputs",
           strata = c("period", "size_class", "size_bin"),
           cross  = list(c("size_bin", "period"),      # length bins by period

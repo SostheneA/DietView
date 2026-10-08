@@ -6,6 +6,7 @@ writing a different
 This article collects the extension points.
 
 ``` r
+
 library(DietView)
 ```
 
@@ -14,6 +15,7 @@ library(DietView)
 Nothing is hard-coded — declare roles once and every function follows:
 
 ``` r
+
 spec <- dv_spec(predator = "sp", stomach = "stom", prey_id = "aphia",
                 weight = "wt_g", covariates = c("yr", "zone"))
 ```
@@ -24,6 +26,7 @@ Freeze taxonomy into a lineage table and use `taxonomy = "table"` — no
 `worrms`, no network, identical results every run:
 
 ``` r
+
 lineage <- read.csv("my_curated_lineage.csv", na.strings = c("NA", ""))
 prep <- dv_prepare(mydata, spec, taxonomy = "table", lineage = lineage)
 ```
@@ -33,6 +36,7 @@ prep <- dv_prepare(mydata, spec, taxonomy = "table", lineage = lineage)
 Display fewer or different ranks by passing your own `ranks`:
 
 ``` r
+
 spec <- dv_spec(predator = "sp", stomach = "stom", prey_name = "prey",
                 ranks = c("phylum", "class", "order", "family", "genus"))
 ```
@@ -43,6 +47,7 @@ Pass a named vector to `dv_sunburst(colors = )`, or build one with
 [`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md):
 
 ``` r
+
 pal <- dv_palette(c("Teleostei", "Malacostraca", "Polychaeta", "NA"))
 pal
 #>    Teleostei Malacostraca   Polychaeta           NA 
@@ -55,6 +60,7 @@ Add columns, list them in `dv_spec(covariates = )`, and derive periods
 and length bins with the helpers:
 
 ``` r
+
 dv_add_period(c(2005, 2012, 2019), breaks = c(2003, 2010, 2020))
 #> [1] 2003-2010 2010-2020 2010-2020
 #> Levels: 2003-2010 2010-2020

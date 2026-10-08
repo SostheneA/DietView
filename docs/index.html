@@ -55,6 +55,7 @@
     <li><a class="dropdown-item" href="articles/covariates.html">Covariate stratification</a></li>
     <li><a class="dropdown-item" href="articles/digestion.html">The digestion identification bias</a></li>
     <li><a class="dropdown-item" href="articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
+    <li><a class="dropdown-item" href="articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Outputs &amp; extension</h6></li>
     <li><a class="dropdown-item" href="articles/dashboard.html">Building a self-contained diet dashboard</a></li>
@@ -121,6 +122,8 @@
 <li>
 <strong>interactive sunbursts</strong> (plotly) with a fixed orientation so covariate cells are directly comparable, and a stable colour dictionary across ranks;</li>
 <li>three <strong>outputs</strong>: a <a href="https://shiny.posit.co/" class="external-link">Shiny</a> explorer, a self-contained HTML dashboard (searchable/sortable predator cards with auto-fetched ID photos), or plain plotly figures.</li>
+<li>
+<strong>exploration &amp; reproducible aggregation</strong>: sample summaries, prey-accumulation curves for sampling sufficiency, classical per-rank frequency of occurrence, threshold-based aggregation that collapses rare prey upward to a reproducible resolution (pooled, cross-predator, and per-predator), and a sampling-unit by prey-category matrix export for multivariate analysis.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -134,18 +137,18 @@
 <col width="33%">
 <col width="33%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th></th>
 <th>Article</th>
 <th>What it covers</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>1</td>
 <td><a href="https://sosthenea.github.io/DietView/articles/dietview.html">Getting started</a></td>
 <td>the whole pipeline, end to end, offline</td>
 </tr>
-<tr class="even">
+<tr>
 <td>2</td>
 <td><a href="https://sosthenea.github.io/DietView/articles/data-model.html">Data model &amp; input contract</a></td>
 <td>one row per prey record; mapping your columns</td>
@@ -159,31 +162,36 @@
 <col width="33%">
 <col width="33%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th></th>
 <th>Article</th>
 <th>What it covers</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>3</td>
 <td><a href="https://sosthenea.github.io/DietView/articles/within-rank-na.html">Within-rank importance &amp; explicit NA</a></td>
 <td>why each rank sums to 100 %, NA included</td>
 </tr>
-<tr class="even">
+<tr>
 <td>4</td>
 <td><a href="https://sosthenea.github.io/DietView/articles/covariates.html">Covariate stratification</a></td>
 <td>periods, size bins, and crossing two covariates</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>5</td>
 <td><a href="https://sosthenea.github.io/DietView/articles/digestion.html">Digestion identification bias</a></td>
 <td>how identification degrades with digestion</td>
 </tr>
-<tr class="even">
+<tr>
 <td>6</td>
 <td><a href="https://sosthenea.github.io/DietView/articles/taxonomy-worms.html">WoRMS taxonomy</a></td>
 <td>matching, provenance, and reviewing fuzzy hits</td>
+</tr>
+<tr>
+<td>7</td>
+<td><a href="https://sosthenea.github.io/DietView/articles/exploration.html">Exploring &amp; aggregating diet data</a></td>
+<td>sample summary, prey-accumulation, true %FO, threshold aggregation, set x category matrix</td>
 </tr>
 </tbody>
 </table>
@@ -194,36 +202,36 @@
 <col width="33%">
 <col width="33%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th></th>
 <th>Article</th>
 <th>What it covers</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
-<td>7</td>
+<tr>
+<td>8</td>
 <td><a href="https://sosthenea.github.io/DietView/articles/dashboard.html">Self-contained dashboard</a></td>
 <td>bands, strata, crossed rows, one file to ship</td>
 </tr>
-<tr class="even">
-<td>8</td>
+<tr>
+<td>9</td>
 <td><a href="https://sosthenea.github.io/DietView/articles/species-cards.html">Species identification cards</a></td>
 <td>photos, descriptions, offline mode</td>
 </tr>
-<tr class="odd">
-<td>9</td>
+<tr>
+<td>10</td>
 <td><a href="https://sosthenea.github.io/DietView/articles/shiny-app.html">Interactive Shiny explorer</a></td>
 <td>pooled or per-predator, faceted and crossed</td>
 </tr>
-<tr class="even">
-<td>10</td>
+<tr>
+<td>11</td>
 <td><a href="https://sosthenea.github.io/DietView/articles/extending.html">Adapting DietView to your survey</a></td>
 <td>custom ranks, colours, offline taxonomy</td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<h3 id="id_-technical-reference--the-package-companion">📘 Technical reference — the package companion</h3>
+<h3 id="blue_book-technical-reference--the-package-companion">📘 Technical reference — the package companion</h3>
 <p>The full narrative of <strong>what DietView contains and why</strong>: design principles, architecture, data structures, and every function with its internal logic. Distinct from the journal article (which argues <em>why</em> the package matters) and from the <a href="https://sosthenea.github.io/DietView/reference/index.html">function reference</a> (the API).</p>
 <p><strong><a href="https://sosthenea.github.io/DietView/articles/technical-reference.html">Read it online</a></strong></p>
 </blockquote>
@@ -286,7 +294,15 @@
 <span><span class="fu"><a href="reference/dv_sunburst.html">dv_sunburst</a></span><span class="op">(</span><span class="va">tree</span>, mode <span class="op">=</span> <span class="st">"occurrence"</span>, title <span class="op">=</span> <span class="st">"All predators"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic</a></span><span class="op">(</span><span class="va">prep</span>, by <span class="op">=</span> <span class="st">"period"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 6. deploy a standalone HTML dashboard (like the sGSL one)</span></span>
+<span><span class="co"># 6. explore, check sampling sufficiency, aggregate, and export</span></span>
+<span><span class="fu"><a href="reference/dv_summary.html">dv_summary</a></span><span class="op">(</span><span class="va">prep</span><span class="op">)</span>                                  <span class="co"># stomachs, records, taxa per predator</span></span>
+<span><span class="fu"><a href="reference/dv_prey_accumulation.html">dv_prey_accumulation</a></span><span class="op">(</span><span class="va">prep</span>, permutations <span class="op">=</span> <span class="fl">50</span><span class="op">)</span>     <span class="co"># cumulative prey curve</span></span>
+<span><span class="fu"><a href="reference/dv_fo_table.html">dv_fo_table</a></span><span class="op">(</span><span class="va">prep</span>, rank <span class="op">=</span> <span class="st">"class"</span><span class="op">)</span>                 <span class="co"># classical per-rank %FO</span></span>
+<span></span>
+<span><span class="va">agg</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/dv_aggregate_threshold.html">dv_aggregate_threshold</a></span><span class="op">(</span><span class="va">prep</span>, threshold <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>   <span class="co"># collapse rare prey upward</span></span>
+<span><span class="va">m</span>    <span class="op">&lt;-</span> <span class="fu"><a href="reference/dv_matrix.html">dv_matrix</a></span><span class="op">(</span><span class="va">agg</span>, currency <span class="op">=</span> <span class="st">"occurrence"</span><span class="op">)</span>         <span class="co"># set x category matrix (-&gt; vegan)</span></span>
+<span></span>
+<span><span class="co"># 7. deploy a standalone HTML dashboard (like the sGSL one)</span></span>
 <span><span class="fu"><a href="reference/dv_deploy.html">dv_deploy</a></span><span class="op">(</span><span class="va">prep</span>, file <span class="op">=</span> <span class="st">"dietview_dashboard.html"</span>, dir <span class="op">=</span> <span class="st">"outputs"</span>,</span>
 <span>          strata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"period"</span>, <span class="st">"size_class"</span>, <span class="st">"size_bin"</span><span class="op">)</span>,</span>
 <span>          cross  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"size_bin"</span>, <span class="st">"period"</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -314,53 +330,59 @@
 <col width="50%">
 <col width="50%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Step</th>
 <th>Functions</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>declare &amp; validate</td>
 <td>
 <a href="https://sosthenea.github.io/DietView/reference/dv_spec.html"><code>dv_spec()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_validate.html"><code>dv_validate()</code></a>
 </td>
 </tr>
-<tr class="even">
+<tr>
 <td>attach taxonomy</td>
 <td>
 <a href="https://sosthenea.github.io/DietView/reference/dv_prepare.html"><code>dv_prepare()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.html"><code>dv_taxonomy_worms()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.html"><code>dv_taxonomy_report()</code></a>
 </td>
 </tr>
-<tr class="odd">
+<tr>
 <td>covariates</td>
 <td>
 <a href="https://sosthenea.github.io/DietView/reference/dv_add_period.html"><code>dv_add_period()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_size_bins.html"><code>dv_size_bins()</code></a>
 </td>
 </tr>
-<tr class="even">
+<tr>
 <td>metrics</td>
 <td>
 <a href="https://sosthenea.github.io/DietView/reference/dv_build_tree.html"><code>dv_build_tree()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_rank_table.html"><code>dv_rank_table()</code></a>
 </td>
 </tr>
-<tr class="odd">
+<tr>
 <td>figures</td>
 <td>
 <a href="https://sosthenea.github.io/DietView/reference/dv_sunburst.html"><code>dv_sunburst()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_palette.html"><code>dv_palette()</code></a>
 </td>
 </tr>
-<tr class="even">
+<tr>
 <td>digestion bias</td>
 <td><a href="https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.html"><code>dv_digestion_diagnostic()</code></a></td>
 </tr>
-<tr class="odd">
+<tr>
 <td>species cards</td>
 <td><a href="https://sosthenea.github.io/DietView/reference/dv_species_card_assets.html"><code>dv_species_card_assets()</code></a></td>
 </tr>
-<tr class="even">
+<tr>
 <td>dashboards &amp; app</td>
 <td>
 <a href="https://sosthenea.github.io/DietView/reference/dv_build_html.html"><code>dv_build_html()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_deploy.html"><code>dv_deploy()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/run_dietview.html"><code>run_dietview()</code></a>
+</td>
+</tr>
+<tr>
+<td>explore &amp; aggregate</td>
+<td>
+<a href="https://sosthenea.github.io/DietView/reference/dv_summary.html"><code>dv_summary()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_prey_accumulation.html"><code>dv_prey_accumulation()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_fo_table.html"><code>dv_fo_table()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_aggregate_threshold.html"><code>dv_aggregate_threshold()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_threshold_sweep.html"><code>dv_threshold_sweep()</code></a>, <a href="https://sosthenea.github.io/DietView/reference/dv_matrix.html"><code>dv_matrix()</code></a>
 </td>
 </tr>
 </tbody>
@@ -385,7 +407,7 @@
 <div class="section level2">
 <h2 id="related-work">Related work<a class="anchor" aria-label="anchor" href="#related-work"></a>
 </h2>
-<p>DietView is a visualization and reporting layer; it does not model diet composition or fit selectivity. It complements diet-analysis workflows built on <code>vegan</code> (multivariate community statistics), the WoRMS toolchain (<code>worrms</code>), and interactive graphics via <code>plotly</code> and <code>htmlwidgets</code>. The sunburst and dashboard design follow the southern Gulf of St. Lawrence (sGSL) diet dashboard it generalizes.</p>
+<p>DietView is a visualization and reporting layer; it does not model diet composition or fit selectivity. It complements diet-analysis workflows built on <code>vegan</code> (multivariate community statistics) — to which <code><a href="reference/dv_matrix.html">dv_matrix()</a></code> is the direct bridge — the WoRMS toolchain (<code>worrms</code>), and interactive graphics via <code>plotly</code> and <code>htmlwidgets</code>. The sunburst and dashboard design follow the southern Gulf of St. Lawrence (sGSL) diet dashboard it generalizes.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -399,9 +421,8 @@
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li>
-<a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a>
-</li>
+<li><a href="LICENSE.html">Full license</a></li>
+<li><small><a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
 </ul>
 </div>
 

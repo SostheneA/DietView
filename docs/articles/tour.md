@@ -14,6 +14,7 @@ moves when you change a currency or a reporting rank. Everything runs
 offline on the bundled example data.
 
 ``` r
+
 library(DietView)
 ```
 
@@ -22,16 +23,16 @@ library(DietView)
 DietView is a short linear pipeline carrying three objects. Nothing is
 hidden: every stage returns something you can print, inspect and export.
 
-| Stage     | Function                                                                                                                                                                                                                                               | Object produced                                     |
-|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
-| Declare   | [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)                                                                                                                                                                               | `dietview_spec` – the column mapping                |
-| Check     | [`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.md)                                                                                                                                                                       | nothing; reports on the data                        |
-| Prepare   | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)                                                                                                                                                                         | `dietview_prep` – data + taxonomy + provenance log  |
-| Review    | [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md)                                                                                                                                                         | data.frame of matches needing a human eye           |
-| Aggregate | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)                                                                                                                                                                   | `dietview_tree` – nodes with within-rank importance |
-| Read      | [`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md)                                                                                                                                                                   | data.frame – the numbers behind one ring            |
-| Show      | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md)                                                                                                                                                                       | plotly figure                                       |
-| Ship      | [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md), [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md), [`dv_deploy()`](https://sosthenea.github.io/DietView/reference/dv_deploy.md) | dashboard, app, deployment                          |
+| Stage | Function | Object produced |
+|----|----|----|
+| Declare | [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md) | `dietview_spec` – the column mapping |
+| Check | [`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.md) | nothing; reports on the data |
+| Prepare | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md) | `dietview_prep` – data + taxonomy + provenance log |
+| Review | [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md) | data.frame of matches needing a human eye |
+| Aggregate | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md) | `dietview_tree` – nodes with within-rank importance |
+| Read | [`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md) | data.frame – the numbers behind one ring |
+| Show | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md) | plotly figure |
+| Ship | [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md), [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md), [`dv_deploy()`](https://sosthenea.github.io/DietView/reference/dv_deploy.md) | dashboard, app, deployment |
 
 Two helpers
 ([`dv_add_period()`](https://sosthenea.github.io/DietView/reference/dv_add_period.md),
@@ -45,6 +46,7 @@ quantifies identification bias, and one
 fetches identification material.
 
 ``` r
+
 dat <- read.csv(
   system.file("extdata", "dietview_example.csv", package = "DietView"),
   na.strings = c("NA", "")
@@ -89,6 +91,7 @@ studies.
 data is touched.
 
 ``` r
+
 spec <- dv_spec(
   predator   = "predator_species_common_name",
   stomach    = "stomach_id",
@@ -155,6 +158,7 @@ missing is analysable in the occurrence currency and misleading in the
 weight currency, and that judgement is yours to make.
 
 ``` r
+
 dv_validate(dat, spec)
 ```
 
@@ -177,6 +181,7 @@ a taxonomic source, joins the lineage back to every record, and fills
 the ranks below the identification point with an explicit `"NA"` marker.
 
 ``` r
+
 prep <- dv_prepare(
   dat, spec,
   taxonomy = "table",   # offline: use the supplied lineage
@@ -198,6 +203,7 @@ names(prep)
 - `taxonomy_log` – one row per distinct prey, with how it resolved.
 
 ``` r
+
 prep$ranks
 #> [1] "kingdom" "phylum"  "class"   "order"   "family"  "genus"   "species"
 head(prep$data[, c("verified_name", prep$ranks)], 4)
@@ -218,12 +224,12 @@ head(prep$data[, c("verified_name", prep$ranks)], 4)
 *`taxonomy =` chooses the source and matters more than any other
 argument here.*
 
-| Value       | Behaviour                               | When to use                                        |
-|-------------|-----------------------------------------|----------------------------------------------------|
-| `"auto"`    | use rank columns if present, else WoRMS | quick exploration                                  |
-| `"columns"` | trust rank columns already in the data  | taxonomy resolved elsewhere                        |
-| `"worms"`   | query WoRMS online                      | first pass on a new dataset                        |
-| `"table"`   | join a supplied lineage table           | reproducible reruns, offline work, non-marine prey |
+| Value | Behaviour | When to use |
+|----|----|----|
+| `"auto"` | use rank columns if present, else WoRMS | quick exploration |
+| `"columns"` | trust rank columns already in the data | taxonomy resolved elsewhere |
+| `"worms"` | query WoRMS online | first pass on a new dataset |
+| `"table"` | join a supplied lineage table | reproducible reruns, offline work, non-marine prey |
 
 *The recommended production pattern is resolve once, then freeze.* Run
 with `taxonomy = "worms"` a single time, review the log, export the
@@ -250,6 +256,7 @@ diet description silently goes wrong. This is the review step.
 human eye.
 
 ``` r
+
 prep_online <- dv_prepare(dat, spec, taxonomy = "worms")
 
 dv_taxonomy_report(prep_online, which = "review")   # fuzzy + unresolved
@@ -287,6 +294,7 @@ items), `value_occ` (occurrence count), `value_w` (summed weight). It
 then divides each by its **rank total** to give `pct_occ` and `pct_w`.
 
 ``` r
+
 tree <- dv_build_tree(
   prep$data,
   ranks      = prep$ranks,
@@ -313,6 +321,7 @@ Two properties hold **by construction**, and both are worth verifying
 once so you trust them thereafter:
 
 ``` r
+
 # 1. every rank is a complete partition (each sums to 100%)
 round(tapply(tree$pct_occ, tree$rank, sum), 6)
 #>   Class  Family   Genus Kingdom   Order  Phylum Species 
@@ -360,6 +369,7 @@ numbers, and so does anyone checking your work.
 share, with the explicit NA row included.
 
 ``` r
+
 dv_rank_table(tree, "Class")
 #>           label value_item value_occ   pct_occ value_w        pct_w
 #> 10 Malacostraca          7        11 45.833333 39.7600 51.504725584
@@ -384,6 +394,7 @@ replaces a wall of per-rank, per-currency panels.
 white.
 
 ``` r
+
 dv_sunburst(tree, mode = "occurrence", title = "Pooled diet, occurrence")
 ```
 
@@ -400,6 +411,7 @@ colours, and the comparison you were trying to make is destroyed. Build
 one global palette and pass it everywhere:
 
 ``` r
+
 colors <- dv_palette(tree$label)   # from the pooled tree: covers every taxon
 head(colors, 4)
 #>   Animalia   Annelida Arthropoda   Chordata 
@@ -447,6 +459,7 @@ over an ontogenetic trajectory. Making stratification cheap is what
 makes it routine.
 
 ``` r
+
 dat$period2   <- dv_add_period(dat$year, breaks = c(1990, 2000, 2010, 2025))
 dat$size_bin2 <- dv_size_bins(dat$somatic_length_cm, breaks = c(0, 30, 50, 200))
 
@@ -480,6 +493,7 @@ literature has asked studies to provide.
 rank resolved, in records and in weight.
 
 ``` r
+
 dg <- dv_digestion_diagnostic(prep)
 head(dg, 8)
 #>   digestion finest_rank n_records  weight p_records    p_weight
@@ -515,6 +529,7 @@ AphiaID, the accepted ID behind an unaccepted name, exact name match,
 then fuzzy match.
 
 ``` r
+
 keys <- unique(dat[, c("aphia_id", "verified_name")])
 names(keys) <- c("prey_id", "prey_name")
 
@@ -539,6 +554,7 @@ identification, students on an unfamiliar fauna, managers new to the
 system.
 
 ``` r
+
 dv_species_card_assets(
   c("Pandalus borealis", "Osmerus mordax"),
   use_wiki  = TRUE,
@@ -558,6 +574,7 @@ A result that needs a live session is a result that will be transcribed
 into a static figure and lose its structure.
 
 ``` r
+
 # self-contained dashboard: one file, opens in any browser, no R
 dv_build_html(
   prep,
@@ -586,6 +603,7 @@ This is the comparison the package exists to make easy. Same tree, same
 records, different contribution per record.
 
 ``` r
+
 cls <- dv_rank_table(tree, "Class")
 
 data.frame(
@@ -616,6 +634,7 @@ conventional workflows cannot perform at all, since the finer ranks were
 discarded before analysis.
 
 ``` r
+
 for (r in c("Class", "Order", "Family")) {
   tb <- dv_rank_table(tree, r)
   cat("\n--", r, "-- top 3 by occurrence share:\n")
@@ -653,6 +672,7 @@ The explicit NA category is not decoration; it is the confidence bound
 on every fine-rank statement in the figure.
 
 ``` r
+
 na_share <- do.call(rbind, lapply(prep$ranks, function(r) {
   lab <- paste0(toupper(substring(r, 1, 1)), substring(r, 2))
   tb  <- dv_rank_table(tree, lab)
@@ -677,21 +697,21 @@ random sample.
 
 ## What changes what – a summary
 
-| Argument                | Where                                                                                                                                                                    | Changes                                           |
-|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|
-| `prey_id` / `prey_name` | [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)                                                                                                 | which key resolves; ID wins when both given       |
-| `ranks`                 | [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)                                                                                                 | number of rings in the sunburst                   |
-| `covariates`            | [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)                                                                                                 | what you can stratify and cross by later          |
-| `taxonomy`              | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)                                                                                           | the source of grouping, and reproducibility       |
-| `fuzzy`                 | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)                                                                                           | recovers misspellings; needs the log reviewed     |
-| `weight_col`            | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)                                                                                     | whether the weight currency exists                |
-| `count_col`             | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)                                                                                     | occurrence becomes a numerical currency           |
-| `mode`                  | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md)                                                                                         | which currency is shown                           |
-| `colors`                | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md)                                                                                         | cross-panel comparability – pass a global palette |
-| `rotation`              | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md)                                                                                         | start angle; keep constant across panels          |
-| `breaks`                | [`dv_add_period()`](https://sosthenea.github.io/DietView/reference/dv_add_period.md), [`dv_size_bins()`](https://sosthenea.github.io/DietView/reference/dv_size_bins.md) | the strata themselves                             |
-| `by`                    | [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md)                                                                 | whether the bias is broken down further           |
-| `cross`                 | [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md)                                                                                     | the panel grid, as inner-by-outer                 |
+| Argument | Where | Changes |
+|----|----|----|
+| `prey_id` / `prey_name` | [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md) | which key resolves; ID wins when both given |
+| `ranks` | [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md) | number of rings in the sunburst |
+| `covariates` | [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md) | what you can stratify and cross by later |
+| `taxonomy` | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md) | the source of grouping, and reproducibility |
+| `fuzzy` | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md) | recovers misspellings; needs the log reviewed |
+| `weight_col` | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md) | whether the weight currency exists |
+| `count_col` | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md) | occurrence becomes a numerical currency |
+| `mode` | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md) | which currency is shown |
+| `colors` | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md) | cross-panel comparability – pass a global palette |
+| `rotation` | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md) | start angle; keep constant across panels |
+| `breaks` | [`dv_add_period()`](https://sosthenea.github.io/DietView/reference/dv_add_period.md), [`dv_size_bins()`](https://sosthenea.github.io/DietView/reference/dv_size_bins.md) | the strata themselves |
+| `by` | [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md) | whether the bias is broken down further |
+| `cross` | [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md) | the panel grid, as inner-by-outer |
 
 ## Three things to carry away
 

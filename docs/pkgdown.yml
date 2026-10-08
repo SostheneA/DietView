@@ -1,4 +1,4 @@
-pandoc: 3.1.1
+pandoc: '3.10'
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
@@ -7,6 +7,7 @@ articles:
   data-model: data-model.html
   articles/dietview: dietview.html
   digestion: digestion.html
+  articles/exploration: exploration.html
   articles/extending: extending.html
   articles/shiny-app: shiny-app.html
   articles/species-cards: species-cards.html
@@ -14,7 +15,7 @@ articles:
   articles/technical-reference: technical-reference.html
   articles/tour: tour.html
   articles/within-rank-na: within-rank-na.html
-last_built: 2026-07-27T16:40Z
+last_built: 2026-10-08T14:59Z
 urls:
   reference: https://sosthenea.github.io/DietView/reference
   article: https://sosthenea.github.io/DietView/articles

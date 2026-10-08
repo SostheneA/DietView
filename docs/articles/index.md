@@ -12,6 +12,8 @@
   DietView](https://sosthenea.github.io/DietView/articles/dietview.md):
 - [The digestion identification
   bias](https://sosthenea.github.io/DietView/articles/digestion.md):
+- [Exploring and aggregating diet
+  data](https://sosthenea.github.io/DietView/articles/exploration.md):
 - [Adapting DietView to your own
   survey](https://sosthenea.github.io/DietView/articles/extending.md):
 - [The interactive Shiny

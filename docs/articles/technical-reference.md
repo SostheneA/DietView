@@ -173,6 +173,7 @@ from the coarsest rank inward, grouping leaves by the prefix of ranks
 and summing:
 
 ``` r
+
 lvl <- lapply(seq_along(ranks), function(i) {
   cols_i <- ranks[seq_len(i)]
   g <- summarise(group_by(leaves, across(all_of(cols_i))),
@@ -194,6 +195,7 @@ and `pct_w` give each node’s share within its rank.
 ### The sunburst call
 
 ``` r
+
 plot_ly(tree, ids = ~id, labels = ~label, parents = ~parent, values = size_vals,
         type = 'sunburst', branchvalues = 'total', sort = FALSE, rotation = rotation,
         text = ~hovertext, hovertemplate = '%{text}<extra></extra>',

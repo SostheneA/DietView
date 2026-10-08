@@ -28,6 +28,7 @@
     <li><a class="dropdown-item" href="../articles/covariates.html">Covariate stratification</a></li>
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
+    <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Outputs &amp; extension</h6></li>
     <li><a class="dropdown-item" href="../articles/dashboard.html">Building a self-contained diet dashboard</a></li>
@@ -54,41 +55,34 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="dietview-010">DietView 0.1.0<a class="anchor" aria-label="anchor" href="#dietview-010"></a></h2>
-<p>First public release.</p>
+<p>First release.</p>
 <div class="section level3">
-<h3 id="data-model-0-1-0">Data model<a class="anchor" aria-label="anchor" href="#data-model-0-1-0"></a></h3>
+<h3 id="core-pipeline-0-1-0">Core pipeline<a class="anchor" aria-label="anchor" href="#core-pipeline-0-1-0"></a></h3>
 <ul><li>
-<code><a href="../reference/dv_spec.html">dv_spec()</a></code> declares how your columns map to DietView’s roles; nothing is hard-coded. <code><a href="../reference/dv_validate.html">dv_validate()</a></code> checks the table against the spec and reports which currencies and diagnostics will be available.</li>
+<code><a href="../reference/dv_spec.html">dv_spec()</a></code>, <code><a href="../reference/dv_validate.html">dv_validate()</a></code>, <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> — column contract, validation, and taxonomy resolution against WoRMS or a supplied lineage, with a provenance log.</li>
+<li>
+<code><a href="../reference/dv_build_tree.html">dv_build_tree()</a></code>, <code><a href="../reference/dv_rank_table.html">dv_rank_table()</a></code> — within-rank importance in occurrence and weight, with unidentified prey kept explicit.</li>
+<li>
+<code><a href="../reference/dv_sunburst.html">dv_sunburst()</a></code>, <code><a href="../reference/dv_palette.html">dv_palette()</a></code> — taxonomically complete sunbursts with a shared palette and the explicit-NA category in white.</li>
+<li>
+<code><a href="../reference/dv_add_period.html">dv_add_period()</a></code>, <code><a href="../reference/dv_size_bins.html">dv_size_bins()</a></code> — covariate helpers.</li>
+<li>
+<code><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic()</a></code> — the identification-bias diagnostic.</li>
+<li>
+<code><a href="../reference/dv_species_card_assets.html">dv_species_card_assets()</a></code>, <code><a href="../reference/dv_build_html.html">dv_build_html()</a></code>, <code><a href="../reference/dv_deploy.html">dv_deploy()</a></code>, <code><a href="../reference/run_dietview.html">run_dietview()</a></code> — species cards, a self-contained dashboard, deployment, and the Shiny explorer.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="taxonomy-0-1-0">Taxonomy<a class="anchor" aria-label="anchor" href="#taxonomy-0-1-0"></a></h3>
+<h3 id="exploration--aggregation-0-1-0">Exploration &amp; aggregation<a class="anchor" aria-label="anchor" href="#exploration--aggregation-0-1-0"></a></h3>
 <ul><li>
-<code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> attaches a taxonomic lineage from WoRMS (<code>"worms"</code>), from a lineage lookup you supply (<code>"table"</code>), from existing rank columns (<code>"columns"</code>), or automatically (<code>"auto"</code>). Unresolved prey are kept as an explicit <code>NA</code> category, never dropped.</li>
+<code><a href="../reference/dv_summary.html">dv_summary()</a></code> — sample overview by predator and covariate.</li>
 <li>
-<code><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms()</a></code> resolves prey to WoRMS with an id / exact / fuzzy / unresolved strategy, follows unaccepted names to their valid AphiaID, caches to disk, and records full provenance. <code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code> returns the fuzzy and unresolved matches for review.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="metrics-and-figures-0-1-0">Metrics and figures<a class="anchor" aria-label="anchor" href="#metrics-and-figures-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/dv_build_tree.html">dv_build_tree()</a></code> builds the multi-rank tree with within-rank importance in occurrence and weight (each rank sums to 100 %, NA included).</li>
+<code><a href="../reference/dv_prey_accumulation.html">dv_prey_accumulation()</a></code> — cumulative prey curve for sample sufficiency.</li>
 <li>
-<code><a href="../reference/dv_rank_table.html">dv_rank_table()</a></code> extracts the importance table for one rank.</li>
+<code><a href="../reference/dv_fo_table.html">dv_fo_table()</a></code> — classical per-rank frequency of occurrence (percent-F), the nested-hierarchy layout; distinct from the additive <code>pct_occ</code>.</li>
 <li>
-<code><a href="../reference/dv_sunburst.html">dv_sunburst()</a></code> renders the multi-rank sunburst with a fixed orientation for comparable covariate cells; <code><a href="../reference/dv_palette.html">dv_palette()</a></code> gives a stable colour dictionary.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="covariates-and-diagnostics-0-1-0">Covariates and diagnostics<a class="anchor" aria-label="anchor" href="#covariates-and-diagnostics-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/dv_add_period.html">dv_add_period()</a></code> and <code><a href="../reference/dv_size_bins.html">dv_size_bins()</a></code> derive period and length-bin covariates.</li>
+<code><a href="../reference/dv_aggregate_threshold.html">dv_aggregate_threshold()</a></code>, <code><a href="../reference/dv_threshold_sweep.html">dv_threshold_sweep()</a></code> — resolution-robust aggregation: collapse prey below a stomach-frequency threshold upward through the hierarchy (pooled, cross-predator, and per-predator architectures).</li>
 <li>
-<code><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic()</a></code> quantifies the identification bias linked to digestion level.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="outputs-0-1-0">Outputs<a class="anchor" aria-label="anchor" href="#outputs-0-1-0"></a></h3>
-<ul><li>
-<code><a href="../reference/dv_build_html.html">dv_build_html()</a></code> and <code><a href="../reference/dv_deploy.html">dv_deploy()</a></code> render a self-contained HTML dashboard with searchable predator cards; <code><a href="../reference/dv_species_card_assets.html">dv_species_card_assets()</a></code> resolves identification photos and descriptions.</li>
-<li>
-<code><a href="../reference/run_dietview.html">run_dietview()</a></code> launches an interactive Shiny explorer.</li>
+<code><a href="../reference/dv_matrix.html">dv_matrix()</a></code> — sampling-unit by prey-category matrix for downstream multivariate analysis.</li>
 </ul></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

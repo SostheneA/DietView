@@ -7,6 +7,7 @@ explains the contract, the role system, and how to map *any* survey onto
 it.
 
 ``` r
+
 library(DietView)
 ```
 
@@ -16,6 +17,7 @@ Column names are free. You never rename your data; instead you declare,
 once, which column plays which **role**. Here is the bundled base table:
 
 ``` r
+
 dat <- read.csv(
   system.file("extdata", "dietview_example.csv", package = "DietView"),
   na.strings = c("NA", "")
@@ -44,6 +46,7 @@ DietView adds those itself (see the taxonomy article).
 ## Declaring roles with `dv_spec()`
 
 ``` r
+
 spec <- dv_spec(
   predator       = "predator_species_common_name",
   predator_latin = "predator_species_latin_name",
@@ -58,16 +61,16 @@ spec <- dv_spec(
 
 The roles and their meaning:
 
-| Role                    | Required    | Purpose                                   |
-|-------------------------|-------------|-------------------------------------------|
-| `predator`              | yes         | one predator per row                      |
-| `stomach`               | yes         | unit of occurrence; drives stomach counts |
-| `prey_id` / `prey_name` | one of them | prey key(s) for taxonomy                  |
-| `weight`                | no          | the weight currency (`%W`)                |
-| `count`                 | no          | per-record count for `%N`                 |
-| `digestion`             | no          | enables the digestion diagnostic          |
-| `covariates`            | no          | any stratifiers                           |
-| `predator_latin`        | no          | auto-fetch ID photos                      |
+| Role | Required | Purpose |
+|----|----|----|
+| `predator` | yes | one predator per row |
+| `stomach` | yes | unit of occurrence; drives stomach counts |
+| `prey_id` / `prey_name` | one of them | prey key(s) for taxonomy |
+| `weight` | no | the weight currency (`%W`) |
+| `count` | no | per-record count for `%N` |
+| `digestion` | no | enables the digestion diagnostic |
+| `covariates` | no | any stratifiers |
+| `predator_latin` | no | auto-fetch ID photos |
 
 ## Validating a table against a spec
 
@@ -78,6 +81,7 @@ no digestion → diagnostic disabled). It returns the data invisibly, so
 it composes in a pipeline.
 
 ``` r
+
 invisible(dv_validate(dat, spec))
 ```
 
@@ -90,6 +94,7 @@ If your columns were, say, `sp`, `stom`, `aphia`, `wt_g`, and `yr`, you
 would simply write:
 
 ``` r
+
 spec <- dv_spec(
   predator = "sp", stomach = "stom", prey_id = "aphia",
   weight = "wt_g", covariates = "yr"

@@ -27,6 +27,7 @@ Disable all network lookups with `use_wiki = FALSE` and supply your own
 assets:
 
 ``` r
+
 library(DietView)
 info <- list(
   "Atlantic cod" = list(
@@ -45,6 +46,7 @@ dv_build_html(prep, output = "diet_dashboard.html",
 ## Calling the resolver directly
 
 ``` r
+
 asset <- dv_species_card_assets(
   predator = "Atlantic cod", latin = "Gadus morhua",
   image_dir = "images", use_wiki = TRUE)

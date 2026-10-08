@@ -6,6 +6,7 @@ kept as an **explicit “NA” category** rather than dropped. Together they
 make the sunburst an honest partition of the diet.
 
 ``` r
+
 library(DietView)
 
 dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
@@ -26,6 +27,7 @@ aggregates records into a node table spanning all ranks, in two
 currencies (occurrence and weight).
 
 ``` r
+
 tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
 head(tree[, c("rank", "label", "value_occ", "pct_occ", "value_w", "pct_w")], 8)
 #>      rank      label value_occ   pct_occ value_w       pct_w
@@ -45,6 +47,7 @@ Importance is the share of a node **within its own rank**, so every rank
 sums to 100 % independently — the explicit `NA` node included.
 
 ``` r
+
 sapply(unique(tree$rank), function(r) round(sum(tree$pct_occ[tree$rank == r]), 3))
 #> Kingdom  Phylum   Class   Order  Family   Genus Species 
 #>     100     100     100     100     100     100     100
@@ -54,6 +57,7 @@ sapply(unique(tree$rank), function(r) round(sum(tree$pct_occ[tree$rank == r]), 3
 gives the sorted importance table for one rank:
 
 ``` r
+
 dv_rank_table(tree, "Class")
 #>           label value_item value_occ   pct_occ value_w        pct_w
 #> 10 Malacostraca          7        11 45.833333 39.7600 51.504725584
@@ -72,6 +76,7 @@ fraction. The `NA` row is present at every rank where some prey are
 unresolved:
 
 ``` r
+
 subset(dv_rank_table(tree, "Order"), label == "NA")
 #>    label value_item value_occ  pct_occ value_w        pct_w
 #> 14    NA          1         2 8.333333  0.7030  0.910659509
@@ -86,6 +91,7 @@ subset(dv_rank_table(tree, "Order"), label == "NA")
 Reading coarse (centre) to fine (edge), with `NA` shown in white:
 
 ``` r
+
 dv_sunburst(tree, mode = "occurrence", title = "All predators",
             subtitle = "occurrence share within each rank")
 ```
@@ -94,6 +100,7 @@ Occurrence and weight routinely disagree — showing both is part of an
 honest diet description:
 
 ``` r
+
 dv_sunburst(tree, mode = "weight", title = "All predators",
             subtitle = "weight share within each rank")
 ```
@@ -105,6 +112,7 @@ assigns each taxon a stable colour so it keeps the same colour across
 ranks and covariate cells; `NA` is always white.
 
 ``` r
+
 pal <- dv_palette(tree$label)
 head(pal)
 #>   Animalia   Annelida Arthropoda   Chordata   Mollusca Polychaeta 

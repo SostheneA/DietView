@@ -80,3 +80,23 @@ A self-contained HTML dashboard, a deploy wrapper, and a Shiny explorer.
   : Deploy the dashboard as a standalone HTML file
 - [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md)
   : Launch the interactive DietView app
+
+## 9 · Explore, aggregate, and export
+
+Describe the sample, check sampling sufficiency, report classical
+frequency of occurrence, aggregate rare prey upward to a reproducible
+threshold, and export the sampling-unit by prey-category matrix for
+downstream multivariate analysis.
+
+- [`dv_summary()`](https://sosthenea.github.io/DietView/reference/dv_summary.md)
+  : Describe the sampled diet dataset
+- [`dv_prey_accumulation()`](https://sosthenea.github.io/DietView/reference/dv_prey_accumulation.md)
+  : Prey accumulation (cumulative prey) curve for sample sufficiency
+- [`dv_fo_table()`](https://sosthenea.github.io/DietView/reference/dv_fo_table.md)
+  : Frequency of occurrence per rank (the Buckland Table B1 layout)
+- [`dv_aggregate_threshold()`](https://sosthenea.github.io/DietView/reference/dv_aggregate_threshold.md)
+  : Aggregate rare prey upward to a stomach-frequency threshold
+- [`dv_threshold_sweep()`](https://sosthenea.github.io/DietView/reference/dv_threshold_sweep.md)
+  : Count diet categories across a sweep of thresholds
+- [`dv_matrix()`](https://sosthenea.github.io/DietView/reference/dv_matrix.md)
+  : Build a sampling-unit by prey-category matrix

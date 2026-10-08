@@ -7,6 +7,7 @@ silently over-represents whatever is easy to identify.
 makes it explicit.
 
 ``` r
+
 library(DietView)
 
 dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
@@ -26,6 +27,7 @@ For each digestion level, the share of records (and of weight) whose
 **finest resolved rank** is Kingdom, Phylum, …, Species, or Unresolved:
 
 ``` r
+
 diag <- dv_digestion_diagnostic(prep)
 head(diag, 12)
 #>    digestion finest_rank n_records  weight p_records     p_weight
@@ -50,6 +52,7 @@ the coarse ranks and “Unresolved”. A dependency-free stacked bar makes
 the shift visible:
 
 ``` r
+
 m <- xtabs(p_records ~ finest_rank + digestion, data = diag)
 barplot(m, col = grDevices::hcl.colors(nrow(m), "Blues"),
         legend.text = TRUE,
@@ -64,6 +67,7 @@ barplot(m, col = grDevices::hcl.colors(nrow(m), "Blues"),
 Pass `by =` to see whether the bias differs across, say, periods:
 
 ``` r
+
 head(dv_digestion_diagnostic(prep, by = "period"), 12)
 #>    digestion        by finest_rank n_records  weight p_records    p_weight
 #> 1          1 2004-2006     Species         1  0.0020 100.00000 100.0000000

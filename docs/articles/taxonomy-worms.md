@@ -34,6 +34,7 @@ before the lineage is fetched, and results are cached to disk so re-runs
 and other surveys do not requery.
 
 ``` r
+
 library(DietView)
 
 dat <- read.csv(
@@ -60,6 +61,7 @@ returns exactly the prey that need a human eye, sorted by how many
 records they affect.
 
 ``` r
+
 review <- dv_taxonomy_report(prep, which = "review")   # fuzzy + unresolved
 review
 
@@ -73,6 +75,7 @@ Once you have reviewed the report, fix the source names, or freeze a
 curated lineage table and switch to the offline, reproducible path:
 
 ``` r
+
 lineage <- read.csv("my_curated_lineage.csv", na.strings = c("NA", ""))
 prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage)
 ```
@@ -83,5 +86,6 @@ To disable fuzzy matching entirely (exact names and known AphiaIDs
 only):
 
 ``` r
+
 prep <- dv_prepare(dat, spec, taxonomy = "worms", fuzzy = FALSE)
 ```

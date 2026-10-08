@@ -10,6 +10,7 @@ an aggregated sunburst, one row of sunbursts per declared covariate, and
 optionally crossed rows.
 
 ``` r
+
 library(DietView)
 
 dat <- read.csv(
@@ -36,6 +37,7 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin)
 ## The simplest dashboard
 
 ``` r
+
 dv_build_html(prep, output = "diet_dashboard.html")
 ```
 
@@ -46,6 +48,7 @@ band; `cross` adds crossed rows (for each level of `outer`, a row of
 `inner` levels).
 
 ``` r
+
 dv_build_html(
   prep,
   output = "diet_dashboard.html",
@@ -66,6 +69,7 @@ dashboard stays a single self-contained file. Turn the network lookups
 off with `use_wiki = FALSE`, or supply your own assets:
 
 ``` r
+
 info <- list(
   "Atlantic cod" = list(
     desc  = "Demersal gadid; opportunistic predator of fish and invertebrates.",
@@ -84,6 +88,7 @@ destination directory (e.g. one served by your web platform) and returns
 its path.
 
 ``` r
+
 dv_deploy(prep, file = "dietview_dashboard.html", dir = "outputs",
           strata = c("period", "size_class", "size_bin"),
           cross  = list(c("size_bin", "period")),

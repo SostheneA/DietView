@@ -7,10 +7,12 @@ committing to a static dashboard. (Chunks here are shown but not run —
 the app needs `shiny` and, for the table, `DT`.)
 
 ``` r
+
 install.packages(c("shiny", "DT"))
 ```
 
 ``` r
+
 library(DietView)
 
 dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
