@@ -6,9 +6,6 @@
 *.Rproj
 
 # pkgdown
-docs/
-/doc/
-/Meta/
 
 # build artifacts
 *.tar.gz
