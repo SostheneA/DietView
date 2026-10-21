@@ -1,0 +1,171 @@
+# Reading the rings: denominators and unidentified prey
+
+A DietView sunburst shows the diet at seven ranks at once, from kingdom
+at the center to species at the edge. This article explains what a
+percentage in any ring is a percentage of, and why prey that could not
+be identified to a given rank stay in the figure instead of being
+dropped. It uses the invented example table that ships with the package
+(24 prey records from 11 stomachs), so the numbers illustrate the
+bookkeeping, not the diet of these fish.
+
+``` r
+
+library(DietView)
+
+dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
+                na.strings = c("NA", ""))
+lin <- read.csv(system.file("extdata", "dietview_example_lineage.csv", package = "DietView"),
+                na.strings = c("NA", ""))
+spec <- dv_spec(predator = "predator_species_common_name", stomach = "stomach_id",
+                prey_id = "aphia_id", prey_name = "verified_name",
+                weight = "prey_weight", digestion = "digestion_level_id")
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin, verbose = FALSE)
+tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
+```
+
+## One record, one place in every ring
+
+[`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)
+gives every record one place at every rank: the taxon it was identified
+to at that rank or, if identification stopped earlier, an unidentified
+node (`NA` in the tables) below the last rank it reached. A shrimp named
+*Pandalus borealis* sits under Decapoda at order and under *Pandalus* at
+genus. A record named only “Decapoda” sits under Decapoda at order and
+in the unidentified node below Decapoda at family, genus and species.
+
+So every ring holds the same records and the same weight:
+
+``` r
+
+rings <- unique(tree$rank)
+data.frame(
+  rank      = rings,
+  records   = sapply(rings, function(r) sum(tree$value_occ[tree$rank == r])),
+  weight_g  = sapply(rings, function(r) round(sum(tree$value_w[tree$rank == r]), 1)),
+  pct_total = sapply(rings, function(r) round(sum(tree$pct_occ[tree$rank == r]), 1)),
+  row.names = NULL
+)
+#>      rank records weight_g pct_total
+#> 1 Kingdom      24     77.2       100
+#> 2  Phylum      24     77.2       100
+#> 3   Class      24     77.2       100
+#> 4   Order      24     77.2       100
+#> 5  Family      24     77.2       100
+#> 6   Genus      24     77.2       100
+#> 7 Species      24     77.2       100
+```
+
+Each percentage in the tree (`pct_occ` for records, `pct_w` for weight)
+is a node’s value divided by that common total, and each ring adds up to
+100%. Because no record is lost between rings, a node’s value is also
+the sum of its children’s values, which is what lets the rings nest:
+
+``` r
+
+kids <- tapply(tree$value_occ, tree$parent, sum)
+parents <- tree[tree$id %in% names(kids), ]
+all.equal(parents$value_occ, as.numeric(kids[parents$id]))
+#> [1] TRUE
+```
+
+## What dropping the unidentified records would do
+
+The usual alternative is to drop, at each rank, the records that were
+not identified to that rank, and to compute shares among the rest. Each
+ring then has its own total, and the rings stop agreeing with each
+other:
+
+``` r
+
+id_only <- function(r) tree[tree$rank == r & tree$label != "NA", ]
+cl <- id_only("Class"); od <- id_only("Order")
+mal_class <- 100 * sum(cl$value_occ[cl$label == "Malacostraca"]) / sum(cl$value_occ)
+mal_order <- 100 * sum(od$value_occ[grepl("|Malacostraca|", od$id, fixed = TRUE)]) /
+             sum(od$value_occ)
+round(c(class_ring = mal_class, order_ring = mal_order), 1)
+#> class_ring order_ring 
+#>       50.0       73.3
+```
+
+Malacostraca would be 50% of the identified records at class, while its
+three orders together would be 73.3% of the identified records at order.
+Nothing about the diet changed between the two rings; only the set of
+records did. With the unidentified records kept, Malacostraca and its
+orders hold the same 11 records in both rings.
+
+## How much was not identified
+
+[`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md)
+lists one ring. At order, there is one unidentified row per parent:
+under Bivalvia, Polychaeta, Copepoda and the fish class, plus the
+material that could not be placed at all.
+
+``` r
+
+ord <- dv_rank_table(tree, "Order")
+ord[ord$label == "NA", ]
+#>    label value_item value_occ  pct_occ value_w        pct_w
+#> 14    NA          1         2 8.333333  0.7030  0.910659509
+#> 16    NA          1         2 8.333333  0.0018  0.002331703
+#> 23    NA          1         2 8.333333  0.0290  0.037566324
+#> 24    NA          1         2 8.333333  1.6000  2.072624772
+#> 22    NA          1         1 4.166667  8.0000 10.363123860
+sum(ord$pct_occ[ord$label == "NA"])
+#> [1] 37.5
+```
+
+Here 37.5% of the records are unidentified at order. Report that figure
+next to any statement made at that rank: an order-level description of
+this diet rests on the remaining 62.5%.
+
+## The figures
+
+Records first, then weight. The two currencies often rank prey
+differently, so look at both before choosing one to report.
+
+``` r
+
+dv_sunburst(tree, mode = "occurrence", title = "All predators",
+            subtitle = "share of prey records")
+```
+
+``` r
+
+dv_sunburst(tree, mode = "weight", title = "All predators",
+            subtitle = "share of prey weight")
+```
+
+White wedges with gray edges are records not identified at that rank.
+Hovering over a wedge shows its count and its share of the ring.
+
+## Colors
+
+[`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md)
+gives each taxon name one color and unidentified nodes white. Build it
+once from all the records and pass it to every figure you want to
+compare, so the same taxon has the same color everywhere:
+
+``` r
+
+pal <- dv_palette(tree$label)
+head(pal)
+#>   Animalia   Annelida Arthropoda   Chordata   Mollusca Polychaeta 
+#>  "#1f77b4"  "#aec7e8"  "#ff7f0e"  "#ffbb78"  "#2ca02c"  "#98df8a"
+```
+
+The palette has 20 colors and reuses them when there are more taxa, so
+in a large survey two taxa can share a color. Check the hover labels
+before you read a color as a taxon.
+
+[`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)
+is the alternative for large surveys. It gives one hue to each phylum
+(the second rank) and lighter tints of that hue to its descendants, and
+keeps unidentified nodes white. Its colors are keyed by node, so build
+it from the pooled tree and pass it to every panel in the same way:
+
+``` r
+
+pal_tree <- dv_palette_tree(tree)
+dv_sunburst(tree, mode = "occurrence", colors = pal_tree, title = "All predators",
+            subtitle = "share of prey records, colors by phylum")
+```

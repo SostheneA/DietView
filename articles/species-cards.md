@@ -1,0 +1,131 @@
+# Species identification cards and photos
+
+Each predator in the dashboard gets a card with a photo and a short
+description.
+[`dv_species_card_assets()`](https://sosthenea.github.io/DietView/reference/dv_species_card_assets.md)
+finds those for one predator and returns the photo as a data URI, so the
+dashboard stays a single file. Cards exist for predators only; prey have
+no cards. The chunks here are shown but not run, because they read or
+download image files.
+
+## Where the photo comes from
+
+DietView takes the first photo it finds, in this order:
+
+1.  a local file you name in `species_info`;
+2.  a local file in `image_dir` named after the predator
+    (`atlantic_cod.jpg`);
+3.  a local file in `image_dir` named after its Latin name
+    (`gadus_morhua.jpg`);
+4.  with `photo_source = "inaturalist"`, a photo of the taxon on
+    [iNaturalist](https://www.inaturalist.org/), if its license is one
+    you accept;
+5.  with `photo_source = "wikipedia"`, a Wikimedia Commons file you
+    name, or the image of the Wikipedia article, if it is hosted on
+    Commons.
+
+The default, `photo_source = "none"`, never goes online. You can name
+both online sources, tried in the order given:
+`photo_source = c("inaturalist", "wikipedia")` uses Wikimedia Commons
+only for predators with no acceptable photo on iNaturalist.
+
+The description is the text you give in `species_info`. Otherwise, with
+either online source, it is the summary of the taxon’s Wikipedia article
+(iNaturalist returns the same summary). Wikipedia text is under CC
+BY-SA, so the card credits it under the description. If a network lookup
+fails, the card is built without that element.
+
+## Photos from iNaturalist
+
+iNaturalist photos belong to the observers who took them, and each one
+carries its own license. DietView looks the predator up by its Latin
+name, keeps only a taxon whose name matches it, and tries the taxon’s
+default photo first, then its other photos, until one has a license you
+accept.
+
+``` r
+
+library(DietView)
+
+asset <- dv_species_card_assets(
+  predator = "Atlantic cod", latin = "Gadus morhua",
+  photo_source = "inaturalist",
+  image_dir = "images")        # a permanent folder keeps the photos
+
+asset$credit    # "Photo: <author>, CC BY, via iNaturalist"
+asset$author    # the photographer
+asset$license   # "CC0", "CC BY" or "CC BY-SA" by default
+asset$url       # the photo's page on iNaturalist
+```
+
+By default only three licenses are accepted: CC0, CC BY and CC BY-SA.
+Each one lets you redistribute the photo inside a dashboard, provided
+you credit the author, and for CC BY-SA keep the same license. Photos
+marked “all rights reserved” are never used. Many iNaturalist photos are
+CC BY-NC (no commercial use); accept them only if every use of the
+dashboard will be non-commercial:
+
+``` r
+
+dv_build_html(prep, output = "diet_dashboard.html",
+              photo_source = "inaturalist",
+              licenses = c("cc0", "cc-by", "cc-by-sa", "cc-by-nc"),
+              image_dir = "images")
+```
+
+The other codes are `"cc-by-nc-sa"`, `"cc-by-nd"` and `"cc-by-nc-nd"`.
+If no photo of the taxon has an accepted license, the card has no photo.
+
+On the card, the credit line sits under the photo and links to the
+photo’s page on iNaturalist. Each downloaded photo is saved in
+`image_dir` together with a `.json` file holding its source, author,
+license and page, so a photo reused in a later session keeps its credit.
+To fetch a photo again, delete the image and its `.json` file.
+
+## Your own photos
+
+With your own photos nothing is fetched. Give the credit fields in
+`species_info`, so the card shows them the same way:
+
+``` r
+
+dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
+                na.strings = c("NA", ""))
+lin <- read.csv(system.file("extdata", "dietview_example_lineage.csv", package = "DietView"),
+                na.strings = c("NA", ""))
+spec <- dv_spec(predator = "predator_species_common_name",
+                predator_latin = "predator_species_latin_name",
+                stomach = "stomach_id", prey_id = "aphia_id",
+                prey_name = "verified_name", weight = "prey_weight")
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin, verbose = FALSE)
+
+info <- list(
+  "Atlantic cod" = list(
+    desc    = "Demersal gadid; feeds on fish and invertebrates.",
+    photo   = "images/atlantic_cod.jpg",
+    author  = "DFO Gulf Region",
+    license = "CC BY"
+  ),
+  "Winter flounder" = list(
+    desc  = "Right-eyed flounder; feeds on polychaetes, bivalves and small crustaceans.",
+    photo = "images/winter_flounder.jpg"
+  )
+)
+dv_build_html(prep, output = file.path(tempdir(), "diet_dashboard.html"),
+              species_info = info, image_dir = "images")
+```
+
+You can also put the credit in a `.json` file next to the image, with
+the same name (`images/winter_flounder.json`):
+
+``` json
+{"author": "Jane Doe", "license": "CC BY",
+ "url": "https://www.inaturalist.org/photos/123456"}
+```
+
+## Before you share a dashboard
+
+The photos are embedded in the HTML file, so the file keeps working when
+`image_dir` is deleted, and it carries the photos wherever it goes. Open
+the dashboard and check the credit line on every card. A photo with no
+credit line is one you supplied without author or license.
