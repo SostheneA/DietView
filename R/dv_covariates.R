@@ -12,6 +12,9 @@
 #' @return A factor of periods. Years outside the breaks become `NA`.
 #' @examples
 #' dv_add_period(c(2004, 2006, 2010, 2018), breaks = c(2003, 2007, 2020))
+#'
+#' # periods for the ICES stomachs (sampled 2020-2024)
+#' table(dv_add_period(ices_stomachs$year, breaks = c(2020, 2022, 2024)))
 #' @export
 dv_add_period <- function(year, breaks, labels = NULL) {
   if (is.null(labels)) {
@@ -41,6 +44,10 @@ dv_add_period <- function(year, breaks, labels = NULL) {
 #' @examples
 #' dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60))
 #' dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60), right = TRUE)
+#'
+#' # length classes of the Atlantic cod in the ICES stomach data
+#' cod_len <- ices_stomachs$length_cm[ices_stomachs$predator_common == "Atlantic cod"]
+#' table(dv_size_bins(cod_len, breaks = c(0, 20, 30, 40, 60, 150)), useNA = "ifany")
 #' @export
 dv_size_bins <- function(length, breaks, right = FALSE, labels = NULL) {
   if (is.null(labels)) {

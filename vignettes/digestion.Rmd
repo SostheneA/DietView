@@ -9,6 +9,8 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
+pct <- function(x, d = 1) format(round(x, d), nsmall = d)
+big <- function(x) format(x, big.mark = ",")
 ```
 
 The more digested a prey item, the coarser the rank it can be named to. That
@@ -19,68 +21,166 @@ sample of what was eaten. Buckland et al. (2017) asked diet studies to report
 how prey condition affected identification. `dv_digestion_diagnostic()` gives
 you that table.
 
+The data are the public ICES stomach-content extract that ships with the
+package (ICES Stomach Content Database, ICES, Copenhagen; extract distributed
+with the R package stomachr, Lindmark 2026; see `?ices_diet`), prepared as in
+the getting-started vignette.
+
 ```{r setup}
 library(DietView)
-dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
-                na.strings = c("NA", ""))
-lin <- read.csv(system.file("extdata", "dietview_example_lineage.csv", package = "DietView"),
-                na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name", stomach = "stomach_id",
-                prey_id = "aphia_id", prey_name = "verified_name",
-                weight = "prey_weight", digestion = "digestion_level_id",
-                covariates = "period")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin, verbose = FALSE)
+
+# drop non-food items and nematodes (mostly parasites, not prey)
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+                   verbose = FALSE)
 ```
+
+## A caveat on the stages
+
+ICES records digestion as a code, 0, 1 or 2. The labels used here ("0
+pristine", "1 affected", "2 skeletal remains") are inferred from the older ICES
+format, whose three classes match the shares of these codes; they are not
+taken from the ICES vocabulary. Read the stages as an ordered scale from fresh
+to digested and check the labels against the ICES documentation before you
+quote them. Records whose stage was not reported are kept as "not recorded".
 
 ## What the diagnostic computes
 
 For every record, DietView finds the deepest rank with a name: its *finest
 resolved rank*. Records with no name at any rank are "Unresolved". Within each
-digestion score it then reports the share of records, and of weight, at each
+digestion stage it then reports the share of records, and of weight, at each
 finest rank.
 
 ```{r diag}
 diag <- dv_digestion_diagnostic(prep)
-out  <- diag[, c("digestion", "finest_rank", "n_records", "p_records", "p_weight")]
-out[c("p_records", "p_weight")] <- round(out[c("p_records", "p_weight")], 1)
-out
+head(diag[, c("digestion", "finest_rank", "n_records", "p_records", "p_weight")], 7)
 ```
 
-Percentages are computed within each digestion score, so each score adds up to
-100% whatever its sample size. Always read them next to `n_records`. In this
-invented example the scores hold
-`r paste(tapply(diag$n_records, diag$digestion, sum), collapse = ", ")` records
-respectively, far too few for any pattern to mean anything.
+Side by side, the record shares are easier to read:
+
+```{r wide}
+round(xtabs(p_records ~ finest_rank + digestion, data = diag), 1)
+n_stage <- tapply(diag$n_records, diag$digestion, sum)
+n_stage
+```
+
+```{r diag-values, include = FALSE}
+w <- xtabs(p_records ~ finest_rank + digestion, data = diag)
+at <- function(rank, stage) pct(w[rank, stage])
+gs <- function(stage) pct(w["Genus", stage] + w["Species", stage])
+nr <- dat$digestion_label == "not recorded"
+nr_dk <- sum(nr & dat$country == "DK")
+```
+
+Percentages are computed within each stage, so each stage adds up to 100%
+whatever its sample size. Always read them next to `n_records`: here the
+four columns hold `r paste(big(n_stage), collapse = ", ")` records respectively.
+
+Pooled, the share named to genus or species changes little between stage 0
+(`r gs("0 pristine")`%) and stage 1 (`r gs("1 affected")`%) and collapses at
+stage 2 (`r gs("2 skeletal remains")`%), while the share named only to a
+phylum or a class reaches
+`r pct(w["Phylum", "2 skeletal remains"] + w["Class", "2 skeletal remains"])`%.
+Stage 0 has its own oddity: `r at("Unresolved", "0 pristine")`% of its records
+are unresolved, which a fresh prey should not be. These are unidentified
+material recorded as undigested, a reminder that the stage describes the
+record, not always the prey.
+
+The "not recorded" column is not a fourth stage. `r big(nr_dk)` of its
+`r big(sum(nr))` records come from Denmark, and `r at("Unresolved", "not recorded")`%
+of them are unresolved. A missing stage follows the data provider, and
+providers differ in how far they identify; dropping these records would not
+remove them at random.
 
 ## Drawing it
 
 ```{r plot}
-m <- xtabs(p_records ~ finest_rank + digestion, data = diag)
-barplot(m, col = grDevices::hcl.colors(nrow(m), "Blues"), legend.text = TRUE,
-        args.legend = list(x = "topright", cex = 0.7, bg = "white"),
-        xlab = "Digestion score", ylab = "% of records")
+w_plot <- w[rowSums(w) > 0, ]            # no record stops at kingdom
+cols <- c(grDevices::hcl.colors(nrow(w_plot) - 1, "Blues 3", rev = TRUE), "grey85")
+barplot(w_plot, col = cols, xlim = c(0, 6.6), legend.text = TRUE,
+        args.legend = list(x = "right", cex = 0.75, bty = "n"),
+        names.arg = sub(" ", "\n", colnames(w_plot)),
+        xlab = "Digestion stage", ylab = "% of records", cex.names = 0.75)
 ```
 
-## How to read it on real data
+## Predator by predator
 
-- If the species share falls steeply with digestion, fine-rank results rest
-  mostly on fresh material. Consider reporting them for scores 1–2 separately,
-  with the sample size you lose by doing so.
+Pooled profiles mix predators that eat different prey and were sampled by
+different countries. `by =` takes any column of the prepared data, including
+the predator:
+
+```{r by-predator}
+top <- c("Atlantic cod", "Whiting", "European plaice", "Atlantic mackerel")
+by_pred <- dv_digestion_diagnostic(prep, by = "predator_common")
+by_pred <- by_pred[by_pred$by %in% top, ]
+fine <- by_pred[by_pred$finest_rank %in% c("Genus", "Species"), ]
+round(xtabs(p_records ~ by + digestion, data = fine), 1)   # % named to genus or species
+xtabs(n_records ~ by + digestion, data = by_pred)          # records per cell
+```
+
+```{r pred-values, include = FALSE}
+f <- xtabs(p_records ~ by + digestion, data = fine)
+n <- xtabs(n_records ~ by + digestion, data = by_pred)
+fp <- function(p, s) pct(f[p, s])
+mack <- dat[dat$predator_common == "Atlantic mackerel", ]
+mack_top <- sort(table(mack$prey_name), decreasing = TRUE)[1:4]
+plaice_top <- names(sort(table(dat$prey_name[dat$predator_common == "European plaice"]),
+                         decreasing = TRUE))[1:3]
+```
+
+- **Atlantic cod** shows the profile in its clearest form: the share named to
+  genus or species falls from `r fp("Atlantic cod", "0 pristine")`% at stage 0
+  to `r fp("Atlantic cod", "1 affected")`% at stage 1 and
+  `r fp("Atlantic cod", "2 skeletal remains")`% at stage 2.
+- **Whiting** starts lower, at `r fp("Whiting", "0 pristine")`%, holds at
+  stage 1 (`r fp("Whiting", "1 affected")`%) and drops at stage 2
+  (`r fp("Whiting", "2 skeletal remains")`%).
+- **European plaice** has only `r n["European plaice", "0 pristine"]` records at
+  stage 0, so its first column means nothing; at stages 1 and 2 it is
+  `r fp("European plaice", "1 affected")`% and
+  `r fp("European plaice", "2 skeletal remains")`%. Its three most
+  frequent prey names, `r paste(plaice_top, collapse = ", ")`, are classes:
+  much of what plaice eat is recorded at class whatever its stage.
+- **Atlantic mackerel** is almost never identified to genus or species, at
+  any stage. Its four most frequent prey names are
+  `r paste0(names(mack_top), " (", mack_top, ")", collapse = ", ")`: the limit
+  here is how the prey were recorded, not how digested they were, and most of
+  its records have no stage at all
+  (`r big(n["Atlantic mackerel", "not recorded"])` of `r big(sum(n["Atlantic mackerel", ]))`).
+
+So the same stage does not mean the same identification depth in two
+predators, and a pooled profile can hide both a steep and a flat one.
+
+## How to read it
+
+- If the species share falls steeply with digestion, as for cod, fine-rank
+  results rest mostly on fresh material. Consider reporting them for the
+  freshest stages separately, with the sample size you lose by doing so.
 - Weight is affected twice: digested prey are both harder to name and lighter.
   A steep profile is a reason to be cautious with the weight currency in
   particular.
-- Use `by =` to check whether the profile differs between strata, for example
-  between periods, when observers or protocols changed between them.
+- Use `by =` with other strata too, for example `by = "country"`, when
+  observers or protocols differ between them, or `by = "year"` when they
+  changed over time.
 
-```{r by}
-by_period <- dv_digestion_diagnostic(prep, by = "period")
-by_period[c("p_records", "p_weight")] <- round(by_period[c("p_records", "p_weight")], 1)
-head(by_period, 8)
-```
-
-The diagnostic describes identification; it does not correct for it. The
-vignette "A known diet" shows, on simulated data where the true diet is known,
-how much a diet description moves when unidentified material is kept or dropped.
+The diagnostic describes identification; it does not correct for it. What
+digestion does to the diet estimate itself cannot be measured on real data,
+because the true diet is unknown. The vignette "A known diet" shows it on
+simulated data where the truth is known: how much a diet description moves
+when unidentified material is kept or dropped.
 
 ## Reference
 

@@ -1,5 +1,22 @@
 # DietView example data: data dictionary
 
+## Real data: the ICES datasets
+
+For real analyses and for learning what stomach-content data look like, use the
+datasets that ship with the package: `ices_diet` (one row per prey record,
+9,639 records from 4,231 stomachs of 22 fish species), `ices_stomachs` (every
+sampled stomach, empty ones included) and `ices_lineage` (their frozen WoRMS
+lineage, joined with `dv_prepare(taxonomy = "table", lineage = ices_lineage)`).
+They come from the ICES Stomach Content Database, ICES, Copenhagen; extract
+distributed with the R package stomachr (Lindmark 2026). Their columns, sources
+and corrections are documented in `?ices_diet`, `?ices_stomachs` and
+`?ices_lineage`.
+
+The 24-record example described below is kept for the package tests and for
+quick checks of the mechanics.
+
+## The 24-record example
+
 The two example files are **invented** for documentation and testing. They have
 the structure of the southern Gulf of St. Lawrence diet data but none of its
 values: 24 prey records from 11 stomachs of three predators. Use them to learn
@@ -21,7 +38,7 @@ map them to DietView roles once with `dv_spec()`.
 | `period`, `year`, `size_class`, `size_bin`, `region` | covariates | no | chr/int | Strata. Size bins are per predator. |
 | `somatic_length_cm` | none | no | num | Predator total length (cm), source of the size strata. |
 
-## Rules
+### Rules
 
 - **An empty rank is a record of where identification stopped, not an error.**
   Leave it empty. DietView shows those records as an unidentified category
@@ -33,7 +50,7 @@ map them to DietView roles once with `dv_spec()`.
   lineage in every row.
 - **Covariates are opt-in.** Declare only those you want to stratify by.
 
-## The lineage table
+### The lineage table
 
 `dietview_example_lineage.csv` holds one row per prey name (`verified_name`)
 with the columns `kingdom`, `phylum`, `class`, `order`, `family`, `genus` and
@@ -42,7 +59,7 @@ fully offline run. Empty (or `NA`) cells mark where identification stopped. Each
 must appear once; a name in the diet table that is absent from the lineage
 table is reported and treated as fully unidentified.
 
-## Minimal `dv_spec()` for this file
+### Minimal `dv_spec()` for this file
 
 ```r
 spec <- dv_spec(

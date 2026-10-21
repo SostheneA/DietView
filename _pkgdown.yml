@@ -34,6 +34,8 @@ navbar:
         href: articles/tour.html
       - text: The DietView data model and input contract
         href: articles/data-model.html
+      - text: "Case study: a complete analysis of public ICES stomach data"
+        href: articles/case-study-ices.html
       - text: "-------"
       - text: "Core concepts"
       - text: Within-rank importance and the explicit-NA philosophy
@@ -67,6 +69,16 @@ reference:
   desc: What DietView is and how the pieces fit together.
   contents:
   - DietView-package
+
+- title: Example data
+  desc: >
+    Public stomach-content data from the ICES Stomach Content Database (North
+    Sea, Skagerrak-Kattegat and Baltic Sea, 2020-2024), with their frozen WoRMS
+    lineage, used throughout the examples and articles.
+  contents:
+  - ices_diet
+  - ices_stomachs
+  - ices_lineage
 
 - title: 1 · Declare and validate your data
   desc: >

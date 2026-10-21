@@ -15,32 +15,56 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height
 A DietView sunburst shows the diet at seven ranks at once, from kingdom at the
 center to species at the edge. This article explains what a percentage in any
 ring is a percentage of, and why prey that could not be identified to a given
-rank stay in the figure instead of being dropped. It uses the invented example
-table that ships with the package (24 prey records from 11 stomachs), so the
-numbers illustrate the bookkeeping, not the diet of these fish.
+rank stay in the figure instead of being dropped. It uses the Atlantic cod
+records of the public ICES stomach data that ship with the package (ICES
+Stomach Content Database, ICES, Copenhagen; extract distributed with the R
+package stomachr, Lindmark 2026; see `?ices_diet`).
 
 ```{r setup}
 library(DietView)
 
-dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
-                na.strings = c("NA", ""))
-lin <- read.csv(system.file("extdata", "dietview_example_lineage.csv", package = "DietView"),
-                na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name", stomach = "stomach_id",
-                prey_id = "aphia_id", prey_name = "verified_name",
-                weight = "prey_weight", digestion = "digestion_level_id")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin, verbose = FALSE)
+# drop non-food items and nematodes (mostly parasites, not prey)
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+
+cod  <- dat[dat$predator_common == "Atlantic cod", ]
+prep <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                   verbose = FALSE)
 tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
 ```
+
+The cod data hold `r format(nrow(cod), big.mark = ",")` prey records from
+`r length(unique(cod$stomach_id))` stomachs.
 
 ## One record, one place in every ring
 
 `dv_build_tree()` gives every record one place at every rank: the taxon
 it was identified to at that rank or, if identification stopped earlier, an
-unidentified node (`NA` in the tables) below the last rank it reached. A
-shrimp named *Pandalus borealis* sits under Decapoda at order and under
-*Pandalus* at genus. A record named only "Decapoda" sits under Decapoda at
-order and in the unidentified node below Decapoda at family, genus and species.
+unidentified node (`NA` in the tables) below the last rank it reached. Three
+cod prey records show the range:
+
+```{r three-records}
+ex <- match(c("Crangon crangon", "Brachyura", "Pisces"), prep$data$prey_name)
+prep$data[ex, c("prey_name", prep$ranks)]
+```
+
+A brown shrimp (*Crangon crangon*) sits under Decapoda at order and under
+*Crangon* at genus. A crab named only "Brachyura" sits under Decapoda at order
+and in the unidentified node below Decapoda at family, genus and species. A
+fish named only "Pisces" sits under Chordata at phylum and in the unidentified
+node below Chordata from class outward.
 
 So every ring holds the same records and the same weight:
 
@@ -56,7 +80,11 @@ data.frame(
 ```
 
 Each percentage in the tree (`pct_occ` for records, `pct_w` for weight) is a
-node's value divided by that common total, and each ring adds up to 100%.
+node's value divided by that common total, and each ring adds up to 100%. The
+weight total is lower than it would be with every record weighed: the
+`r sum(is.na(cod$prey_weight_g))` cod records without a weight count in the
+records currency and add nothing to the weight one.
+
 Because no record is lost between rings, a node's value is also the sum of its
 children's values, which is what lets the rings nest:
 
@@ -64,7 +92,11 @@ children's values, which is what lets the rings nest:
 kids <- tapply(tree$value_occ, tree$parent, sum)
 parents <- tree[tree$id %in% names(kids), ]
 all.equal(parents$value_occ, as.numeric(kids[parents$id]))
+all.equal(parents$value_w, as.numeric(tapply(tree$value_w, tree$parent, sum)[parents$id]))
 ```
+
+Both checks hold for the `r nrow(parents)` nodes that have children, in
+records and in weight.
 
 ## What dropping the unidentified records would do
 
@@ -74,53 +106,109 @@ has its own total, and the rings stop agreeing with each other:
 
 ```{r dropped}
 id_only <- function(r) tree[tree$rank == r & tree$label != "NA", ]
-cl <- id_only("Class"); od <- id_only("Order")
-mal_class <- 100 * sum(cl$value_occ[cl$label == "Malacostraca"]) / sum(cl$value_occ)
-mal_order <- 100 * sum(od$value_occ[grepl("|Malacostraca|", od$id, fixed = TRUE)]) /
-             sum(od$value_occ)
-round(c(class_ring = mal_class, order_ring = mal_order), 1)
+share_in <- function(r, pattern) {
+  x <- id_only(r)
+  100 * sum(x$value_occ[grepl(pattern, x$id, fixed = TRUE)]) / sum(x$value_occ)
+}
+mal <- c(class  = share_in("Class",  "|Malacostraca"),
+         order  = share_in("Order",  "|Malacostraca|"),
+         family = share_in("Family", "|Malacostraca|"),
+         genus  = share_in("Genus",  "|Malacostraca|"))
+round(mal, 1)
 ```
 
-Malacostraca would be `r round(mal_class, 1)`% of the identified records at
-class, while its three orders together would be `r round(mal_order, 1)`% of the
-identified records at order. Nothing about the diet changed between the two
-rings; only the set of records did. With the unidentified records kept,
-Malacostraca and its orders hold the same 11 records in both rings.
+Malacostraca would be `r round(mal[["class"]], 1)`% of the identified records
+at class, its orders together `r round(mal[["order"]], 1)`% of the identified
+records at order, its families `r round(mal[["family"]], 1)`% at family and its
+genera `r round(mal[["genus"]], 1)`% at genus. Nothing about the diet changed
+between the rings; only the set of records did. Each ring drops a different
+set of records (at family, the crabs named only "Brachyura" and the shrimps
+named only "Caridea"; at genus, also the swimming crabs named only
+Polybiidae), so the crustacean share swings with the
+identification habits of the people who read the stomachs. With the
+unidentified records kept, Malacostraca and everything below it hold the same
+`r tree$value_occ[tree$label == "Malacostraca"]` records in every ring:
+`r round(tree$pct_occ[tree$label == "Malacostraca"], 1)`% of the cod's prey
+records.
 
-## How much was not identified
+## How much was not identified, and where
 
-`dv_rank_table()` lists one ring. At order, there is one unidentified row per
-parent: under Bivalvia, Polychaeta, Copepoda and the fish class, plus the
-material that could not be placed at all.
+`dv_rank_table()` lists one ring. The unidentified records do not form one
+`NA` row: there is one per parent, so you can tell what kind of prey stopped
+being identified at that rank. At order:
 
 ```{r na}
 ord <- dv_rank_table(tree, "Order")
-ord[ord$label == "NA", ]
+na_rows <- tree[tree$rank == "Order" & tree$label == "NA",
+                c("parent", "value_occ", "pct_occ")]
+na_rows$pct_occ <- round(na_rows$pct_occ, 2)
+na_rows[order(-na_rows$value_occ), ]
 sum(ord$pct_occ[ord$label == "NA"])
 ```
 
-Here `r round(sum(ord$pct_occ[ord$label == "NA"]), 1)`% of the records are
-unidentified at order. Report that figure next to any statement made at that
-rank: an order-level description of this diet rests on the remaining
-`r round(100 - sum(ord$pct_occ[ord$label == "NA"]), 1)`%.
+```{r na-num, include = FALSE}
+na_ord <- sum(ord$pct_occ[ord$label == "NA"])
+top <- na_rows[order(-na_rows$value_occ), ][1:3, ]
+```
+
+Here `r round(na_ord, 1)`% of the records are unidentified at order. The
+largest parts are the material placed nowhere (parent `NA|NA|NA`), the fish
+not identified beyond Chordata ("Pisces" and the like), and the crustaceans
+named only "Crustacea" (parent `Animalia|Arthropoda|NA`). Report the total next to any statement made at that rank: an
+order-level description of this diet rests on the remaining
+`r round(100 - na_ord, 1)`%. The per-parent rows say what the gap is made of,
+which matters as much as its size: a gap made of fish and a gap made of worms
+bias a description in different directions.
+
+The share rises toward the edge of the sunburst:
+
+```{r na-by-rank}
+sapply(rings, function(r) round(sum(tree$pct_occ[tree$rank == r & tree$label == "NA"]), 1))
+```
+
+## An unidentified node with named children
+
+Most `NA` nodes have only `NA` below them. A few do not, because WoRMS gives no
+taxon at one rank to some groups. In the ICES lineage, several polychaete
+families have no order, and Priapulida have no class:
+
+```{r na-children}
+kid_named <- tapply(tree$label != "NA", tree$parent, any)
+na_with_kids <- tree[tree$label == "NA" & tree$id %in% names(kid_named)[kid_named], ]
+na_with_kids[, c("id", "rank", "value_occ")]
+tree[tree$parent %in% na_with_kids$id & tree$label != "NA", c("parent", "label", "value_occ")]
+```
+
+```{r na-children-num, include = FALSE}
+n_poly <- na_with_kids$value_occ[na_with_kids$rank == "Order"]
+```
+
+Such a node mixes two things. The `r n_poly` cod records in the unidentified
+order node under Polychaeta are `r n_poly - 1` polychaetes not identified
+beyond class and one lugworm (Arenicolidae), a family to which WoRMS gives no
+order: identified to family, it still appears unidentified at order. The
+effect is one record here, but on another predator or survey it can be
+large. Before you
+report an unidentified share at that rank, check these rows; the article
+"Adapting DietView to your own survey" comes back to it.
 
 ## The figures
 
-Records first, then weight. The two currencies often rank prey differently,
-so look at both before choosing one to report.
+Records first, then weight. In cod the two currencies rank prey very
+differently, so look at both before choosing one to report.
 
 ```{r sunburst-occ}
-dv_sunburst(tree, mode = "occurrence", title = "All predators",
+dv_sunburst(tree, mode = "occurrence", title = "Atlantic cod",
             subtitle = "share of prey records")
 ```
 
 ```{r sunburst-w}
-dv_sunburst(tree, mode = "weight", title = "All predators",
+dv_sunburst(tree, mode = "weight", title = "Atlantic cod",
             subtitle = "share of prey weight")
 ```
 
-White wedges with gray edges are records not identified at that rank. Hovering over a wedge
-shows its count and its share of the ring.
+White wedges with gray edges are records not identified at that rank. Hovering
+over a wedge shows its count and its share of the ring.
 
 ## Colors
 
@@ -130,20 +218,22 @@ compare, so the same taxon has the same color everywhere:
 
 ```{r palette}
 pal <- dv_palette(tree$label)
+length(pal)
 head(pal)
 ```
 
-The palette has 20 colors and reuses them when there are more taxa, so in a
-large survey two taxa can share a color. Check the hover labels before you
-read a color as a taxon.
+The palette has 20 colors and reuses them when there are more taxa. The cod
+tree alone has `r length(pal) - 1` taxon names, so every color stands for
+about `r round((length(pal) - 1) / 20)` of them. Check the hover labels before
+you read a color as a taxon.
 
-`dv_palette_tree()` is the alternative for large surveys. It gives one hue to
+`dv_palette_tree()` is the better choice at this size. It gives one hue to
 each phylum (the second rank) and lighter tints of that hue to its
 descendants, and keeps unidentified nodes white. Its colors are keyed by node,
 so build it from the pooled tree and pass it to every panel in the same way:
 
 ```{r palette-tree}
 pal_tree <- dv_palette_tree(tree)
-dv_sunburst(tree, mode = "occurrence", colors = pal_tree, title = "All predators",
+dv_sunburst(tree, mode = "occurrence", colors = pal_tree, title = "Atlantic cod",
             subtitle = "share of prey records, colors by phylum")
 ```

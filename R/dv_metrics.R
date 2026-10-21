@@ -33,16 +33,21 @@
 #'   value_occ, value_w, pct_occ, pct_w`, with the attribute `currency`
 #'   (`"records"`, or `"numbers"` when `count_col` is given).
 #' @examples
-#' csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-#' lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-#' dat <- read.csv(csv, na.strings = c("NA", ""))
-#' lineage <- read.csv(lin, na.strings = c("NA", ""))
-#' spec <- dv_spec(predator = "predator_species_common_name",
-#'                 stomach = "stomach_id",
-#'                 prey_id = "aphia_id",
-#'                 prey_name = "verified_name",
-#'                 weight = "prey_weight")
-#' prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
+#' # the standard set-up: public ICES data, non-food items and nematodes dropped
+#' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+#' dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+#' spec <- dv_spec(
+#'   predator       = "predator_common",
+#'   predator_latin = "predator_latin",
+#'   stomach        = "stomach_id",
+#'   prey_id        = "prey_aphia_id",
+#'   prey_name      = "prey_name",
+#'   weight         = "prey_weight_g",
+#'   count          = "prey_count",
+#'   digestion      = "digestion_label",
+#'   covariates     = c("region", "year", "quarter")
+#' )
+#' prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
 #'                    verbose = FALSE)
 #' tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
 #' head(tree)
@@ -122,16 +127,21 @@ dv_build_tree <- function(df, ranks,
 #' @param rank Rank label to extract (e.g. "Class").
 #' @return A data.frame: `label, value_item, value_occ, pct_occ, value_w, pct_w`.
 #' @examples
-#' csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-#' lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-#' dat <- read.csv(csv, na.strings = c("NA", ""))
-#' lineage <- read.csv(lin, na.strings = c("NA", ""))
-#' spec <- dv_spec(predator = "predator_species_common_name",
-#'                 stomach = "stomach_id",
-#'                 prey_id = "aphia_id",
-#'                 prey_name = "verified_name",
-#'                 weight = "prey_weight")
-#' prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
+#' # the standard set-up: public ICES data, non-food items and nematodes dropped
+#' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+#' dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+#' spec <- dv_spec(
+#'   predator       = "predator_common",
+#'   predator_latin = "predator_latin",
+#'   stomach        = "stomach_id",
+#'   prey_id        = "prey_aphia_id",
+#'   prey_name      = "prey_name",
+#'   weight         = "prey_weight_g",
+#'   count          = "prey_count",
+#'   digestion      = "digestion_label",
+#'   covariates     = c("region", "year", "quarter")
+#' )
+#' prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
 #'                    verbose = FALSE)
 #' tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
 #' dv_rank_table(tree, "Class")
@@ -156,19 +166,26 @@ dv_rank_table <- function(tree, rank) {
 #'   currency, with a warning.
 #' @return A `dietview_tree`, as from [dv_build_tree()].
 #' @examples
-#' csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-#' lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-#' dat <- read.csv(csv, na.strings = c("NA", ""))
-#' lineage <- read.csv(lin, na.strings = c("NA", ""))
-#' spec <- dv_spec(predator = "predator_species_common_name",
-#'                 stomach = "stomach_id", prey_id = "aphia_id",
-#'                 prey_name = "verified_name", weight = "prey_weight",
-#'                 count = "number_of_prey")
-#' prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
+#' # the standard set-up: public ICES data, non-food items and nematodes dropped
+#' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+#' dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+#' spec <- dv_spec(
+#'   predator       = "predator_common",
+#'   predator_latin = "predator_latin",
+#'   stomach        = "stomach_id",
+#'   prey_id        = "prey_aphia_id",
+#'   prey_name      = "prey_name",
+#'   weight         = "prey_weight_g",
+#'   count          = "prey_count",
+#'   digestion      = "digestion_label",
+#'   covariates     = c("region", "year", "quarter")
+#' )
+#' prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
 #'                    verbose = FALSE)
-#' tree <- dv_tree(prep)                       # shares of prey records
+#' tree <- dv_tree(prep)                          # shares of prey records
 #' dv_rank_table(tree, "Class")
-#' tree_n <- suppressWarnings(dv_tree(prep, currency = "numbers"))   # %N
+#' # %N from prey_count; records without a count are left out, with a warning
+#' tree_n <- suppressWarnings(dv_tree(prep, currency = "numbers"))
 #' @export
 dv_tree <- function(prep, currency = c("records", "numbers")) {
   stopifnot(inherits(prep, "dietview_prep"))

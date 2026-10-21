@@ -23,16 +23,26 @@ shifts toward the coarse ranks -- this makes the bias explicit instead of
 hiding it inside a functional grouping.
 }
 \examples{
-csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-dat <- read.csv(csv, na.strings = c("NA", ""))
-lineage <- read.csv(lin, na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name",
-                stomach = "stomach_id",
-                prey_id = "aphia_id",
-                prey_name = "verified_name",
-                weight = "prey_weight", digestion = "digestion_level_id")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
-                   verbose = FALSE)
-head(dv_digestion_diagnostic(prep))
+# the standard set-up: public ICES data, non-food items and nematodes dropped
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum \%in\% "Nematoda", ]
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+# Atlantic cod only, for speed
+cod <- dat[dat$predator_common == "Atlantic cod", ]
+prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                       verbose = FALSE)
+
+# digestion labels in ices_diet are inferred from the older ICES format;
+# see ?ices_diet
+head(dv_digestion_diagnostic(prep_cod))
 }

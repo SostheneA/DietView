@@ -35,4 +35,8 @@ app (\code{\link[=run_dietview]{run_dietview()}}) shows them as an "NA" panel.
 \examples{
 dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60))
 dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60), right = TRUE)
+
+# length classes of the Atlantic cod in the ICES stomach data
+cod_len <- ices_stomachs$length_cm[ices_stomachs$predator_common == "Atlantic cod"]
+table(dv_size_bins(cod_len, breaks = c(0, 20, 30, 40, 60, 150)), useNA = "ifany")
 }

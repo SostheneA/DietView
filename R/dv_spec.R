@@ -26,13 +26,17 @@
 #'
 #' @return An object of class `dietview_spec`.
 #' @examples
+#' # the column roles of the public ICES data (see ?ices_diet)
 #' spec <- dv_spec(
-#'   predator = "predator_species_common_name",
-#'   stomach  = "stomach_id",
-#'   prey_id  = "aphia_id",
-#'   prey_name = "verified_name",
-#'   weight   = "prey_weight",
-#'   covariates = c("period", "size_class")
+#'   predator       = "predator_common",
+#'   predator_latin = "predator_latin",
+#'   stomach        = "stomach_id",
+#'   prey_id        = "prey_aphia_id",
+#'   prey_name      = "prey_name",
+#'   weight         = "prey_weight_g",
+#'   count          = "prey_count",
+#'   digestion      = "digestion_label",
+#'   covariates     = c("region", "year", "quarter")
 #' )
 #' spec$ranks
 #' @export
@@ -76,6 +80,23 @@ dv_spec <- function(predator, stomach,
 #'   and errors are never suppressed).
 #' @return `data`, invisibly, with two attributes: `dv_spec` (the spec, minus any
 #'   dropped covariates) and `dv_report` (a list of counts).
+#' @examples
+#' # the standard set-up: public ICES data, non-food items and nematodes dropped
+#' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+#' dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+#' spec <- dv_spec(
+#'   predator       = "predator_common",
+#'   predator_latin = "predator_latin",
+#'   stomach        = "stomach_id",
+#'   prey_id        = "prey_aphia_id",
+#'   prey_name      = "prey_name",
+#'   weight         = "prey_weight_g",
+#'   count          = "prey_count",
+#'   digestion      = "digestion_label",
+#'   covariates     = c("region", "year", "quarter")
+#' )
+#' v <- dv_validate(dat, spec)
+#' attr(v, "dv_report")
 #' @export
 dv_validate <- function(data, spec, strict_covariates = TRUE, quiet = FALSE) {
   stopifnot(inherits(spec, "dietview_spec"), is.data.frame(data))

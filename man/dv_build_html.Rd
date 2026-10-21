@@ -78,20 +78,30 @@ directory: photos are fetched only with \code{photo_source = "inaturalist"} or
 linked to the photo's page; see \code{\link[=dv_species_card_assets]{dv_species_card_assets()}}.
 }
 \examples{
-csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-dat <- read.csv(csv, na.strings = c("NA", ""))
-lineage <- read.csv(lin, na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name",
-                stomach = "stomach_id",
-                prey_id = "aphia_id",
-                prey_name = "verified_name",
-                weight = "prey_weight", digestion = "digestion_level_id")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
-                   verbose = FALSE)
-\dontrun{
-# writes a self-contained HTML dashboard
-dv_build_html(prep, output = file.path(tempdir(), "diet_dashboard.html"),
-              strata = c("period", "size_class"))
-}
+# the standard set-up: public ICES data, non-food items and nematodes dropped
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum \%in\% "Nematoda", ]
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+# Atlantic cod only, for speed
+cod <- dat[dat$predator_common == "Atlantic cod", ]
+prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                       verbose = FALSE)
+
+# a dashboard for cod, stratified by quarter, written to tempdir();
+# self_contained = FALSE keeps this quick and needs no pandoc; the default
+# (TRUE) embeds everything in one file
+out <- dv_build_html(prep_cod, output = file.path(tempdir(), "cod_dashboard.html"),
+                     strata = "quarter", bands = "count",
+                     self_contained = FALSE)
+file.exists(out)
 }

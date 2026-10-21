@@ -18,28 +18,30 @@ knitr::opts_chunk$set(
 This article covers the functions you use before drawing a diet: a few
 descriptive summaries, a prey accumulation curve, the classical frequency of
 occurrence, aggregation of rare prey to a stated threshold, and export of a
-stomach-by-prey matrix. Everything runs offline on the invented example table
-that ships with the package (24 prey records from 11 stomachs), so the numbers
-show what each function returns, not what these fish eat.
+stomach-by-prey matrix. It runs on the public ICES stomach data that ship with
+the package (ICES Stomach Content Database, ICES, Copenhagen; extract
+distributed with the R package stomachr, Lindmark 2026; see `?ices_diet`),
+prepared with the standard set-up used throughout the documentation.
 
 ```{r setup}
 library(DietView)
 
-csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-dat <- read.csv(csv, na.strings = c("NA", ""))
-lineage <- read.csv(lin, na.strings = c("NA", ""))
+# drop non-food items and nematodes (mostly parasites, not prey)
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
 
 spec <- dv_spec(
-  predator   = "predator_species_common_name",
-  stomach    = "stomach_id",
-  prey_id    = "aphia_id",
-  prey_name  = "verified_name",
-  weight     = "prey_weight",
-  digestion  = "digestion_level_id",
-  covariates = c("period", "size_class", "region")
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
 )
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
                    verbose = FALSE)
 ```
 
@@ -50,17 +52,46 @@ records, the number of distinct prey taxa and the mean number of records per
 stomach. Pass `by` to break it down by a covariate.
 
 ```{r summary}
-dv_summary(prep)
-dv_summary(prep, by = "region")
+s <- dv_summary(prep)
+s$total_weight <- round(s$total_weight)
+s
 ```
 
-Taxa are the finest names reached, so "Amphipoda" and *Themisto libellula*
-count as two even though the second is an amphipod. Read the taxa count as the
-number of distinct prey names, not as species richness.
+```{r summary-num, include = FALSE}
+s_fam <- dv_summary(prep, rank = "family")
+cod_taxa <- s$n_taxa[s$predator_common == "Atlantic cod"]
+cod_fam  <- s_fam$n_taxa[s_fam$predator_common == "Atlantic cod"]
+mac_taxa <- s$n_taxa[s$predator_common == "Atlantic mackerel"]
+```
+
+The sample is very uneven: four predators (mackerel, cod, whiting and plaice)
+hold `r round(100 * sum(s$n_stomachs[1:4]) / sum(s$n_stomachs))`% of the
+stomachs, and `r sum(s$n_stomachs < 20)` of the `r nrow(s)` predators have
+fewer than 20 stomachs. Read every statistic for those last ones as anecdote.
+
+By default a taxon is the finest name reached, so "Decapoda" and
+*Crangon crangon* count as two even though the second is a decapod. Read that
+count as the number of distinct prey names, not as species richness. Pass
+`rank` to count taxa at one stated rank, unidentified records excluded:
+
+```{r summary-rank}
+head(dv_summary(prep, rank = "family")[, c("predator_common", "n_stomachs", "n_taxa")], 4)
+```
+
+Cod has `r cod_taxa` distinct prey names but `r cod_fam` families. Mackerel,
+with the largest number of stomachs, has only `r mac_taxa` prey names: most of
+its records are "Unidentified material", "Crustacea", "Pisces" or sandeels
+(Ammodytidae).
 
 A table of prey records holds only stomachs that contained something, so it
 cannot give the share of empty stomachs. That has to come from the full list of
-stomachs examined.
+stomachs examined, which the package ships as `ices_stomachs`:
+
+```{r empty}
+# % of sampled stomachs flagged empty
+e <- tapply(ices_stomachs$stomach_empty %in% 1, ices_stomachs$predator_common, mean)
+round(100 * e[c("Atlantic cod", "Atlantic mackerel", "European plaice", "Whiting")], 1)
+```
 
 ## 2. Is the diet adequately sampled?
 
@@ -69,20 +100,44 @@ taxa found against the number of stomachs examined, averaged over random orders
 of the stomachs. A curve that levels off means more stomachs would add few new
 taxa; a curve still rising means the sample is not yet enough.
 
-```{r accumulation}
-acc <- dv_prey_accumulation(prep, permutations = 50, seed = 1)
-acc
+Count taxa at one stated rank. With the finest names, a curve rises each time
+a new coarse name ("Crustacea", "Decapoda") appears next to the species
+already seen, and the rise grows with digestion. Here, family:
 
-plot(acc$n_stomachs, acc$mean_richness, type = "b",
-     xlab = "Stomachs examined", ylab = "Cumulative prey taxa",
-     main = "Prey accumulation (all predators)")
+```{r accumulation}
+four <- c("Atlantic cod", "Atlantic mackerel", "European plaice", "Whiting")
+acc <- dv_prey_accumulation(prep, by = spec$predator, rank = "family",
+                            permutations = 50, seed = 1)
+acc <- acc[acc$predator_common %in% four, ]
+
+plot(NA, xlim = c(0, max(acc$n_stomachs)), ylim = c(0, max(acc$mean_richness)),
+     xlab = "Stomachs examined", ylab = "Cumulative prey families",
+     main = "Prey accumulation at family rank")
+cols <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
+for (i in seq_along(four)) {
+  a <- acc[acc$predator_common == four[i], ]
+  lines(a$n_stomachs, a$mean_richness, col = cols[i], lwd = 2)
+}
+legend("topleft", legend = four, col = cols, lwd = 2, bty = "n")
 ```
 
-As in `dv_summary()`, taxa are the finest names reached, which inflates the
-curve when identification depth varies. Use `rank = "family"` for a curve at
-one stated rank. Pass `by = spec$predator`
-for one curve per predator. Keep `permutations` low while exploring and raise
-it for a figure.
+```{r accumulation-tail}
+# families gained over the last 100 stomachs of each curve
+sapply(split(acc, acc$predator_common), function(a) {
+  n <- nrow(a)
+  round(a$mean_richness[n] - a$mean_richness[n - 100], 1)
+})
+```
+
+The cod, whiting and plaice curves are still rising slowly at the full sample
+size: the last 100 stomachs add one or two families each. The mackerel curve is
+flat, but not because the mackerel diet is well sampled: almost nothing in its
+stomachs was identified to family. A flat curve says that more stomachs, read
+the same way, would add few new families; it says nothing about what better
+identification would add.
+
+Keep `permutations` low while exploring and raise it for a figure. The seed is
+used for that call only.
 
 ## 3. Frequency of occurrence (%FO)
 
@@ -94,12 +149,32 @@ taxon, computed separately at each rank, as recommended for comparison between
 studies (Buckland et al., 2017).
 
 ```{r fo}
-dv_fo_table(prep, rank = "class")
+fo <- dv_fo_table(prep, rank = "class", by = spec$predator)
+head(fo[fo$predator_common == "Atlantic cod", ], 6)
 ```
 
+```{r fo-num, include = FALSE}
+fc <- fo[fo$predator_common == "Atlantic cod", ]
+fo_mal <- fc$pct_fo[fc$taxon == "Malacostraca"]
+fo_tel <- fc$pct_fo[fc$taxon == "Teleostei"]
+tree_cod <- dv_build_tree(prep$data[prep$data$predator_common == "Atlantic cod", ],
+                          prep$ranks, weight_col = spec$weight)
+rc <- dv_rank_table(tree_cod, "Class")
+```
+
+Crustaceans (Malacostraca) occur in `r fo_mal`% of the non-empty cod stomachs
+and fish (Teleostei) in `r fo_tel`%. The same classes are
+`r round(rc$pct_occ[rc$label == "Malacostraca"], 1)`% and
+`r round(rc$pct_occ[rc$label == "Teleostei"], 1)`% of the cod's prey records.
+The two quantities answer different questions (how many fish ate it, and how
+much of the recorded material it is) and should be reported under their own
+names. The column `n_total` is the number of non-empty stomachs in the group:
+the denominator of %FO.
+
 %FO does not add up across ranks: a parent's %FO is computed from the stomachs
-that contain it, not summed from its children. Leave `rank = NULL` to stack
-every rank, and pass `by` for a breakdown by covariate.
+that contain it, not summed from its children, and the `NA` row (stomachs
+holding at least one record not identified to class) overlaps the others.
+Leave `rank = NULL` to stack every rank.
 
 ## 4. Aggregating rare prey to a stated threshold
 
@@ -109,40 +184,82 @@ found in fewer than `threshold` stomachs up to their parent, and repeats up the
 hierarchy until every category it reports occurs in at least `threshold`
 stomachs.
 
+### Choosing the threshold
+
+The threshold is a judgement, so look at what it costs before you fix it.
+`dv_threshold_sweep()` runs the aggregation for several values and reports the
+number of categories left and the share of records whose category is coarser
+than species:
+
+```{r sweep}
+sw <- dv_threshold_sweep(prep, thresholds = c(5, 10, 20, 30, 50, 100))
+sw
+```
+
+```{r sweep-num, include = FALSE}
+g <- function(x, col) sw[[col]][sw$threshold == x]
+```
+
+The share of records above species is high whatever the threshold
+(`r g(5, "pct_coarser")`% at 5 stomachs), because most records were never
+identified to species. Raising the threshold from 5 to 20 stomachs halves the
+number of categories (`r g(5, "n_categories")` to `r g(20, "n_categories")`)
+and moves only `r round(g(20, "pct_coarser") - g(5, "pct_coarser"), 1)` more
+percent of the records to a coarser rank; beyond 50 the categories become
+broad groups. We use 20 stomachs here: about
+`r round(100 * 20 / length(unique(dat$stomach_id)), 1)`% of the
+`r format(length(unique(dat$stomach_id)), big.mark = ",")` stomachs, enough for
+a category to be compared between the main predators, and a point where the
+sweep has removed most of the rare names at little cost. State the value and
+the reason in your methods; a different question (a per-predator description,
+a rare-prey study) would justify a different one.
+
+### The aggregated data
+
 ```{r aggregate}
-agg <- dv_aggregate_threshold(prep, threshold = 3)
-table(agg$data$prey_category, useNA = "ifany")
+agg <- dv_aggregate_threshold(prep, threshold = 20)
+attr(agg, "aggregation")$n_categories
+head(sort(table(agg$data$prey_category), decreasing = TRUE), 12)
 table(agg$data$prey_rank, useNA = "ifany")
 ```
 
 A category named after a taxon that also has retained descendants holds only
-the records that stayed at that taxon, and its label ends in "(other)". Here
-"Animalia (other)" holds the bivalve, polychaete and mysid records: none of
-those groups reaches 3 stomachs on its own, so they move up until they are
-counted together, at kingdom. The records with no prey placement at all stay
-unidentified (`NA`).
+the records that stayed at that taxon, and its label ends in "(other)".
+"Decapoda (other)" holds the decapods that are not in a retained family, genus
+or species of their own: the many records named only "Brachyura", "Caridea"
+or "Decapoda", and rare decapods merged into them. Named species such as
+*Crangon crangon* (brown shrimp), *Merlangius merlangus* (whiting eaten by
+other fish) and *Aphia minuta* (transparent goby) are frequent enough to stay
+on their own. The `r format(sum(is.na(agg$data$prey_rank)), big.mark = ",")`
+records with no prey placement at all stay unidentified (`NA`).
 
 The result is a `dietview_prep` again: ranks finer than the rank each record
 settled at are set to `NA`, so it goes straight back into the usual functions,
 and the sunburst then has no category rarer than the threshold.
 
 ```{r aggregate-tree}
-tree <- dv_build_tree(agg$data, agg$ranks, weight_col = spec$weight)
-dv_rank_table(tree, "Class")
+tree_agg <- dv_build_tree(agg$data[agg$data$predator_common == "Atlantic cod", ],
+                          agg$ranks, weight_col = spec$weight)
+dv_sunburst(tree_agg, mode = "occurrence", colors = dv_palette_tree(tree_agg),
+            title = "Atlantic cod, prey aggregated to 20 stomachs",
+            subtitle = "share of prey records")
 ```
 
 Two arguments give three ways of counting:
 
 ```{r architectures, eval = FALSE}
-dv_aggregate_threshold(prep, 100)                      # all predators pooled
-dv_aggregate_threshold(prep, 100, min_predators = 2)   # pooled, and in at least 2 predators
-dv_aggregate_threshold(prep, 50, scope = "per_predator")
+dv_aggregate_threshold(prep, 20)                      # all predators pooled
+dv_aggregate_threshold(prep, 20, min_predators = 2)   # pooled, and in at least 2 predators
+dv_aggregate_threshold(prep, 20, scope = "per_predator")
 ```
 
-To see how the number of categories changes with the threshold, sweep it:
+The per-predator scope counts stomachs within each predator, so a prey must
+reach the threshold in one predator's own stomachs. A prey found in 15 cod and
+10 whiting stomachs keeps its category in the pooled tree but is merged upward
+in both predator trees. That leaves fewer categories at the same threshold:
 
-```{r sweep}
-dv_threshold_sweep(prep, thresholds = c(2, 3, 5, 8))
+```{r sweep-per}
+dv_threshold_sweep(prep, thresholds = c(5, 10, 20, 30, 50), scope = "per_predator")
 ```
 
 DietView stops at the aggregation. If you summarize a statistic across several
@@ -156,21 +273,28 @@ first, it uses the `prey_category` column automatically. Pass `rank` to build
 the matrix at one rank instead.
 
 ```{r matrix}
-m <- dv_matrix(agg, currency = "occurrence")
+m <- dv_matrix(agg, currency = "weight")
 dim(m)
-m[1:3, 1:min(5, ncol(m))]
+m[1:3, c("Crangon crangon", "Decapoda (other)", "Chordata (other)", "NA")]
 ```
+
+One row per stomach (`r format(nrow(m), big.mark = ",")`), one column per
+category (`r ncol(m)`, the `NA` column included), summed prey weight in each
+cell. The matrix is very sparse: `r round(100 * mean(m == 0), 1)`% of its
+cells are zero, which is typical of stomach data and matters for the choice of
+distance in the analysis that follows.
 
 `currency` is `"weight"` (summed weight), `"occurrence"` (number of records) or
 `"fo"` (presence or absence in each unit). Use `unit` to sum over something
-coarser than a stomach, such as a trawl set. Use `include_na = FALSE` to drop
-the unidentified column, and say in your methods that you did.
+coarser than a stomach, such as a haul (`unit = "haul_id"`). Use
+`include_na = FALSE` to drop the unidentified column, and say in your methods
+that you did.
 
 ```{r downstream, eval = FALSE}
 # DietView stops here; the analysis uses other packages
-mm <- vegan::decostand(m, "total")
+mm <- vegan::decostand(m[rowSums(m) > 0, ], "total")
 d  <- vegan::vegdist(mm, "bray")
-# vegan::adonis2(d ~ period, data = set_covariates)
+# vegan::adonis2(d ~ predator_common + region, data = stomach_covariates)
 ```
 
 ## Where this fits
@@ -179,8 +303,12 @@ These functions describe and aggregate. DietView does not test hypotheses:
 diversity tests, PERMANOVA and dispersion analyses belong to packages built for
 them, and `dv_matrix()` is the step that hands your data over.
 
-## Reference
+## References
 
 Buckland, A., Baker, R., Loneragan, N., & Sheaves, M. (2017). Standardising fish
 stomach content analysis: the importance of prey condition. *Fisheries Research*,
 196, 126–140.
+
+ICES Stomach Content Database. ICES, Copenhagen. <https://stomachdata.ices.dk>.
+Extract distributed with the R package stomachr (Lindmark 2026,
+<https://github.com/maxlindmark/stomachr>).

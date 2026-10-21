@@ -1,5 +1,33 @@
 # DietView (development version)
 
+## Example data
+
+* Three datasets of real, public stomach-content data, from the ICES Stomach
+  Content Database (ICES, Copenhagen), as extracted in the R package stomachr
+  (Lindmark 2026); see `?ices_diet`:
+  * `ices_diet`: 9,639 prey records from 4,231 stomachs of 22 fish species,
+    North Sea, Skagerrak-Kattegat and Baltic Sea, 2020-2024, one row per prey
+    record, in the format DietView expects;
+  * `ices_stomachs`: the 8,886 sampled stomachs, one row each, the 1,197 empty
+    ones included;
+  * `ices_lineage`: the frozen WoRMS classification of the 461 prey keys, for
+    an offline, reproducible `dv_prepare(taxonomy = "table")`.
+
+  Rows that only mark an empty stomach in the ICES export were dropped, and two
+  unit errors in the predator variables were fixed (Belgian lengths reported in
+  mm, Danish individual weights reported in kg). Everything else is kept as
+  exported, including unidentified material, Nematoda (mostly parasites) and
+  non-food items, so the data show what real surveys look like; the analyst
+  decides what to drop. The digestion labels are inferred from the older ICES
+  format.
+* The examples, the README, the vignettes and the website articles now use the
+  ICES data instead of the invented example. A new article, "Case study: a
+  complete analysis of public ICES stomach data", works through a full analysis
+  of them.
+* The small 24-record example (`inst/extdata/dietview_example.csv` and its
+  lineage table) is kept for the tests and for quick checks of the mechanics.
+* `dv_validate()` gains an example.
+
 ## Bug fixes
 
 * `dv_prepare(taxonomy = "worms")` no longer stops with "arguments imply

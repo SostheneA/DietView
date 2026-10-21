@@ -35,9 +35,25 @@ enrichment, then correct anything wrong by supplying a lineage table
 (\code{dv_prepare(taxonomy = "table")}) or fixing the source names.
 }
 \examples{
+# the standard set-up: public ICES data, non-food items and nematodes dropped
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum \%in\% "Nematoda", ]
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
 \dontrun{
 # a WoRMS-prepared object carries a taxonomy log to review
-prep <- dv_prepare(dat, spec, taxonomy = "worms")
-dv_taxonomy_report(prep, which = "review")
+# (needs the 'worrms' package and internet access)
+cod <- dat[dat$predator_common == "Atlantic cod", ]
+prep_worms <- dv_prepare(cod, spec, taxonomy = "worms")
+dv_taxonomy_report(prep_worms, which = "review")
 }
 }

@@ -1,0 +1,849 @@
+---
+title: "Case study: a complete analysis of public ICES stomach data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Case study: a complete analysis of public ICES stomach data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7,
+                      fig.height = 5, warning = FALSE, message = FALSE)
+t_start <- Sys.time()
+```
+
+This article is a complete diet study, from the raw table to the figures, the
+tables and a dashboard, done only with DietView and a little base R. The data
+are real: a public extract of the ICES Stomach Content Database for fishes of
+the North Sea, the Skagerrak-Kattegat and the Baltic Sea. The question is
+simple and classical: **what do the four best-sampled predators in this
+extract (Atlantic mackerel, Atlantic cod, European plaice and whiting) eat, how
+well do we know it, and how much do their diets overlap?**
+
+The sections follow the order of a real study. Each one opens with the
+question it answers. Every number in the text is computed by the code shown.
+
+1. [The question and the data](#data)
+2. [Checks and cleaning decisions](#cleaning)
+3. [Taxonomy](#taxonomy)
+4. [Covariates](#covariates)
+5. [The diet](#diet)
+6. [Figures](#figures)
+7. [Identification and digestion](#digestion)
+8. [Comparisons within cod](#comparisons)
+9. [Sampling sufficiency](#sufficiency)
+10. [Resolution-robust aggregation and diet overlap](#aggregation)
+11. [Outputs: dashboard, species cards, app](#outputs)
+12. [What we learned, and the limits](#learned)
+
+```{r setup}
+library(DietView)
+m4 <- c("Atlantic mackerel", "Atlantic cod", "European plaice", "Whiting")
+pc <- function(x, d = 1) formatC(x, format = "f", digits = d)   # format a %
+```
+
+## 1. The question and the data {#data}
+
+*What is in the data, where does it come from, and how many fish were
+sampled?*
+
+Three tables ship with DietView. `ices_diet` has one row per prey record,
+`ices_stomachs` one row per sampled stomach (empty ones included), and
+`ices_lineage` the frozen WoRMS classification of every prey. Source: ICES
+Stomach Content Database, ICES, Copenhagen; extract distributed with the R
+package stomachr (Lindmark 2026). See `?ices_diet` for the details and the
+corrections made when the tables were built.
+
+```{r data-size}
+c(records  = nrow(ices_diet),
+  stomachs = length(unique(ices_diet$stomach_id)),
+  sampled  = nrow(ices_stomachs),
+  predators = length(unique(ices_diet$predator_common)))
+```
+
+A stomach falls in one of three groups: it has prey records, it is flagged
+empty, or it has no record and no "empty" flag, so its content is unknown.
+The last group matters: it must not be counted as empty.
+
+```{r stomach-status}
+st <- ices_stomachs
+st$status <- ifelse(st$stomach_empty %in% 1, "empty",
+             ifelse(st$stomach_id %in% ices_diet$stomach_id, "with prey",
+                    "unknown"))
+tab <- table(st$predator_common, st$status)
+tab <- tab[order(-rowSums(tab)), c("with prey", "empty", "unknown")]
+head(tab, 8)
+```
+
+```{r vacuity}
+known <- tab[m4, "with prey"] + tab[m4, "empty"]
+vac <- round(100 * tab[m4, "empty"] / known, 1)
+vac
+```
+
+Of the `r nrow(st)` stomachs, `r sum(st$status == "empty")` are flagged
+empty and `r sum(st$status == "unknown")` have an unknown status. Among
+stomachs of known status, the share of empty stomachs (vacuity) ranges from
+`r min(vac)`% (`r names(which.min(vac))`) to `r max(vac)`%
+(`r names(which.max(vac))`). This can only be computed from `ices_stomachs`:
+a long prey table holds no empty stomachs.
+
+The sampling is uneven in space and time, which will matter for every
+comparison:
+
+```{r sampling}
+table(st$region, st$year)
+with(st[st$predator_common %in% m4, ], table(predator_common, year))
+with(st[st$predator_common %in% m4, ], table(predator_common, quarter))
+```
+
+Mackerel were sampled in a single year and quarter, plaice in a single year.
+Any contrast between predators is therefore also a contrast between years,
+seasons and places.
+
+## 2. Checks and cleaning decisions {#cleaning}
+
+*Is the table fit for DietView, and which records should count as diet?*
+
+### Declare and validate
+
+`dv_spec()` records which column plays which role. `dv_validate()` checks the
+table against it and reports; it does not repair.
+
+```{r spec}
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+v <- dv_validate(ices_diet, spec)
+rep_raw <- attr(v, "dv_report")
+unlist(rep_raw)
+```
+
+No error and no warning: every record has a prey key (an AphiaID or a name),
+weights are numbers and never negative, and stomach IDs are not shared
+between predators. The report also tells us that
+`r rep_raw$n_single_record_stomachs` stomachs hold a single record and
+`r rep_raw$n_missing_weight` records have no weight. Validation does not say
+whether a record is food; that is our decision.
+
+### Non-food items
+
+```{r non-food}
+table(ices_diet$item_type)
+sort(table(ices_diet$prey_name[ices_diet$item_type == "non_food"]),
+     decreasing = TRUE)
+```
+
+Sand, stones, plastic and the like are not diet. They are dropped.
+
+### Nematodes
+
+Nematodes in fish stomachs are mostly parasites of the predator, not prey.
+Before dropping them, we look at how much they weigh in each predator's
+records, because a decision that removes a large share of one predator's records is
+not a detail.
+
+```{r nematodes}
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id,
+                                    ices_lineage$prey_aphia_id)]
+is_nem <- phylum %in% "Nematoda"
+nem <- tapply(is_nem, ices_diet$predator_common, mean)
+nem_n <- tapply(is_nem, ices_diet$predator_common, sum)
+round(100 * nem[m4], 1)
+```
+
+Nematodes make `r sum(is_nem)` records
+(`r pc(100 * mean(is_nem))`% of all), and `r pc(100 * nem["Atlantic mackerel"])`%
+of mackerel records. Kept, they would make "Nematoda" one of the main prey of
+mackerel. They are dropped; an analysis of parasites would keep them and
+nothing else.
+
+### Pooled fish, missing digestion, missing weight
+
+```{r other-checks}
+pooled <- unique(ices_diet$stomach_id[ices_diet$n_fish_pooled %in% 2])
+length(pooled)
+dig_missing <- tapply(ices_diet$digestion_label == "not recorded",
+                      ices_diet$predator_common, mean)
+round(100 * dig_missing[m4], 1)
+```
+
+`r length(pooled)` stomach samples pool two fish. They are too few to change
+any share, so they are kept as stomachs. The digestion stage is "not
+recorded" for `r pc(100 * mean(ices_diet$digestion_label == "not recorded"))`%
+of records overall, and for `r pc(100 * dig_missing["Atlantic mackerel"])`% of
+the mackerel records: the digestion diagnostic below says little about
+mackerel. Missing digestion is kept as its own level, not dropped. The
+`r rep_raw$n_missing_weight` records without a weight are kept too: they
+count in the record and numbers views and add nothing to the weight view.
+
+### The cleaned table
+
+```{r clean}
+dat <- ices_diet[ices_diet$item_type != "non_food" & !is_nem, ]
+rep_clean <- attr(dv_validate(dat, spec, quiet = TRUE), "dv_report")
+```
+
+The methods paragraph is generated from the counts, so it stays true if the
+data or the decisions change:
+
+```{r methods, results = "asis"}
+cat(sprintf(paste(
+  "We used %d prey records from %d stomachs of %d predator species",
+  "(ICES Stomach Content Database, %d-%d). %d non-food records and %d nematode",
+  "records (mostly parasites) were excluded. %d sampled stomachs were flagged",
+  "empty and %d had no record and no flag; these were excluded from diet",
+  "composition. %d records (%s%%) lacked a weight and %d (%s%%) a digestion stage."),
+  rep_clean$n_records, rep_clean$n_stomachs, rep_clean$n_predators,
+  min(dat$year), max(dat$year),
+  sum(ices_diet$item_type == "non_food"), sum(is_nem),
+  sum(st$status == "empty"), sum(st$status == "unknown"),
+  rep_clean$n_missing_weight, pc(100 * rep_clean$n_missing_weight / rep_clean$n_records),
+  sum(dat$digestion_label == "not recorded"),
+  pc(100 * mean(dat$digestion_label == "not recorded"))))
+```
+
+Dropping nematodes removed every record of
+`r rep_raw$n_stomachs - rep_clean$n_stomachs` stomachs, which held nothing
+else.
+
+## 3. Taxonomy {#taxonomy}
+
+*Is every prey placed in the classification, and to what depth?*
+
+```{r prepare}
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+                   verbose = FALSE)
+prep
+```
+
+With a frozen lineage table there is no matching to review, so
+`prep$taxonomy_log` is `NULL` and `dv_taxonomy_report()` says why:
+
+```{r tax-report}
+is.null(prep$taxonomy_log)
+tryCatch(dv_taxonomy_report(prep, which = "review"),
+         error = function(e) conditionMessage(e))
+```
+
+What we can check offline is the depth of identification: the WoRMS rank of
+the name each record carries.
+
+```{r worms-rank}
+wr <- ices_lineage$worms_rank[match(dat$prey_aphia_id, ices_lineage$prey_aphia_id)]
+wr[is.na(dat$prey_aphia_id)] <- "unidentified material"
+sort(round(100 * prop.table(table(wr)), 1), decreasing = TRUE)[1:8]
+```
+
+Only `r pc(100 * mean(wr == "Species"))`% of the records are named to
+species, and `r pc(100 * mean(wr == "unidentified material"))`% are
+unidentified material with no AphiaID. Names at intermediate WoRMS ranks
+(superorder, infraorder, ...) are placed at the nearest of the seven ranks
+above them, and the finer ranks are `NA`, shown below as the unidentified
+share of their branch.
+
+The lineage was built with WoRMS (via the stomachr package) and frozen, so
+the article runs offline and gives the same answer every time. To redo it
+against the live register, and get the per-prey matching log:
+
+```{r worms, eval = FALSE}
+prep_w <- dv_prepare(dat, spec, taxonomy = "worms")      # needs 'worrms' + internet
+dv_taxonomy_report(prep_w, which = "review")             # fuzzy, synonyms, homonyms
+# or resolve the keys only, then freeze the table yourself:
+lin <- dv_taxonomy_worms(unique(dat$prey_aphia_id[!is.na(dat$prey_aphia_id)]))
+```
+
+## 4. Covariates {#covariates}
+
+*Which strata do we want to compare, and how are they defined?*
+
+Two derived covariates: a period, with breaks written out so they are part of
+the method, and a length class with breaks specific to each predator (a 30 cm
+whiting is large, a 30 cm cod is not). The breaks are close to the quartiles
+of each predator's lengths.
+
+```{r covariates}
+dat$period <- dv_add_period(dat$year, breaks = c(2020, 2022, 2024))
+table(dat$period)
+
+len_breaks <- list("Atlantic mackerel" = c(15, 28, 34, 50),
+                   "Atlantic cod"      = c(0, 25, 40, 110),
+                   "European plaice"   = c(10, 22, 30, 60),
+                   "Whiting"           = c(5, 20, 28, 50))
+dat$length_class <- NA_character_
+for (p in m4) {
+  i <- dat$predator_common == p
+  dat$length_class[i] <- as.character(dv_size_bins(dat$length_cm[i], len_breaks[[p]]))
+}
+with(dat[dat$predator_common %in% m4, ], table(predator_common, length_class))
+```
+
+The analysis from here on uses the four predators, with the new covariates
+declared in the spec.
+
+```{r prep4}
+spec4 <- dv_spec(predator = "predator_common", predator_latin = "predator_latin",
+                 stomach = "stomach_id", prey_id = "prey_aphia_id",
+                 prey_name = "prey_name", weight = "prey_weight_g",
+                 count = "prey_count", digestion = "digestion_label",
+                 covariates = c("region", "quarter", "period", "length_class"))
+d4 <- dat[dat$predator_common %in% m4, ]
+prep_of <- function(rows) dv_prepare(d4[rows, ], spec4, taxonomy = "table",
+                                     lineage = ices_lineage, verbose = FALSE)
+prep4 <- prep_of(TRUE)
+by_pred <- lapply(setNames(m4, m4), function(p) prep_of(d4$predator_common == p))
+prep4
+```
+
+## 5. The diet {#diet}
+
+*What do the four predators eat, in records, in numbers and in weight?*
+
+`dv_tree()` builds the tree at all seven ranks. Each node carries prey
+records (`value_occ`, or individuals with `currency = "numbers"`) and weight
+(`value_w`), with their shares within the rank (`pct_occ`, `pct_w`).
+
+```{r trees}
+tr_rec <- lapply(by_pred, dv_tree)
+tr_num <- lapply(by_pred, function(p)
+  withCallingHandlers(dv_tree(p, currency = "numbers"),
+                      warning = function(w) invokeRestart("muffleWarning")))
+n_nocount <- sum(is.na(d4$prey_count))
+```
+
+The numbers currency counts individuals; `r n_nocount` records
+(`r pc(100 * n_nocount / nrow(d4))`%) have no count, mostly unidentified
+material, and contribute nothing to it (DietView warns about this; the
+warning is muffled here).
+
+### Class rank
+
+`dv_rank_table()` returns one ring of the tree, sorted by record share:
+
+```{r rank-table}
+head(dv_rank_table(tr_rec[["Atlantic cod"]], "Class"), 4)
+```
+
+A ring can hold several `NA` nodes, one per branch: the records identified to
+a phylum but not to a class sit in an `NA` node under that phylum. The tables
+below label each one by its deepest named ancestor ("Chordata, unid." is fish material not
+resolved to class, such as "Pisces") and give the share of records (%R), of
+individuals (%N) and of weight (%W).
+
+```{r class-tables}
+rank_tab <- function(p, rank, n = 6) {
+  t <- tr_rec[[p]]; r <- t[t$rank == rank, ]; r <- r[order(-r$pct_occ), ]
+  nn <- tr_num[[p]]
+  anc <- vapply(strsplit(r$id, "|", fixed = TRUE),   # deepest named ancestor
+                function(x) { x <- x[x != "NA"]; if (length(x)) tail(x, 1) else "" }, "")
+  lab <- ifelse(r$label != "NA", r$label,
+                ifelse(nzchar(anc), paste0(anc, ", unid."), "unidentified"))
+  out <- data.frame(taxon = lab, records = r$value_occ,
+                    pct_R = round(r$pct_occ, 1),
+                    pct_N = round(nn$pct_occ[match(r$id, nn$id)], 1),
+                    pct_W = round(r$pct_w, 1))
+  head(out, n)
+}
+for (p in m4) { cat("\n", p, "\n"); print(rank_tab(p, "Class"), row.names = FALSE) }
+```
+
+### Family rank
+
+```{r family-tables}
+for (p in m4) { cat("\n", p, "\n"); print(rank_tab(p, "Family", 5), row.names = FALSE) }
+```
+
+```{r top-taxa, include = FALSE}
+top <- function(p, rank, what = "pct_occ") {
+  r <- dv_rank_table(tr_rec[[p]], rank); r <- r[r$label != "NA", ]
+  r <- r[order(-r[[what]]), ]
+  list(label = r$label[1], pct = round(r[[what]][1], 1))
+}
+cls_rec <- lapply(m4, top, rank = "Class");            names(cls_rec) <- m4
+cls_w   <- lapply(m4, top, rank = "Class", what = "pct_w"); names(cls_w) <- m4
+fam_rec <- lapply(m4, top, rank = "Family");           names(fam_rec) <- m4
+fam_w   <- lapply(m4, top, rank = "Family", what = "pct_w"); names(fam_w) <- m4
+phy <- sapply(tr_rec, function(t) {
+  x <- t[t$rank == "Phylum", ]
+  setNames(round(x$pct_occ, 1), x$label)[c("Chordata", "Arthropoda")]
+})
+```
+
+Among identified classes, the leading one by records is `r cls_rec[["Atlantic mackerel"]]$label` for
+mackerel (`r cls_rec[["Atlantic mackerel"]]$pct`%),
+`r cls_rec[["Atlantic cod"]]$label` for cod (`r cls_rec[["Atlantic cod"]]$pct`%),
+`r cls_rec[["European plaice"]]$label` for plaice
+(`r cls_rec[["European plaice"]]$pct`%) and `r cls_rec[["Whiting"]]$label` for
+whiting (`r cls_rec[["Whiting"]]$pct`%). By weight it is
+`r cls_w[["Atlantic mackerel"]]$label` (`r cls_w[["Atlantic mackerel"]]$pct`%),
+`r cls_w[["Atlantic cod"]]$label` (`r cls_w[["Atlantic cod"]]$pct`%),
+`r cls_w[["European plaice"]]$label` (`r cls_w[["European plaice"]]$pct`%) and
+`r cls_w[["Whiting"]]$label` (`r cls_w[["Whiting"]]$pct`%) respectively.
+The record and weight currencies answer different questions (how often a prey
+is eaten, and how much of the food it makes), and they disagree most where
+prey sizes differ most: a fish is heavy, a copepod is not.
+
+### Invariants, checked in code
+
+DietView keeps the unidentified material in every ring, so each rank accounts
+for all the records and all the weight. These are checked, not assumed:
+
+```{r invariants}
+for (p in m4) {
+  t <- tr_rec[[p]]; n <- nrow(by_pred[[p]]$data)
+  w <- sum(by_pred[[p]]$data$prey_weight_g, na.rm = TRUE)
+  for (r in unique(t$rank)) {
+    x <- t[t$rank == r, ]
+    stopifnot(abs(sum(x$pct_occ) - 100) < 1e-8,       # every ring sums to 100%
+              sum(x$value_occ) == n,                  # ... and holds every record
+              abs(sum(x$value_w) - w) < 1e-6)         # ... and all the weight
+  }
+  # the NA node at class rank holds exactly the records not identified to class
+  stopifnot(sum(t$value_occ[t$rank == "Class" & t$label == "NA"]) ==
+              sum(is.na(by_pred[[p]]$data$class)))
+  # a parent equals the sum of its children
+  kids <- tapply(t$value_occ, t$parent, sum)
+  par <- t$value_occ[match(names(kids), t$id)]
+  stopifnot(all(kids[!is.na(par)] == par[!is.na(par)]))
+}
+"all invariants hold"
+```
+
+### Frequency of occurrence versus record share
+
+The classical %FO (share of stomachs containing a taxon) is not the record
+share: a taxon present as several records per stomach gets a large record
+share, a taxon present once in many stomachs a large %FO.
+
+```{r fo}
+fo <- dv_fo_table(prep4, rank = "class", by = "predator_common")
+fo_vs <- do.call(rbind, lapply(m4, function(p) {
+  r <- dv_rank_table(tr_rec[[p]], "Class")
+  f <- fo[fo$predator_common == p, ]
+  data.frame(predator = p, taxon = r$label, pct_R = round(r$pct_occ, 1),
+             pct_FO = f$pct_fo[match(r$label, f$taxon)],
+             rec_per_stomach = round(r$value_occ / f$n_stomachs[match(r$label, f$taxon)], 2))
+}))
+fo_vs <- fo_vs[fo_vs$taxon != "NA", ]      # identified classes only
+fo_vs$gap <- fo_vs$pct_FO - fo_vs$pct_R
+head(fo_vs[order(-abs(fo_vs$gap)), ], 6)
+id <- fo$taxon != "NA"
+fo_sum <- tapply(fo$pct_fo[id], fo$predator_common[id], sum)
+round(fo_sum[m4])
+```
+
+```{r fo-gap, include = FALSE}
+g <- fo_vs[order(-abs(fo_vs$gap)), ][1, ]
+sm <- dv_summary(prep4)
+rps <- setNames(sm$records_per_stomach, sm$predator_common)
+```
+
+The largest gap is for `r g$taxon` in `r g$predator`: found in `r g$pct_FO`%
+of stomachs but `r g$pct_R`% of records. Two things drive the gap. First, the
+record share has all records as its denominator, and a `r g$predator` stomach
+holds `r rps[g$predator]` records on average, so a taxon present once per
+stomach gets a record share well below its %FO. Second, a taxon recorded
+several times per stomach (`rec_per_stomach` above 1) gains record share
+relative to %FO. %FO is also not additive: a stomach with fish and shrimp
+counts in both, so %FO over the identified classes sums to
+`r round(min(fo_sum[m4]))` to `r round(max(fo_sum[m4]))`% here, while the
+record share sums to exactly 100% with the unidentified nodes. Report %FO next
+to the record share, never in its place.
+
+## 6. Figures {#figures}
+
+*How do we show seven ranks at once, comparably across predators?*
+
+One palette is built from the pooled tree of the four predators, so a taxon
+has the same color in every panel. `dv_palette_tree()` colors by branch
+(each phylum a hue); `dv_palette()` gives each label its own color.
+
+```{r palette}
+tree4 <- dv_tree(prep4)
+pal <- dv_palette_tree(tree4)
+length(pal)
+head(dv_palette(tree4$label[tree4$rank == "Class"]), 4)
+```
+
+Prey records (`mode = "occurrence"`; the default, `"count"`, would count
+distinct prey items). White wedges are records not identified at that rank.
+
+```{r sb-records}
+htmltools::tagList(lapply(m4, function(p)
+  dv_sunburst(tr_rec[[p]], mode = "occurrence", colors = pal, title = p,
+              subtitle = "% of prey records")))
+```
+
+The same, by weight:
+
+```{r sb-weight}
+htmltools::tagList(lapply(m4, function(p)
+  dv_sunburst(tr_rec[[p]], mode = "weight", colors = pal, title = p,
+              subtitle = "% of prey weight")))
+```
+
+## 7. Identification and digestion {#digestion}
+
+*How deep is the identification, and does it fall as digestion advances?*
+
+```{r digestion}
+dg <- dv_digestion_diagnostic(prep4, by = "predator_common")
+stages <- c("0 pristine", "1 affected", "2 skeletal remains", "not recorded")
+dg$digestion <- factor(dg$digestion, levels = stages)
+sp_tab <- xtabs(p_records ~ by + digestion, dg[dg$finest_rank == "Species", ])
+n_tab <- xtabs(n_records ~ by + digestion, dg)
+sp_tab[n_tab == 0] <- NA        # no record at that stage
+round(sp_tab[m4, ], 1)
+```
+
+The table shows the share of records identified to species at each digestion
+stage (`NA`: no record at that stage). The stage labels are inferred: the ICES export gives codes 0, 1 and 2,
+and the labels come from the older ICES format whose three classes match the
+shares of these codes. Check them against the ICES vocabulary before using
+them in print.
+
+```{r dig-cod, include = FALSE}
+cod_sp <- sp_tab["Atlantic cod", ]
+```
+
+For cod, `r pc(cod_sp["0 pristine"])`% of pristine records are identified to
+species, against `r pc(cod_sp["2 skeletal remains"])`% of skeletal remains.
+Any diet built from identified prey alone over-represents the prey that are
+digested slowly or eaten recently.
+
+The unidentified share at each rank (the white wedges) for each predator:
+
+```{r unid}
+unid <- sapply(tr_rec, function(t) {
+  x <- t[t$label == "NA", ]
+  tapply(x$pct_occ, factor(x$rank, levels = unique(t$rank)), sum)
+})
+round(unid, 1)
+```
+
+## 8. Comparisons within cod {#comparisons}
+
+*Does the cod diet change between regions, length classes and periods?*
+
+Cod is the predator sampled across all three regions, both periods and a
+wide range of lengths. Each stratum gets its own tree; we compare the class
+shares (%R).
+
+```{r cod-strata}
+cod <- d4$predator_common == "Atlantic cod"
+compare <- function(col) {
+  lv <- sort(unique(na.omit(d4[[col]][cod])))
+  ps <- lapply(lv, function(l) prep_of(cod & d4[[col]] %in% l))
+  sh <- lapply(ps, function(p) {
+    r <- dv_rank_table(dv_tree(p), "Class"); tapply(r$pct_occ, r$label, sum) })
+  tx <- head(names(sort(-tapply(unlist(sh), names(unlist(sh)), sum))), 6)
+  out <- sapply(sh, function(s) round(ifelse(is.na(s[tx]), 0, s[tx]), 1))
+  out <- rbind(out, stomachs = sapply(ps, function(p) length(unique(p$data$stomach_id))))
+  dimnames(out) <- list(c(tx, "stomachs"), lv); out
+}
+(cod_region <- compare("region"))
+(cod_length <- compare("length_class"))
+(cod_period <- compare("period"))
+(cod_cells <- with(unique(d4[cod, c("stomach_id", "length_class", "period")]),
+                   table(length_class, period)))
+```
+
+```{r cod-numbers, include = FALSE}
+fish_by_len <- cod_length["Teleostei", ]
+mal_by_reg <- cod_region["Malacostraca", ]
+small_cells <- c(cod_region["stomachs", ], cod_length["stomachs", ],
+                 cod_period["stomachs", ])
+small_cross <- min(cod_cells)
+```
+
+Fish (Teleostei) make `r pc(fish_by_len[1])`% of the records of cod
+`r names(fish_by_len)[1]` cm and `r pc(fish_by_len[length(fish_by_len)])`% of
+cod `r names(fish_by_len)[length(fish_by_len)]` cm: the shift towards fish
+with size is the clearest contrast in these data. Between regions,
+malacostracans range from `r pc(min(mal_by_reg))`% to `r pc(max(mal_by_reg))`%.
+`NA` here sums the unidentified nodes of all branches. The smallest single
+stratum has `r min(small_cells)` stomachs, but crossing length class with
+period, as the dashboard does below, leaves cells of `r small_cross` stomachs.
+With a few dozen stomachs, a handful of fish with many records can move a
+share by tens of percent, so small cells are read as hints, not results. Region, period and length are
+also confounded here (the Baltic samples come from different surveys and
+years), so these are descriptions of the samples, not effects.
+
+## 9. Sampling sufficiency {#sufficiency}
+
+*Have we sampled enough stomachs to describe each diet?*
+
+```{r summary}
+dv_summary(prep4)
+dv_summary(prep4, rank = "family")[, c("predator_common", "n_stomachs", "n_taxa")]
+```
+
+`n_taxa` at the finest label mixes ranks (a family and a species in it count
+twice); at family rank it counts families. Accumulation curves, averaged over
+random orderings of the stomachs, show whether new stomachs still bring new
+families:
+
+```{r accumulation, fig.height = 4.5}
+acc <- dv_prey_accumulation(prep4, by = "predator_common", rank = "family",
+                            permutations = 50, seed = 1)
+cols <- c("#1f77b4", "#d62728", "#2ca02c", "#9467bd")
+plot(NA, xlim = c(0, max(acc$n_stomachs)), ylim = c(0, max(acc$mean_richness)),
+     xlab = "Stomachs", ylab = "Families (mean of 50 orderings)")
+for (i in seq_along(m4)) with(acc[acc$predator_common == m4[i], ],
+                               lines(n_stomachs, mean_richness, col = cols[i], lwd = 2))
+legend("bottomright", m4, col = cols, lwd = 2, bty = "n")
+```
+
+```{r slope}
+gain <- sapply(m4, function(p) {
+  a <- acc[acc$predator_common == p, ]; n <- nrow(a)
+  c(stomachs = a$n_stomachs[n], families = round(a$mean_richness[n], 1),
+    last_100 = round(a$mean_richness[n] - a$mean_richness[n - 100], 1))
+})
+gain
+```
+
+`last_100` is the number of new families brought by the last 100 stomachs.
+A curve that still rises (cod: `r gain["last_100", "Atlantic cod"]` families
+in its last 100 stomachs) means rare prey are still being found; the common
+part of the diet, which dominates the shares, settles much earlier.
+
+## 10. Resolution-robust aggregation and diet overlap {#aggregation}
+
+*Can we describe the diets at a resolution that does not depend on how
+deeply each prey happened to be identified, and how similar are they?*
+
+Prey seen in fewer than `threshold` stomachs are merged into their parent
+taxon until every category reaches the threshold. A sweep shows the cost of
+each choice:
+
+```{r sweep}
+n_stom <- tapply(prep4$data$stomach_id, prep4$data$predator_common,
+                 function(x) length(unique(x)))
+th <- ceiling(0.01 * min(n_stom))
+sw <- dv_threshold_sweep(prep4, sort(unique(c(1, 2, 5, th, 10, 20, 50))))
+sw
+```
+
+`pct_coarser` is the share of records that end coarser than species (or
+unidentified). The curve has no clear elbow, so we state a rule instead:
+**a category must occur in at least 1% of the stomachs of the least-sampled
+predator** (`r names(which.min(n_stom))`, `r min(n_stom)` stomachs), which
+gives a threshold of `r th` stomachs: a category rarer than that in the pooled
+data could hardly be compared between predators.
+
+```{r choose}
+agg <- dv_aggregate_threshold(prep4, threshold = th)
+agg_pp <- dv_aggregate_threshold(prep4, threshold = th, scope = "per_predator")
+c(pooled = length(unique(agg$data$prey_category)),
+  per_predator = length(unique(paste(agg_pp$data$predator_common,
+                                     agg_pp$data$prey_category))))
+table(agg$data$prey_rank, useNA = "ifany")
+```
+
+With a threshold of `r th` stomachs, the pooled aggregation keeps
+`r length(unique(agg$data$prey_category))` categories shared by the four
+predators. The per-predator version adapts the resolution to each predator's
+own sample, which suits single-predator descriptions but makes the categories
+differ between predators. For comparing predators we use the pooled one.
+
+`dv_matrix()` hands the result over as a matrix. With stomachs as rows it is
+the input of ordination or PERMANOVA; with predators as the unit, it gives one
+diet vector per predator:
+
+```{r matrix}
+m_st <- dv_matrix(agg, currency = "occurrence")
+dim(m_st)
+m_pred <- dv_matrix(agg, unit = "predator_common", currency = "occurrence",
+                    include_na = FALSE)
+m_w <- dv_matrix(agg, unit = "predator_common", currency = "weight",
+                 include_na = FALSE)
+```
+
+Schoener's overlap index, `1 - 0.5 * sum(|p_i - p_j|)`, compares two diets
+as proportions (0: no shared prey, 1: identical). Unidentified material is
+left out, as it cannot be shared knowingly.
+
+```{r schoener}
+schoener <- function(m) {
+  p <- m / rowSums(m)
+  o <- outer(seq_len(nrow(p)), seq_len(nrow(p)),
+             Vectorize(function(i, j) 1 - 0.5 * sum(abs(p[i, ] - p[j, ]))))
+  dimnames(o) <- list(rownames(m), rownames(m)); round(o, 2)
+}
+(ov_rec <- schoener(m_pred))
+(ov_w <- schoener(m_w))
+```
+
+```{r ov-max, include = FALSE}
+o <- ov_rec; diag(o) <- NA
+mx <- which(o == max(o, na.rm = TRUE), arr.ind = TRUE)[1, ]
+mn <- which(o == min(o, na.rm = TRUE), arr.ind = TRUE)[1, ]
+omax <- apply(o, 1, max, na.rm = TRUE)
+iso <- names(which.min(omax)); iso_max <- min(omax)
+```
+
+By records, the most similar pair is `r rownames(o)[mx[1]]` and
+`r colnames(o)[mx[2]]` (`r o[mx[1], mx[2]]`), the least similar
+`r rownames(o)[mn[1]]` and `r colnames(o)[mn[2]]` (`r o[mn[1], mn[2]]`).
+Values below about 0.6 are conventionally read as no biologically
+significant overlap. The same matrix at the stomach level (`m_st`) is what a
+multivariate analysis would start from, for instance with
+`vegan::vegdist(m_st, "bray")`.
+
+## 11. Outputs: dashboard, species cards, app {#outputs}
+
+*How do we share the results with people who will not run R?*
+
+### Species cards
+
+Each dashboard card can show a photo with its author and license. Offline,
+we draw a placeholder for each predator with `grDevices::png()`, name it
+after the predator in the image folder, and give the credit fields
+explicitly.
+
+```{r cards}
+img <- file.path(tempdir(), "ices-images")
+dir.create(img, showWarnings = FALSE)
+for (p in m4) {
+  grDevices::png(file.path(img, paste0(tolower(gsub("[^A-Za-z0-9]+", "_", p)), ".png")),
+                 width = 300, height = 180)
+  par(mar = c(0, 0, 0, 0)); plot.new(); rect(0, 0, 1, 1, col = "#dbe9f6", border = NA)
+  text(0.5, 0.5, p, cex = 1.6)
+  grDevices::dev.off()
+}
+info <- lapply(setNames(m4, m4), function(p)
+  list(desc = sprintf("%s: %d stomachs with prey in this extract.", p,
+                      length(unique(by_pred[[p]]$data$stomach_id))),
+       author = "DietView placeholder", license = "CC0"))
+a <- dv_species_card_assets("Atlantic cod", latin = "Gadus morhua",
+                            info = info[["Atlantic cod"]], image_dir = img)
+a[c("source", "credit", "desc")]
+```
+
+With network access, an openly licensed iNaturalist photo comes with its
+author and license; only the licenses you list are accepted:
+
+```{r inat, eval = FALSE}
+dv_species_card_assets("Atlantic cod", latin = "Gadus morhua",
+                       photo_source = "inaturalist",
+                       licenses = c("cc0", "cc-by", "cc-by-sa"),
+                       image_dir = img)
+```
+
+### The dashboard
+
+One self-contained HTML file: a card per predator, and for each a band of
+sunbursts per currency (distinct prey items, records, weight), stratified by
+region and quarter, plus length class crossed with period.
+
+```{r dashboard}
+out <- file.path(tempdir(), "ices_dashboard.html")
+t0 <- Sys.time()
+dv_build_html(prep4, output = out,
+              strata = c("region", "quarter"),
+              cross = list(c("length_class", "period")),
+              length_col = "length_cm",
+              species_info = info, image_dir = img,
+              title = "ICES stomach data: four North-East Atlantic predators")
+c(MB = round(file.size(out) / 1e6, 1),
+  seconds = round(as.numeric(Sys.time() - t0, units = "secs")))
+```
+
+The file is written to `tempdir()`, so it is not part of this website; run the
+chunk to get your own copy and open it in a browser. `dv_deploy()` writes the
+same file into a folder you serve. Each sunburst carries its own data, so the
+size grows with bands and strata; a version with the record band and the
+regions only is much lighter:
+
+```{r deploy}
+path <- dv_deploy(prep4, file = "ices_records.html",
+                  dir = file.path(tempdir(), "site"),
+                  bands = "occurrence", strata = "region",
+                  species_info = info, image_dir = img)
+round(file.size(path) / 1e6, 1)
+```
+
+### The app
+
+For exploring rather than publishing, the Shiny app takes the same object:
+
+```{r app, eval = FALSE}
+run_dietview(prep4)
+```
+
+## 12. What we learned, and the limits {#learned}
+
+*What do the numbers say about these four predators, and how far can we
+trust them?*
+
+- **Mackerel** (`r length(unique(by_pred[["Atlantic mackerel"]]$data$stomach_id))`
+  stomachs, one quarter of one year) is the least identified diet:
+  `r pc(unid["Kingdom", "Atlantic mackerel"])`% of its records are
+  unidentified material. What is identified is fish
+  (`r phy["Chordata", "Atlantic mackerel"]`% of records, mostly
+  `r fam_rec[["Atlantic mackerel"]]$label`, i.e. sandeels:
+  `r pc(fam_rec[["Atlantic mackerel"]]$pct)`% of records and
+  `r pc(fam_w[["Atlantic mackerel"]]$pct)`% of weight) and crustaceans
+  (`r phy["Arthropoda", "Atlantic mackerel"]`%). It has the fewest families
+  (`r gain["families", "Atlantic mackerel"]`).
+- **Cod** (`r length(unique(by_pred[["Atlantic cod"]]$data$stomach_id))`
+  stomachs) is the most generalist (`r gain["families", "Atlantic cod"]`
+  families): `r cls_rec[["Atlantic cod"]]$label` lead
+  by records (`r cls_rec[["Atlantic cod"]]$pct`%), but
+  `r cls_w[["Atlantic cod"]]$label` make `r cls_w[["Atlantic cod"]]$pct`% of the
+  weight, and the share of fish rises from `r pc(fish_by_len[1])`% to
+  `r pc(fish_by_len[length(fish_by_len)])`% of records with length.
+- **Plaice** (`r length(unique(by_pred[["European plaice"]]$data$stomach_id))`
+  stomachs) feeds on the bottom fauna: `r cls_rec[["European plaice"]]$label`
+  lead by records (`r cls_rec[["European plaice"]]$pct`%),
+  `r cls_w[["European plaice"]]$label` (brittle stars) by weight
+  (`r cls_w[["European plaice"]]$pct`%), with almost no fish
+  (`r phy["Chordata", "European plaice"]`% of records are chordates).
+- **Whiting** (`r length(unique(by_pred[["Whiting"]]$data$stomach_id))`
+  stomachs) eats `r cls_rec[["Whiting"]]$label` most often
+  (`r cls_rec[["Whiting"]]$pct`% of records) but
+  `r cls_w[["Whiting"]]$label` by weight (`r cls_w[["Whiting"]]$pct`%), and
+  much of its stomach content is unidentified
+  (`r pc(unid["Class", "Whiting"])`% of records at class rank).
+- The diets overlap little: the highest Schoener index between two predators
+  is `r max(o, na.rm = TRUE)` by records (`r rownames(o)[mx[1]]` and
+  `r colnames(o)[mx[2]]`), below the conventional 0.6, and
+  `r iso` is the most isolated (overlap at most `r iso_max` with any other).
+
+```{r cells, include = FALSE}
+pr_cells <- with(unique(d4[, c("stomach_id", "predator_common", "region")]),
+                 table(predator_common, region))
+```
+
+The limits are those of the data, and they bound every sentence above:
+
+- **A survey extract.** These are the stomachs some surveys sampled, in some
+  years and quarters, not a design for diet comparison. Predator, year,
+  season and region are confounded (mackerel: one quarter of one year).
+- **Uneven sampling.** A predator-by-region stratum holds from
+  `r min(pr_cells[pr_cells > 0])` to `r max(pr_cells)` stomachs, and
+  `r sum(st$status == "unknown")` sampled stomachs have no known status.
+- **Inferred digestion labels.** The stage names attached to ICES codes 0, 1
+  and 2 are an inference; the diagnostic depends on the codes, the words do
+  not.
+- **No uncertainty.** Every share here is a point estimate. Stomachs, not
+  records, are the independent units, so the natural next step is a
+  bootstrap over stomachs (resample stomach IDs within each predator and
+  stratum, rebuild the tree with `dv_tree()`, and take percentile intervals of
+  `pct_occ` and `pct_w`), or over hauls when fish from one haul share a meal.
+
+```{r timing, include = FALSE}
+elapsed <- round(as.numeric(Sys.time() - t_start, units = "secs"))
+```
+
+*This article ran in about `r elapsed` seconds.*

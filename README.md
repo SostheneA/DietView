@@ -54,10 +54,18 @@ stomach*) and one reusable specification object. From there it offers:
   upward to a reproducible resolution (pooled, cross-predator, and per-predator),
   and a sampling-unit by prey-category matrix export for multivariate analysis.
 
+The package ships real, public data to learn on: `ices_diet` (9,639 prey
+records from 4,231 stomachs of 22 fish species, North Sea, Skagerrak-Kattegat
+and Baltic Sea, 2020-2024), `ices_stomachs` (every sampled stomach, empty ones
+included) and `ices_lineage` (their frozen WoRMS classification). Source: ICES
+Stomach Content Database, ICES, Copenhagen; extract distributed with the R
+package stomachr (Lindmark 2026). See `?ices_diet`.
+
 ## Documentation
 
 Everything lives on the **[documentation site](https://sosthenea.github.io/DietView/)**.
-Several articles are rendered end-to-end on the bundled example, so the tables and
+The articles are rendered end-to-end on the bundled ICES stomach data (the
+known-diet article uses a simulated survey instead), so the tables and
 sunbursts you see there are real output.
 
 **Start here**
@@ -67,25 +75,31 @@ sunbursts you see there are real output.
 | 1 | [Getting started](https://sosthenea.github.io/DietView/articles/getting-started.html) | the whole pipeline, end to end, offline |
 | 2 | [Data model & input contract](https://sosthenea.github.io/DietView/articles/data-model.html) | one row per prey record; mapping your columns |
 
+**Case study**
+
+| | Article | What it covers |
+|---|---|---|
+| 3 | [Case study: a complete analysis of public ICES stomach data](https://sosthenea.github.io/DietView/articles/case-study-ices.html) | a full worked analysis of the bundled ICES data, from the raw records to figures and a dashboard |
+
 **Core concepts**
 
 | | Article | What it covers |
 |---|---|---|
-| 3 | [Within-rank importance & explicit NA](https://sosthenea.github.io/DietView/articles/within-rank-na.html) | why each rank sums to 100 %, NA included |
-| 4 | [Covariate stratification](https://sosthenea.github.io/DietView/articles/covariates.html) | periods, size bins, and crossing two covariates |
-| 5 | [Digestion identification bias](https://sosthenea.github.io/DietView/articles/digestion.html) | how identification degrades with digestion |
-| 6 | [WoRMS taxonomy](https://sosthenea.github.io/DietView/articles/taxonomy-worms.html) | matching, provenance, and reviewing fuzzy hits |
-| 7 | [Exploring & aggregating diet data](https://sosthenea.github.io/DietView/articles/exploration.html) | sample summary, prey-accumulation, true %FO, threshold aggregation, set x category matrix |
-| 8 | [A known diet](https://sosthenea.github.io/DietView/articles/known-diet.html) | a simulated survey: what keeping or dropping unidentified prey does |
+| 4 | [Within-rank importance & explicit NA](https://sosthenea.github.io/DietView/articles/within-rank-na.html) | why each rank sums to 100 %, NA included |
+| 5 | [Covariate stratification](https://sosthenea.github.io/DietView/articles/covariates.html) | periods, size bins, and crossing two covariates |
+| 6 | [Digestion identification bias](https://sosthenea.github.io/DietView/articles/digestion.html) | how identification degrades with digestion |
+| 7 | [WoRMS taxonomy](https://sosthenea.github.io/DietView/articles/taxonomy-worms.html) | matching, provenance, and reviewing fuzzy hits |
+| 8 | [Exploring & aggregating diet data](https://sosthenea.github.io/DietView/articles/exploration.html) | sample summary, prey-accumulation, true %FO, threshold aggregation, set x category matrix |
+| 9 | [A known diet](https://sosthenea.github.io/DietView/articles/known-diet.html) | a simulated survey: what keeping or dropping unidentified prey does |
 
 **Outputs & extension**
 
 | | Article | What it covers |
 |---|---|---|
-| 9 | [Self-contained dashboard](https://sosthenea.github.io/DietView/articles/dashboard.html) | bands, strata, crossed rows, one file to ship |
-| 10 | [Species identification cards](https://sosthenea.github.io/DietView/articles/species-cards.html) | photos from iNaturalist, licenses and credits, offline mode |
-| 11 | [Interactive Shiny explorer](https://sosthenea.github.io/DietView/articles/shiny-app.html) | pooled or per-predator, faceted and crossed |
-| 12 | [Adapting DietView to your survey](https://sosthenea.github.io/DietView/articles/extending.html) | custom ranks, colors, offline taxonomy |
+| 10 | [Self-contained dashboard](https://sosthenea.github.io/DietView/articles/dashboard.html) | bands, strata, crossed rows, one file to ship |
+| 11 | [Species identification cards](https://sosthenea.github.io/DietView/articles/species-cards.html) | photos from iNaturalist, licenses and credits, offline mode |
+| 12 | [Interactive Shiny explorer](https://sosthenea.github.io/DietView/articles/shiny-app.html) | pooled or per-predator, faceted and crossed |
+| 13 | [Adapting DietView to your survey](https://sosthenea.github.io/DietView/articles/extending.html) | custom ranks, colors, offline taxonomy |
 
 > ### 📘 Technical reference: the package companion
 > The full narrative of **what DietView contains and why**: design principles,
@@ -121,36 +135,34 @@ install.packages(c("worrms", "shiny", "DT", "rmarkdown"))
 
 ## Basic use
 
-A minimal, fully offline workflow using the bundled example (base long table +
-a lineage lookup, so no internet is required):
+A minimal, fully offline workflow on the bundled ICES stomach data (a long
+table of prey records plus a frozen lineage lookup, so no internet is
+required):
 
 ```r
 library(DietView)
 
-# 1. base long table: predator, stomach, prey, weight, covariates -- NO taxonomy
-dat <- read.csv(
-  system.file("extdata", "dietview_example.csv", package = "DietView"),
-  na.strings = c("NA", "")
-)
+# 1. base long table: one row per prey record, NO taxonomy columns
+#    (drop non-food items and nematodes, which are mostly parasites, not prey)
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
 
 # 2. declare column roles once (nothing is hard-coded)
 spec <- dv_spec(
-  predator       = "predator_species_common_name",
-  predator_latin = "predator_species_latin_name",
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
   stomach        = "stomach_id",
-  prey_id        = "aphia_id",
-  prey_name      = "verified_name",
-  weight         = "prey_weight",
-  digestion      = "digestion_level_id",
-  covariates     = c("period", "size_class", "size_bin", "region")
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
 )
 
 # 3. attach taxonomy -- offline via a lineage table ...
-lin  <- read.csv(
-  system.file("extdata", "dietview_example_lineage.csv", package = "DietView"),
-  na.strings = c("NA", "")
-)
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin)
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+                   verbose = FALSE)
 
 #    ... or live from WoRMS (needs 'worrms' + internet; results are cached):
 # prep <- dv_prepare(dat, spec, taxonomy = "worms")
@@ -159,23 +171,24 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin)
 tree <- dv_tree(prep)
 dv_rank_table(tree, "Class")
 
-# 5. figures + digestion diagnostic
-dv_sunburst(tree, mode = "occurrence", title = "All predators")
-dv_digestion_diagnostic(prep, by = "period")
+# 5. figures + digestion diagnostic, here for Atlantic cod
+cod <- dv_prepare(dat[dat$predator_common == "Atlantic cod", ], spec,
+                  taxonomy = "table", lineage = ices_lineage, verbose = FALSE)
+dv_sunburst(dv_tree(cod), mode = "occurrence", title = "Atlantic cod")
+dv_digestion_diagnostic(cod, by = "region")
 
 # 6. explore, check sampling sufficiency, aggregate, and export
 dv_summary(prep)                                  # stomachs, records, taxa per predator
-dv_prey_accumulation(prep, permutations = 50)     # cumulative prey curve
-dv_fo_table(prep, rank = "class")                 # classical per-rank %FO
+dv_prey_accumulation(cod, permutations = 50)      # cumulative prey curve
+dv_fo_table(cod, rank = "class")                  # classical per-rank %FO
 
-agg  <- dv_aggregate_threshold(prep, threshold = 3)     # prey in < 3 stomachs move up a rank
-m    <- dv_matrix(agg, currency = "occurrence")         # set x category matrix (-> vegan)
+agg  <- dv_aggregate_threshold(cod, threshold = 10)    # prey in < 10 stomachs move up a rank
+m    <- dv_matrix(agg, currency = "occurrence")        # set x category matrix (-> vegan)
 
 # 7. write a standalone HTML dashboard (one file, opens in any browser)
-dv_deploy(prep, file = "dietview_dashboard.html", dir = "outputs",
-          strata = c("period", "size_class", "size_bin"),
-          cross  = list(c("size_bin", "period")),
-          length_col = "somatic_length_cm")
+dv_deploy(cod, file = "cod_dashboard.html", dir = tempdir(),
+          strata = c("region", "quarter"),
+          length_col = "length_cm")
 
 # or explore interactively
 run_dietview(prep)
@@ -217,10 +230,15 @@ rank or stay unresolved; the diagnostic shows by how much, instead of hiding it.
 ## Input format
 
 One row = **one prey record in one stomach**. Column names are free; you map them
-to DietView roles once via `dv_spec()`. The bundled data dictionary
-(`inst/extdata/dietview_data_dictionary.md`) documents the example files
-`dietview_example.csv` (base table) and `dietview_example_lineage.csv` (lineage
-lookup).
+to DietView roles once via `dv_spec()`. The bundled `ices_diet` table is in
+this format: one row per prey record, with the stomach-level variables
+(predator, length, haul, region, year, ...) repeated on each row, and its
+lineage lookup is `ices_lineage` (ICES Stomach Content Database, ICES,
+Copenhagen; extract distributed with the R package stomachr, Lindmark 2026;
+see `?ices_diet`). The data dictionary
+(`inst/extdata/dietview_data_dictionary.md`) also documents the small 24-record
+example `dietview_example.csv` (base table) and `dietview_example_lineage.csv`
+(lineage lookup), kept for tests and quick checks of the mechanics.
 
 ## Getting help
 

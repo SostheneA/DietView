@@ -54,11 +54,18 @@
 #' \dontrun{
 #' # needs the 'worrms' package and internet access
 #' keys <- data.frame(
-#'   prey_id   = c(NA, NA),
-#'   prey_name = c("Gadus morhua", "Homarus americanus"),
+#'   prey_id   = c(126436, NA),
+#'   prey_name = c("Gadus morhua", "Crangon crangon"),
 #'   stringsAsFactors = FALSE
 #' )
 #' dv_taxonomy_worms(keys)
+#'
+#' # the prey keys of the ICES cod records
+#' cod <- ices_diet[ices_diet$predator_common == "Atlantic cod", ]
+#' keys <- unique(data.frame(prey_id = cod$prey_aphia_id,
+#'                           prey_name = cod$prey_name))
+#' lin <- dv_taxonomy_worms(keys)
+#' table(lin$match_type)
 #' }
 #' @export
 dv_taxonomy_worms <- function(keys,
@@ -263,10 +270,26 @@ dv_taxonomy_worms <- function(keys,
 #'   WoRMS matched, the match type and checks, the AphiaID used, the number of
 #'   records affected, and the resolved ranks, sorted by number of records.
 #' @examples
+#' # the standard set-up: public ICES data, non-food items and nematodes dropped
+#' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+#' dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+#' spec <- dv_spec(
+#'   predator       = "predator_common",
+#'   predator_latin = "predator_latin",
+#'   stomach        = "stomach_id",
+#'   prey_id        = "prey_aphia_id",
+#'   prey_name      = "prey_name",
+#'   weight         = "prey_weight_g",
+#'   count          = "prey_count",
+#'   digestion      = "digestion_label",
+#'   covariates     = c("region", "year", "quarter")
+#' )
 #' \dontrun{
 #' # a WoRMS-prepared object carries a taxonomy log to review
-#' prep <- dv_prepare(dat, spec, taxonomy = "worms")
-#' dv_taxonomy_report(prep, which = "review")
+#' # (needs the 'worrms' package and internet access)
+#' cod <- dat[dat$predator_common == "Atlantic cod", ]
+#' prep_worms <- dv_prepare(cod, spec, taxonomy = "worms")
+#' dv_taxonomy_report(prep_worms, which = "review")
 #' }
 #' @export
 dv_taxonomy_report <- function(prep,
