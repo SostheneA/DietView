@@ -41,14 +41,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/dietview.html">Getting started with DietView</a></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
     <li><a class="dropdown-item" href="../articles/covariates.html">Covariate stratification</a></li>
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
+    <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
@@ -89,140 +91,280 @@
 
     
     
-<p>DietView is built on a single, deliberately simple contract:
-<strong>one row is one prey record in one stomach</strong>. Everything
-else — taxonomy, metrics, figures, dashboards — is derived from that.
-This article explains the contract, the role system, and how to map
-<em>any</em> survey onto it.</p>
+<p>This vignette shows how to describe your own table to DietView.
+DietView needs one thing from your data: one row per prey record, that
+is, one prey taxon found in one stomach. Taxonomy, tables, figures and
+dashboards are all built from that table and from a specification that
+says which column is which.</p>
+<p>The example is the public ICES stomach-content extract that ships
+with the package (ICES Stomach Content Database, ICES, Copenhagen;
+extract distributed with the R package stomachr, Lindmark 2026; see
+<code><a href="../reference/ices_diet.html">?ices_diet</a></code>).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SostheneA/DietView" class="external-link">DietView</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="one-row-per-prey-record">One row per prey record<a class="anchor" aria-label="anchor" href="#one-row-per-prey-record"></a>
 </h2>
-<p>Column names are free. You never rename your data; instead you
-declare, once, which column plays which <strong>role</strong>. Here is
-the bundled base table:</p>
+<p>Column names are free. You do not rename your data; you declare once
+which column plays which role. <code>ices_diet</code> is already in the
+long format DietView expects:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span>,</span>
-<span>  na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">dat</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 'data.frame':    24 obs. of  14 variables:</span></span>
-<span><span class="co">#&gt;  $ predator_species_common_name: chr  "Atlantic cod" "Atlantic cod" "Atlantic cod" "Atlantic cod" ...</span></span>
-<span><span class="co">#&gt;  $ predator_species_latin_name : chr  "Gadus morhua" "Gadus morhua" "Gadus morhua" "Gadus morhua" ...</span></span>
-<span><span class="co">#&gt;  $ stomach_id                  : chr  "GM001" "GM001" "GM001" "GM002" ...</span></span>
-<span><span class="co">#&gt;  $ aphia_id                    : int  107649 126752 1130 101107 293496 107649 1135 NA 127194 107323 ...</span></span>
-<span><span class="co">#&gt;  $ verified_name               : chr  "Pandalus borealis" "Ammodytes dubius" "Decapoda" "Themisto libellula" ...</span></span>
-<span><span class="co">#&gt;  $ prey_weight                 : num  12.3 5.1 2 0.8 8 9 0.3 1.5 22 15 ...</span></span>
-<span><span class="co">#&gt;  $ number_of_prey              : int  3 2 1 20 1 2 5 NA 1 1 ...</span></span>
-<span><span class="co">#&gt;  $ digestion_level_id          : int  2 3 4 2 4 1 3 5 2 3 ...</span></span>
-<span><span class="co">#&gt;  $ period                      : chr  "2004-2006" "2004-2006" "2004-2006" "2004-2006" ...</span></span>
-<span><span class="co">#&gt;  $ year                        : int  2005 2005 2005 2005 2005 2019 2019 2019 2019 2019 ...</span></span>
-<span><span class="co">#&gt;  $ somatic_length_cm           : int  45 45 45 52 52 38 38 38 75 75 ...</span></span>
-<span><span class="co">#&gt;  $ size_class                  : chr  "adult" "adult" "adult" "adult" ...</span></span>
-<span><span class="co">#&gt;  $ size_bin                    : chr  "[40-50[" "[40-50[" "[40-50[" "[50-60[" ...</span></span>
-<span><span class="co">#&gt;  $ region                      : chr  "Northumberland" "Northumberland" "Northumberland" "Northumberland" ...</span></span></code></pre></div>
-<p>Note what is <em>not</em> here: there are no
-<code>kingdom .. species</code> columns. DietView adds those itself (see
-the taxonomy article).</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 9639   28</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  [1] "stomach_id"        "prey_aphia_id"     "prey_name"        </span></span>
+<span><span class="co">#&gt;  [4] "item_type"         "digestion_stage"   "digestion_label"  </span></span>
+<span><span class="co">#&gt;  [7] "prey_count"        "prey_weight_g"     "prey_length_cm"   </span></span>
+<span><span class="co">#&gt; [10] "haul_id"           "country"           "survey"           </span></span>
+<span><span class="co">#&gt; [13] "year"              "month"             "quarter"          </span></span>
+<span><span class="co">#&gt; [16] "lat"               "lon"               "ices_rectangle"   </span></span>
+<span><span class="co">#&gt; [19] "depth_m"           "region"            "predator_aphia_id"</span></span>
+<span><span class="co">#&gt; [22] "predator_latin"    "predator_common"   "n_fish_pooled"    </span></span>
+<span><span class="co">#&gt; [25] "length_cm"         "weight_g"          "stomach_empty"    </span></span>
+<span><span class="co">#&gt; [28] "regurgitated"</span></span></code></pre></div>
+<p>Prey columns come first (<code>prey_aphia_id</code> to
+<code>prey_length_cm</code>), then the haul and the predator, repeated
+on every record of the same stomach. The table has no
+<code>kingdom</code> to <code>species</code> columns. DietView adds them
+when you attach a taxonomy, here the frozen lineage
+<code>ices_lineage</code> (see the vignette on WoRMS).</p>
 </div>
 <div class="section level2">
 <h2 id="declaring-roles-with-dv_spec">Declaring roles with <code>dv_spec()</code><a class="anchor" aria-label="anchor" href="#declaring-roles-with-dv_spec"></a>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span></span>
-<span>  predator       <span class="op">=</span> <span class="st">"predator_species_common_name"</span>,</span>
-<span>  predator_latin <span class="op">=</span> <span class="st">"predator_species_latin_name"</span>,</span>
+<span>  predator       <span class="op">=</span> <span class="st">"predator_common"</span>,</span>
+<span>  predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span>
 <span>  stomach        <span class="op">=</span> <span class="st">"stomach_id"</span>,</span>
-<span>  prey_id        <span class="op">=</span> <span class="st">"aphia_id"</span>,       <span class="co"># WoRMS AphiaID (preferred key)</span></span>
-<span>  prey_name      <span class="op">=</span> <span class="st">"verified_name"</span>,  <span class="co"># fallback key</span></span>
-<span>  weight         <span class="op">=</span> <span class="st">"prey_weight"</span>,</span>
-<span>  digestion      <span class="op">=</span> <span class="st">"digestion_level_id"</span>,</span>
-<span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"period"</span>, <span class="st">"size_class"</span>, <span class="st">"size_bin"</span>, <span class="st">"region"</span><span class="op">)</span></span>
+<span>  prey_id        <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,   <span class="co"># WoRMS AphiaID, used first when present</span></span>
+<span>  prey_name      <span class="op">=</span> <span class="st">"prey_name"</span>,       <span class="co"># scientific name, used when there is no ID</span></span>
+<span>  weight         <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span>
+<span>  count          <span class="op">=</span> <span class="st">"prey_count"</span>,</span>
+<span>  digestion      <span class="op">=</span> <span class="st">"digestion_label"</span>,</span>
+<span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The roles and their meaning:</p>
+<p>The roles, what they do, and the ICES column that fills each one:</p>
 <table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
 <thead><tr class="header">
 <th>Role</th>
 <th>Required</th>
 <th>Purpose</th>
+<th>ICES column</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td><code>predator</code></td>
 <td>yes</td>
-<td>one predator per row</td>
+<td>the predator of each record; a grouping and display label</td>
+<td><code>predator_common</code></td>
 </tr>
 <tr class="even">
 <td><code>stomach</code></td>
 <td>yes</td>
-<td>unit of occurrence; drives stomach counts</td>
+<td>the stomach each record came from; must be unique across the whole
+table, because stomach counts count distinct identifiers</td>
+<td><code>stomach_id</code></td>
 </tr>
 <tr class="odd">
 <td>
 <code>prey_id</code> / <code>prey_name</code>
 </td>
-<td>one of them</td>
-<td>prey key(s) for taxonomy</td>
+<td>at least one</td>
+<td>prey keys used to attach the taxonomy</td>
+<td>
+<code>prey_aphia_id</code>, <code>prey_name</code>
+</td>
 </tr>
 <tr class="even">
 <td><code>weight</code></td>
 <td>no</td>
-<td>the weight currency (<code>%W</code>)</td>
+<td>the weight share (%W)</td>
+<td><code>prey_weight_g</code></td>
 </tr>
 <tr class="odd">
 <td><code>count</code></td>
 <td>no</td>
-<td>per-record count for <code>%N</code>
-</td>
+<td>number of individuals per record, for the numerical share (%N).
+Records without a count contribute nothing to %N, so unidentified
+material usually disappears from that view</td>
+<td><code>prey_count</code></td>
 </tr>
 <tr class="even">
 <td><code>digestion</code></td>
 <td>no</td>
 <td>enables the digestion diagnostic</td>
+<td><code>digestion_label</code></td>
 </tr>
 <tr class="odd">
 <td><code>covariates</code></td>
 <td>no</td>
-<td>any stratifiers</td>
+<td>columns you want to compare diets across</td>
+<td>
+<code>region</code>, <code>year</code>, <code>quarter</code>
+</td>
 </tr>
 <tr class="even">
 <td><code>predator_latin</code></td>
 <td>no</td>
-<td>auto-fetch ID photos</td>
+<td>used to look up identification photos</td>
+<td><code>predator_latin</code></td>
 </tr>
 </tbody>
 </table>
+<p>Columns you do not declare are kept and travel with the data:
+<code>length_cm</code>, <code>country</code> or
+<code>ices_rectangle</code> can be added as covariates later, or used to
+build new ones, such as length classes (see the dashboard vignette). For
+the digestion role we use the readable <code>digestion_label</code>
+rather than the code <code>digestion_stage</code>, because it also says
+where the stage was not recorded. Its labels are inferred from the older
+ICES format; check them against the ICES vocabulary before you rely on
+them.</p>
 </div>
 <div class="section level2">
-<h2 id="validating-a-table-against-a-spec">Validating a table against a spec<a class="anchor" aria-label="anchor" href="#validating-a-table-against-a-spec"></a>
+<h2 id="what-counts-as-a-prey-record">What counts as a prey record<a class="anchor" aria-label="anchor" href="#what-counts-as-a-prey-record"></a>
 </h2>
-<p><code><a href="../reference/dv_validate.html">dv_validate()</a></code> fails fast on hard errors (a missing
-required column, no prey key, an absent covariate) and only warns on
-soft gaps (no weight → <code>%W</code> empty; no digestion → diagnostic
-disabled). It returns the data invisibly, so it composes in a
-pipeline.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/dv_validate.html">dv_validate</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     non_food         prey unidentified </span></span>
+<span><span class="co">#&gt;           67         8019         1553</span></span></code></pre></div>
+<p><code>item_type</code> sorts the records into three kinds.
+<code>prey</code> records carry a WoRMS AphiaID.
+<code>unidentified</code> records are food that could not be named; they
+have no AphiaID, and DietView keeps them as unidentified at every rank,
+which is the point of the package. <code>non_food</code> records are
+sand, stones, plastic and wood: real observations, but not diet, so they
+are dropped before the analysis.</p>
+<p>Nematodes are a different case. They do have an AphiaID, but in fish
+stomachs they are mostly parasites of the fish rather than food. The
+lineage tells you which records they are:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># drop non-food items and nematodes (mostly parasites, not prey)</span></span>
+<span><span class="va">phylum</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">phylum</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">prey_aphia_id</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">ices_diet</span><span class="op">[</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span> <span class="op">!=</span> <span class="st">"non_food"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span>, <span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>nematoda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span><span class="op">)</span>, kept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; nematoda     kept </span></span>
+<span><span class="co">#&gt;     1042     8530</span></span></code></pre></div>
+<p>Both choices belong to the analyst, which is why the data keep these
+records and the filter is written out in the code. Dropping them also
+removes 9 stomachs whose only records were nematodes or non-food
+items.</p>
+</div>
+<div class="section level2">
+<h2 id="empty-stomachs-live-in-ices_stomachs">Empty stomachs live in <code>ices_stomachs</code><a class="anchor" aria-label="anchor" href="#empty-stomachs-live-in-ices_stomachs"></a>
+</h2>
+<p>A stomach with no prey has no prey record, so it has no row in
+<code>ices_diet</code>. The companion table <code>ices_stomachs</code>
+has one row per sampled stomach, empty or not:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">st</span> <span class="op">&lt;-</span> <span class="va">ices_stomachs</span></span>
+<span><span class="va">st</span><span class="op">$</span><span class="va">status</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">st</span><span class="op">$</span><span class="va">stomach_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">ices_diet</span><span class="op">$</span><span class="va">stomach_id</span>, <span class="st">"with prey records"</span>,</span>
+<span>             <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">st</span><span class="op">$</span><span class="va">stomach_empty</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fl">1</span>, <span class="st">"flagged empty"</span>, <span class="st">"no record, no flag"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">st</span><span class="op">$</span><span class="va">status</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;      flagged empty no record, no flag  with prey records </span></span>
+<span><span class="co">#&gt;               1197               3458               4231</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">st</span><span class="op">$</span><span class="va">country</span>, <span class="va">st</span><span class="op">$</span><span class="va">status</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     </span></span>
+<span><span class="co">#&gt;      flagged empty no record, no flag with prey records</span></span>
+<span><span class="co">#&gt;   BE            45                  2               195</span></span>
+<span><span class="co">#&gt;   DE           117                 25               420</span></span>
+<span><span class="co">#&gt;   DK           595                  7              1861</span></span>
+<span><span class="co">#&gt;   NL           379                  0               586</span></span>
+<span><span class="co">#&gt;   NO            61                 30                69</span></span>
+<span><span class="co">#&gt;   SE             0               3394              1100</span></span></code></pre></div>
+<p>Of the 8,886 stomachs, 4,231 have at least one record and 1,197 are
+flagged empty. The other 3,458 have no record and no flag: almost all
+(3,394) are Swedish, and the Swedish data do not report the empty flag,
+so these stomachs are most likely empty, but the data do not say so.</p>
+<p>This matters for every per-stomach measure. DietView counts the
+stomachs it sees, so the denominator of <code><a href="../reference/dv_fo_table.html">dv_fo_table()</a></code> is
+the number of stomachs with at least one record: frequency of occurrence
+among feeding fish, not among all fish sampled. For cod,
+<code>ices_stomachs</code> holds 2,055 stomachs, while the prepared data
+below hold 991. Use <code>ices_stomachs</code> for the proportion of
+empty stomachs or the number of fish sampled per stratum.</p>
+</div>
+<div class="section level2">
+<h2 id="records-and-counts">Records and counts<a class="anchor" aria-label="anchor" href="#records-and-counts"></a>
+</h2>
+<p>A record is not an individual. <code>prey_count</code> gives the
+number of prey individuals behind each record, when it was reported:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>records <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat</span><span class="op">)</span>, individuals <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_count</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  no_count <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_count</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     records individuals    no_count </span></span>
+<span><span class="co">#&gt;        8530       10816        3468</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/tapply.html" class="external-link">tapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_count</span><span class="op">)</span>, <span class="va">dat</span><span class="op">$</span><span class="va">item_type</span>, <span class="va">sum</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         prey unidentified </span></span>
+<span><span class="co">#&gt;         1952         1516</span></span></code></pre></div>
+<p>Declaring <code>count</code> lets you switch from shares of records
+to shares of individuals (%N). For cod, the two currencies at class
+rank:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cod</span>  <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">predator_common</span> <span class="op">==</span> <span class="st">"Atlantic cod"</span>, <span class="op">]</span></span>
+<span><span class="va">prep_cod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
+<span>                       verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">t_rec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_tree.html">dv_tree</a></span><span class="op">(</span><span class="va">prep_cod</span><span class="op">)</span></span>
+<span><span class="va">t_num</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/dv_tree.html">dv_tree</a></span><span class="op">(</span><span class="va">prep_cod</span>, currency <span class="op">=</span> <span class="st">"numbers"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">by_rec</span> <span class="op">&lt;-</span> <span class="va">t_rec</span><span class="op">[</span><span class="va">t_rec</span><span class="op">$</span><span class="va">rank</span> <span class="op">==</span> <span class="st">"Class"</span>, <span class="op">]</span></span>
+<span><span class="va">by_num</span> <span class="op">&lt;-</span> <span class="va">t_num</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">by_rec</span><span class="op">$</span><span class="va">id</span>, <span class="va">t_num</span><span class="op">$</span><span class="va">id</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="va">cmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>class <span class="op">=</span> <span class="va">by_rec</span><span class="op">$</span><span class="va">label</span>, parent <span class="op">=</span> <span class="va">by_rec</span><span class="op">$</span><span class="va">parent</span>,</span>
+<span>                  records <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">by_rec</span><span class="op">$</span><span class="va">pct_occ</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>                  numbers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">by_num</span><span class="op">$</span><span class="va">pct_occ</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cmp</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="op">-</span><span class="va">cmp</span><span class="op">$</span><span class="va">records</span><span class="op">)</span>, <span class="op">]</span>, <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="co">#&gt;           class              parent records numbers</span></span>
+<span><span class="co">#&gt; 4  Malacostraca Animalia|Arthropoda    43.4    55.0</span></span>
+<span><span class="co">#&gt; 7     Teleostei   Animalia|Chordata    27.1    25.9</span></span>
+<span><span class="co">#&gt; 17           NA               NA|NA     8.3     0.7</span></span>
+<span><span class="co">#&gt; 8            NA   Animalia|Chordata     6.6     3.0</span></span>
+<span><span class="co">#&gt; 2    Polychaeta   Animalia|Annelida     6.2     4.9</span></span></code></pre></div>
+<p>Malacostraca rise from 43.4% of the records to 55.0% of the
+individuals, because 20% of the malacostracan records with a count hold
+more than one individual. The unidentified material falls out almost
+entirely: it rarely has a count, and records without a count contribute
+nothing to %N (<code><a href="../reference/dv_tree.html">dv_tree()</a></code> warns, here about 461 cod
+records). The default currency is records for that reason.</p>
+</div>
+<div class="section level2">
+<h2 id="checking-a-table-against-a-specification">Checking a table against a specification<a class="anchor" aria-label="anchor" href="#checking-a-table-against-a-specification"></a>
+</h2>
+<p><code><a href="../reference/dv_validate.html">dv_validate()</a></code> stops if a declared column is missing, if
+there is no prey key column, or if a weight is negative. It warns about
+records with no prey key, weights that are not numbers and stomach IDs
+shared between predators, and it ends with a one-line description of the
+sample. It reports problems and never changes your data. It returns the
+data invisibly, so you can use it in a pipeline.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/dv_validate.html">dv_validate</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 8530 records from 4222 stomachs of 22 predator(s); 2305 stomach(s) hold a single record; 531 record(s) lack a weight.</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="mapping-your-own-survey">Mapping your own survey<a class="anchor" aria-label="anchor" href="#mapping-your-own-survey"></a>
 </h2>
-<p>Because nothing is hard-coded, adapting DietView to a new dataset is
-entirely a matter of writing a different <code><a href="../reference/dv_spec.html">dv_spec()</a></code>. If your
-columns were, say, <code>sp</code>, <code>stom</code>,
-<code>aphia</code>, <code>wt_g</code>, and <code>yr</code>, you would
-simply write:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>To use DietView on another table, write a different
+<code><a href="../reference/dv_spec.html">dv_spec()</a></code>. If your columns were <code>sp</code>,
+<code>stom</code>, <code>aphia</code>, <code>wt_g</code> and
+<code>yr</code>, you would write:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span></span>
 <span>  predator <span class="op">=</span> <span class="st">"sp"</span>, stomach <span class="op">=</span> <span class="st">"stom"</span>, prey_id <span class="op">=</span> <span class="st">"aphia"</span>,</span>
 <span>  weight <span class="op">=</span> <span class="st">"wt_g"</span>, covariates <span class="op">=</span> <span class="st">"yr"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Everything downstream — <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code>,
+<p>The later steps (<code><a href="../reference/dv_prepare.html">dv_prepare()</a></code>,
 <code><a href="../reference/dv_build_tree.html">dv_build_tree()</a></code>, <code><a href="../reference/dv_sunburst.html">dv_sunburst()</a></code>,
-<code><a href="../reference/dv_build_html.html">dv_build_html()</a></code> — reads the spec, never the literal
-names.</p>
+<code><a href="../reference/dv_build_html.html">dv_build_html()</a></code>) read the column names from the
+specification, never from your code. The article “Adapting DietView to
+your own survey” goes through the other choices you make with a new
+table.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -231,7 +373,7 @@ names.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthene A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
 </div>
 
 <div class="pkgdown-footer-right">

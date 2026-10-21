@@ -41,14 +41,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/dietview.html">Getting started with DietView</a></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
     <li><a class="dropdown-item" href="../articles/covariates.html">Covariate stratification</a></li>
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
+    <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
@@ -330,13 +332,79 @@ conversion), <code>.dv_empty_tree()</code> (typed empty tree),
 <div class="section level2">
 <h2 id="bundled-data-and-the-input-contract">Bundled data and the input contract<a class="anchor" aria-label="anchor" href="#bundled-data-and-the-input-contract"></a>
 </h2>
-<p>The package ships an example base table
-(<code>inst/extdata/dietview_example.csv</code>), a matching lineage
-lookup (<code>dietview_example_lineage.csv</code>), and a data
-dictionary. One row = one prey record in one stomach; free column names
-mapped via <code><a href="../reference/dv_spec.html">dv_spec()</a></code>. The example deliberately includes
-class-only, order/family-only, and fully unidentified prey so the
-explicit-NA behaviour is visible end to end.</p>
+<p>One row = one prey record in one stomach; free column names mapped
+via <code><a href="../reference/dv_spec.html">dv_spec()</a></code>. The package ships three kinds of data.</p>
+<p><strong>The ICES datasets</strong> (<code>data/</code>, lazy-loaded;
+documented in <code><a href="../reference/ices_diet.html">?ices_diet</a></code>), the data of the articles,
+vignettes and examples. They are a public extract of the ICES Stomach
+Content Database (ICES, Copenhagen), distributed with the R package
+stomachr (Lindmark 2026), and built by
+<code>data-raw/ices_data.R</code>.</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th>Dataset</th>
+<th>Rows</th>
+<th>Content</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>ices_diet</code></td>
+<td>9,639 prey records</td>
+<td>4,231 stomachs of 22 predators, North Sea, Skagerrak-Kattegat and
+Baltic Sea, 2020-2024; prey AphiaID and name, <code>item_type</code>
+(prey / unidentified / non_food), digestion code and label, count,
+weight, length, haul, date, position, region, predator length and
+weight</td>
+</tr>
+<tr class="even">
+<td><code>ices_stomachs</code></td>
+<td>8,886 stomachs</td>
+<td>every sampled stomach of 23 predators, 1,197 flagged empty: the
+sampling frame for the share of empty stomachs</td>
+</tr>
+<tr class="odd">
+<td><code>ices_lineage</code></td>
+<td>461 AphiaIDs</td>
+<td>the frozen WoRMS lineage (kingdom to species, plus
+<code>scientific_name</code> and <code>worms_rank</code>), keyed by
+<code>prey_aphia_id</code> for <code>taxonomy = "table"</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The data are kept close to the ICES export: prey identified to very
+uneven depth, 1,553 records of unidentified material, 67 non-food items
+and about 1,000 nematode records (mostly parasites) kept for the analyst
+to decide on, and digestion stage missing for many records. The
+digestion labels are inferred from the older ICES format. The standard
+set-up used throughout the documentation drops non-food items and
+nematodes:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">phylum</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">phylum</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">prey_aphia_id</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">ices_diet</span><span class="op">[</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span> <span class="op">!=</span> <span class="st">"non_food"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span>, <span class="op">]</span></span>
+<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span>predator <span class="op">=</span> <span class="st">"predator_common"</span>, predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span>
+<span>                stomach <span class="op">=</span> <span class="st">"stomach_id"</span>, prey_id <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,</span>
+<span>                prey_name <span class="op">=</span> <span class="st">"prey_name"</span>, weight <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span>
+<span>                count <span class="op">=</span> <span class="st">"prey_count"</span>, digestion <span class="op">=</span> <span class="st">"digestion_label"</span>,</span>
+<span>                covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
+<span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><strong>The small example</strong>
+(<code>inst/extdata/dietview_example.csv</code>, 24 invented records,
+with <code>dietview_example_lineage.csv</code> and a data dictionary)
+stays for the unit tests and for checking the mechanics on a table you
+can read in full. It includes class-only, order/family-only and fully
+unidentified prey.</p>
+<p><strong>The simulated survey</strong>
+(<code>inst/extdata/dietview_sim.csv</code> and its lineage), built by
+<code>data-raw/simulate_known_diet.R</code>, has a known true diet; the
+“A known diet” vignette uses it to show what keeping or dropping
+unidentified prey does, which real data cannot show.</p>
 </div>
 <div class="section level2">
 <h2 id="dependencies">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies"></a>
@@ -375,7 +443,7 @@ the helpers; supply a lineage table for non-marine prey. See the <a href="extend
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthene A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
 </div>
 
 <div class="pkgdown-footer-right">

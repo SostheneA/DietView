@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>The digestion identification bias • DietView</title>
+<title>Identification depth and digestion • DietView</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -17,7 +17,7 @@
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="The digestion identification bias">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Identification depth and digestion">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -41,14 +41,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/dietview.html">Getting started with DietView</a></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
     <li><a class="dropdown-item" href="../articles/covariates.html">Covariate stratification</a></li>
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
+    <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
@@ -80,7 +82,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>The digestion identification bias</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Identification depth and digestion</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/SostheneA/DietView/blob/HEAD/vignettes/digestion.Rmd" class="external-link"><code>vignettes/digestion.Rmd</code></a></small>
@@ -89,81 +91,191 @@
 
     
     
-<p>Diet identification is not uniform: heavily digested prey can only be
-resolved to coarse ranks. If that bias is hidden, a diet description
-silently over-represents whatever is easy to identify.
-<code><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic()</a></code> makes it explicit.</p>
+<p>The more digested a prey item, the coarser the rank it can be named
+to. That matters because digestion is not even across prey. Soft-bodied
+prey lose their identifying features faster than fish with otoliths or
+crustaceans with hard parts, so the material that can still be
+identified to species is a biased sample of what was eaten. Buckland et
+al. (2017) asked diet studies to report how prey condition affected
+identification. <code><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic()</a></code> gives you that
+table.</p>
+<p>The data are the public ICES stomach-content extract that ships with
+the package (ICES Stomach Content Database, ICES, Copenhagen; extract
+distributed with the R package stomachr, Lindmark 2026; see
+<code><a href="../reference/ices_diet.html">?ices_diet</a></code>), prepared as in the getting-started
+vignette.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SostheneA/DietView" class="external-link">DietView</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span>,</span>
-<span>                na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">lin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example_lineage.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span>,</span>
-<span>                na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span>predator <span class="op">=</span> <span class="st">"predator_species_common_name"</span>, stomach <span class="op">=</span> <span class="st">"stomach_id"</span>,</span>
-<span>                prey_id <span class="op">=</span> <span class="st">"aphia_id"</span>, prey_name <span class="op">=</span> <span class="st">"verified_name"</span>,</span>
-<span>                weight <span class="op">=</span> <span class="st">"prey_weight"</span>, digestion <span class="op">=</span> <span class="st">"digestion_level_id"</span>,</span>
-<span>                covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"period"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">lin</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># drop non-food items and nematodes (mostly parasites, not prey)</span></span>
+<span><span class="va">phylum</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">phylum</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">prey_aphia_id</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">ices_diet</span><span class="op">[</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span> <span class="op">!=</span> <span class="st">"non_food"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span>, <span class="op">]</span></span>
+<span></span>
+<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span></span>
+<span>  predator       <span class="op">=</span> <span class="st">"predator_common"</span>,</span>
+<span>  predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span>
+<span>  stomach        <span class="op">=</span> <span class="st">"stomach_id"</span>,</span>
+<span>  prey_id        <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,</span>
+<span>  prey_name      <span class="op">=</span> <span class="st">"prey_name"</span>,</span>
+<span>  weight         <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span>
+<span>  count          <span class="op">=</span> <span class="st">"prey_count"</span>,</span>
+<span>  digestion      <span class="op">=</span> <span class="st">"digestion_label"</span>,</span>
+<span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
+<span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="the-diagnostic">The diagnostic<a class="anchor" aria-label="anchor" href="#the-diagnostic"></a>
+<h2 id="a-caveat-on-the-stages">A caveat on the stages<a class="anchor" aria-label="anchor" href="#a-caveat-on-the-stages"></a>
 </h2>
-<p>For each digestion level, the share of records (and of weight) whose
-<strong>finest resolved rank</strong> is Kingdom, Phylum, …, Species, or
-Unresolved:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">diag</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic</a></span><span class="op">(</span><span class="va">prep</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">diag</span>, <span class="fl">12</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    digestion finest_rank n_records  weight p_records     p_weight</span></span>
-<span><span class="co">#&gt; 1          1     Species         2  9.0020 100.00000 1.000000e+02</span></span>
-<span><span class="co">#&gt; 2          2       Class         3  0.5128  33.33333 1.433491e+00</span></span>
-<span><span class="co">#&gt; 3          2       Order         2  0.1100  22.22222 3.074962e-01</span></span>
-<span><span class="co">#&gt; 4          2     Species         4 35.1500  44.44444 9.825901e+01</span></span>
-<span><span class="co">#&gt; 5          3       Class         2  0.2010  28.57143 9.662997e-01</span></span>
-<span><span class="co">#&gt; 6          3       Order         2  0.4500  28.57143 2.163358e+00</span></span>
-<span><span class="co">#&gt; 7          3      Family         1  0.0500  14.28571 2.403731e-01</span></span>
-<span><span class="co">#&gt; 8          3     Species         2 20.1000  28.57143 9.662997e+01</span></span>
-<span><span class="co">#&gt; 9          4       Class         2  8.0200  50.00000 8.003193e+01</span></span>
-<span><span class="co">#&gt; 10         4       Order         1  2.0000  25.00000 1.995809e+01</span></span>
-<span><span class="co">#&gt; 11         4     Species         1  0.0010  25.00000 9.979044e-03</span></span>
-<span><span class="co">#&gt; 12         5  Unresolved         2  1.6000 100.00000 1.000000e+02</span></span></code></pre></div>
+<p>ICES records digestion as a code, 0, 1 or 2. The labels used here (“0
+pristine”, “1 affected”, “2 skeletal remains”) are inferred from the
+older ICES format, whose three classes match the shares of these codes;
+they are not taken from the ICES vocabulary. Read the stages as an
+ordered scale from fresh to digested and check the labels against the
+ICES documentation before you quote them. Records whose stage was not
+reported are kept as “not recorded”.</p>
 </div>
 <div class="section level2">
-<h2 id="reading-the-bias">Reading the bias<a class="anchor" aria-label="anchor" href="#reading-the-bias"></a>
+<h2 id="what-the-diagnostic-computes">What the diagnostic computes<a class="anchor" aria-label="anchor" href="#what-the-diagnostic-computes"></a>
 </h2>
-<p>As the digestion level increases, mass shifts away from Species
-toward the coarse ranks and “Unresolved”. A dependency-free stacked bar
-makes the shift visible:</p>
+<p>For every record, DietView finds the deepest rank with a name: its
+<em>finest resolved rank</em>. Records with no name at any rank are
+“Unresolved”. Within each digestion stage it then reports the share of
+records, and of weight, at each finest rank.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">diag</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic</a></span><span class="op">(</span><span class="va">prep</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">diag</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"digestion"</span>, <span class="st">"finest_rank"</span>, <span class="st">"n_records"</span>, <span class="st">"p_records"</span>, <span class="st">"p_weight"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">7</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    digestion finest_rank n_records p_records   p_weight</span></span>
+<span><span class="co">#&gt; 1 0 pristine      Phylum        42  7.486631  3.1594482</span></span>
+<span><span class="co">#&gt; 2 0 pristine       Class        26  4.634581  0.2300241</span></span>
+<span><span class="co">#&gt; 3 0 pristine       Order       110 19.607843  2.2952781</span></span>
+<span><span class="co">#&gt; 4 0 pristine      Family        82 14.616756  9.2883107</span></span>
+<span><span class="co">#&gt; 5 0 pristine       Genus        16  2.852050  0.8581803</span></span>
+<span><span class="co">#&gt; 6 0 pristine     Species       219 39.037433 82.5783551</span></span>
+<span><span class="co">#&gt; 7 0 pristine  Unresolved        66 11.764706  1.5904035</span></span></code></pre></div>
+<p>Side by side, the record shares are easier to read:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/xtabs.html" class="external-link">xtabs</a></span><span class="op">(</span><span class="va">p_records</span> <span class="op">~</span> <span class="va">finest_rank</span> <span class="op">+</span> <span class="va">digestion</span>, data <span class="op">=</span> <span class="va">diag</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot</a></span><span class="op">(</span><span class="va">m</span>, col <span class="op">=</span> <span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span>, <span class="st">"Blues"</span><span class="op">)</span>,</span>
-<span>        legend.text <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>        args.legend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"topright"</span>, cex <span class="op">=</span> <span class="fl">0.7</span>, bg <span class="op">=</span> <span class="st">"white"</span><span class="op">)</span>,</span>
-<span>        xlab <span class="op">=</span> <span class="st">"digestion level"</span>, ylab <span class="op">=</span> <span class="st">"% of records"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/xtabs.html" class="external-link">xtabs</a></span><span class="op">(</span><span class="va">p_records</span> <span class="op">~</span> <span class="va">finest_rank</span> <span class="op">+</span> <span class="va">digestion</span>, data <span class="op">=</span> <span class="va">diag</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             digestion</span></span>
+<span><span class="co">#&gt; finest_rank  0 pristine 1 affected 2 skeletal remains not recorded</span></span>
+<span><span class="co">#&gt;   Kingdom           0.0        0.0                0.0          0.0</span></span>
+<span><span class="co">#&gt;   Phylum            7.5        9.0               24.9         25.7</span></span>
+<span><span class="co">#&gt;   Class             4.6       15.0               32.6          4.1</span></span>
+<span><span class="co">#&gt;   Order            19.6       13.6               10.7         11.0</span></span>
+<span><span class="co">#&gt;   Family           14.6       21.6                7.8          1.1</span></span>
+<span><span class="co">#&gt;   Genus             2.9        8.9                5.5          0.3</span></span>
+<span><span class="co">#&gt;   Species          39.0       31.3                5.7          5.6</span></span>
+<span><span class="co">#&gt;   Unresolved       11.8        0.7               12.7         52.2</span></span>
+<span><span class="va">n_stage</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tapply.html" class="external-link">tapply</a></span><span class="op">(</span><span class="va">diag</span><span class="op">$</span><span class="va">n_records</span>, <span class="va">diag</span><span class="op">$</span><span class="va">digestion</span>, <span class="va">sum</span><span class="op">)</span></span>
+<span><span class="va">n_stage</span></span>
+<span><span class="co">#&gt;         0 pristine         1 affected 2 skeletal remains       not recorded </span></span>
+<span><span class="co">#&gt;                561               3494               2206               2269</span></span></code></pre></div>
+<p>Percentages are computed within each stage, so each stage adds up to
+100% whatever its sample size. Always read them next to
+<code>n_records</code>: here the four columns hold 561, 3,494, 2,206,
+2,269 records respectively.</p>
+<p>Pooled, the share named to genus or species changes little between
+stage 0 (41.9%) and stage 1 (40.2%) and collapses at stage 2 (11.2%),
+while the share named only to a phylum or a class reaches 57.6%. Stage 0
+has its own oddity: 11.8% of its records are unresolved, which a fresh
+prey should not be. These are unidentified material recorded as
+undigested, a reminder that the stage describes the record, not always
+the prey.</p>
+<p>The “not recorded” column is not a fourth stage. 2,139 of its 2,269
+records come from Denmark, and 52.2% of them are unresolved. A missing
+stage follows the data provider, and providers differ in how far they
+identify; dropping these records would not remove them at random.</p>
+</div>
+<div class="section level2">
+<h2 id="drawing-it">Drawing it<a class="anchor" aria-label="anchor" href="#drawing-it"></a>
+</h2>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">w_plot</span> <span class="op">&lt;-</span> <span class="va">w</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">w</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span>, <span class="op">]</span>            <span class="co"># no record stops at kingdom</span></span>
+<span><span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">w_plot</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span>, <span class="st">"Blues 3"</span>, rev <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="st">"grey85"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot</a></span><span class="op">(</span><span class="va">w_plot</span>, col <span class="op">=</span> <span class="va">cols</span>, xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">6.6</span><span class="op">)</span>, legend.text <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>        args.legend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"right"</span>, cex <span class="op">=</span> <span class="fl">0.75</span>, bty <span class="op">=</span> <span class="st">"n"</span><span class="op">)</span>,</span>
+<span>        names.arg <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">" "</span>, <span class="st">"\n"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">w_plot</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>        xlab <span class="op">=</span> <span class="st">"Digestion stage"</span>, ylab <span class="op">=</span> <span class="st">"% of records"</span>, cex.names <span class="op">=</span> <span class="fl">0.75</span><span class="op">)</span></span></code></pre></div>
 <p><img src="digestion_files/figure-html/plot-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
-<h2 id="splitting-by-a-covariate">Splitting by a covariate<a class="anchor" aria-label="anchor" href="#splitting-by-a-covariate"></a>
+<h2 id="predator-by-predator">Predator by predator<a class="anchor" aria-label="anchor" href="#predator-by-predator"></a>
 </h2>
-<p>Pass <code>by =</code> to see whether the bias differs across, say,
-periods:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic</a></span><span class="op">(</span><span class="va">prep</span>, by <span class="op">=</span> <span class="st">"period"</span><span class="op">)</span>, <span class="fl">12</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    digestion        by finest_rank n_records  weight p_records    p_weight</span></span>
-<span><span class="co">#&gt; 1          1 2004-2006     Species         1  0.0020 100.00000 100.0000000</span></span>
-<span><span class="co">#&gt; 2          1 2018-2019     Species         1  9.0000 100.00000 100.0000000</span></span>
-<span><span class="co">#&gt; 3          2 2004-2006       Class         3  0.5128  60.00000   3.7670428</span></span>
-<span><span class="co">#&gt; 4          2 2004-2006     Species         2 13.1000  40.00000  96.2329572</span></span>
-<span><span class="co">#&gt; 5          2 2018-2019       Order         2  0.1100  50.00000   0.4963899</span></span>
-<span><span class="co">#&gt; 6          2 2018-2019     Species         2 22.0500  50.00000  99.5036101</span></span>
-<span><span class="co">#&gt; 7          3 2004-2006       Class         2  0.2010  50.00000   3.7563072</span></span>
-<span><span class="co">#&gt; 8          3 2004-2006      Family         1  0.0500  25.00000   0.9344048</span></span>
-<span><span class="co">#&gt; 9          3 2004-2006     Species         1  5.1000  25.00000  95.3092880</span></span>
-<span><span class="co">#&gt; 10         3 2018-2019       Order         2  0.4500  66.66667   2.9126214</span></span>
-<span><span class="co">#&gt; 11         3 2018-2019     Species         1 15.0000  33.33333  97.0873786</span></span>
-<span><span class="co">#&gt; 12         4 2004-2006       Class         1  8.0000  50.00000  80.0000000</span></span></code></pre></div>
-<p>Making this bias visible is the point: it is exactly the information
-a functional prey grouping would smooth over.</p>
+<p>Pooled profiles mix predators that eat different prey and were
+sampled by different countries. <code>by =</code> takes any column of
+the prepared data, including the predator:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">top</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Atlantic cod"</span>, <span class="st">"Whiting"</span>, <span class="st">"European plaice"</span>, <span class="st">"Atlantic mackerel"</span><span class="op">)</span></span>
+<span><span class="va">by_pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic</a></span><span class="op">(</span><span class="va">prep</span>, by <span class="op">=</span> <span class="st">"predator_common"</span><span class="op">)</span></span>
+<span><span class="va">by_pred</span> <span class="op">&lt;-</span> <span class="va">by_pred</span><span class="op">[</span><span class="va">by_pred</span><span class="op">$</span><span class="va">by</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">top</span>, <span class="op">]</span></span>
+<span><span class="va">fine</span> <span class="op">&lt;-</span> <span class="va">by_pred</span><span class="op">[</span><span class="va">by_pred</span><span class="op">$</span><span class="va">finest_rank</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Genus"</span>, <span class="st">"Species"</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/xtabs.html" class="external-link">xtabs</a></span><span class="op">(</span><span class="va">p_records</span> <span class="op">~</span> <span class="va">by</span> <span class="op">+</span> <span class="va">digestion</span>, data <span class="op">=</span> <span class="va">fine</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>   <span class="co"># % named to genus or species</span></span>
+<span><span class="co">#&gt;                    digestion</span></span>
+<span><span class="co">#&gt; by                  0 pristine 1 affected 2 skeletal remains not recorded</span></span>
+<span><span class="co">#&gt;   Atlantic cod            73.0       63.7               21.1         21.0</span></span>
+<span><span class="co">#&gt;   Atlantic mackerel        1.5        9.9                0.0          0.1</span></span>
+<span><span class="co">#&gt;   European plaice         33.3       11.9                8.5          0.0</span></span>
+<span><span class="co">#&gt;   Whiting                 29.9       32.6               10.8          9.9</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/xtabs.html" class="external-link">xtabs</a></span><span class="op">(</span><span class="va">n_records</span> <span class="op">~</span> <span class="va">by</span> <span class="op">+</span> <span class="va">digestion</span>, data <span class="op">=</span> <span class="va">by_pred</span><span class="op">)</span>          <span class="co"># records per cell</span></span>
+<span><span class="co">#&gt;                    digestion</span></span>
+<span><span class="co">#&gt; by                  0 pristine 1 affected 2 skeletal remains not recorded</span></span>
+<span><span class="co">#&gt;   Atlantic cod             159       1237                393          515</span></span>
+<span><span class="co">#&gt;   Atlantic mackerel         66        262                 73         1192</span></span>
+<span><span class="co">#&gt;   European plaice            3        646               1003          238</span></span>
+<span><span class="co">#&gt;   Whiting                  284        656                483          182</span></span></code></pre></div>
+<ul>
+<li>
+<strong>Atlantic cod</strong> shows the profile in its clearest
+form: the share named to genus or species falls from 73.0% at stage 0 to
+63.7% at stage 1 and 21.1% at stage 2.</li>
+<li>
+<strong>Whiting</strong> starts lower, at 29.9%, holds at stage 1
+(32.6%) and drops at stage 2 (10.8%).</li>
+<li>
+<strong>European plaice</strong> has only 3 records at stage 0, so
+its first column means nothing; at stages 1 and 2 it is 11.9% and 8.5%.
+Its three most frequent prey names, Ophiuroidea, Polychaeta, Bivalvia,
+are classes: much of what plaice eat is recorded at class whatever its
+stage.</li>
+<li>
+<strong>Atlantic mackerel</strong> is almost never identified to
+genus or species, at any stage. Its four most frequent prey names are
+Unidentified material (817), Ammodytidae (318), Crustacea (243), Pisces
+(181): the limit here is how the prey were recorded, not how digested
+they were, and most of its records have no stage at all (1,192 of
+1,593).</li>
+</ul>
+<p>So the same stage does not mean the same identification depth in two
+predators, and a pooled profile can hide both a steep and a flat
+one.</p>
+</div>
+<div class="section level2">
+<h2 id="how-to-read-it">How to read it<a class="anchor" aria-label="anchor" href="#how-to-read-it"></a>
+</h2>
+<ul>
+<li>If the species share falls steeply with digestion, as for cod,
+fine-rank results rest mostly on fresh material. Consider reporting them
+for the freshest stages separately, with the sample size you lose by
+doing so.</li>
+<li>Weight is affected twice: digested prey are both harder to name and
+lighter. A steep profile is a reason to be cautious with the weight
+currency in particular.</li>
+<li>Use <code>by =</code> with other strata too, for example
+<code>by = "country"</code>, when observers or protocols differ between
+them, or <code>by = "year"</code> when they changed over time.</li>
+</ul>
+<p>The diagnostic describes identification; it does not correct for it.
+What digestion does to the diet estimate itself cannot be measured on
+real data, because the true diet is unknown. The vignette “A known diet”
+shows it on simulated data where the truth is known: how much a diet
+description moves when unidentified material is kept or dropped.</p>
+</div>
+<div class="section level2">
+<h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a>
+</h2>
+<p>Buckland, A., Baker, R., Loneragan, N., &amp; Sheaves, M. (2017).
+Standardising fish stomach content analysis: the importance of prey
+condition. <em>Fisheries Research</em>, 196, 126–140.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -172,7 +284,7 @@ a functional prey grouping would smooth over.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthene A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
 </div>
 
 <div class="pkgdown-footer-right">

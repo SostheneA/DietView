@@ -41,14 +41,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/dietview.html">Getting started with DietView</a></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
     <li><a class="dropdown-item" href="../articles/covariates.html">Covariate stratification</a></li>
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
+    <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
@@ -89,92 +91,337 @@
 
     
     
-<p>DietView can attach a full taxonomic lineage to your prey by querying
-the <a href="https://www.marinespecies.org/" class="external-link">World Register of Marine
-Species (WoRMS)</a>. This article explains how the matching works, what
-provenance it records, and how to review and correct it. All chunks here
-are shown but not run (they need the <code>worrms</code> package and
-internet).</p>
-<div class="section level2">
-<h2 id="why-a-lineage-and-why-na-matters">Why a lineage, and why NA matters<a class="anchor" aria-label="anchor" href="#why-a-lineage-and-why-na-matters"></a>
-</h2>
-<p>DietView renders diet across the seven flagship Linnaean ranks
-(kingdom … species). Your records rarely carry all seven, and
-identification often stops at a coarse rank (e.g. <code>Decapoda</code>,
-<code>Teleostei</code>). DietView never invents the missing ranks: where
-identification stops, the deeper ranks stay <code>NA</code> and are
-shown as an explicit “NA” category so within-rank percentages still sum
-to 100 %.</p>
-</div>
-<div class="section level2">
-<h2 id="the-matching-strategy">The matching strategy<a class="anchor" aria-label="anchor" href="#the-matching-strategy"></a>
-</h2>
-<p><code>dv_prepare(taxonomy = "worms")</code> calls
-<code><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms()</a></code> on the unique prey. Matching proceeds
-in a strict order and every prey carries a provenance record:</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>id</strong> - the <code>prey_id</code> (AphiaID) is already
-known and used directly;</li>
-<li>
-<strong>exact</strong> - the <code>prey_name</code> matches a WoRMS
-latin name exactly;</li>
-<li>
-<strong>fuzzy</strong> - if <code>fuzzy = TRUE</code>, the closest
-WoRMS name is proposed (and flagged);</li>
-<li>
-<strong>unresolved</strong> - nothing matched; all ranks stay
-<code>NA</code>.</li>
-</ol>
-<p>Unaccepted names are followed to their <strong>accepted (valid)
-AphiaID</strong> before the lineage is fetched, and results are cached
-to disk so re-runs and other surveys do not requery.</p>
+<p>DietView can attach a taxonomic lineage to every prey by querying the
+<a href="https://www.marinespecies.org/" class="external-link">World Register of Marine
+Species (WoRMS)</a>. This vignette shows how to run the lookup, how to
+read the log of how each prey was matched, and how to freeze the result
+so that later runs need no network. The lookup chunks are shown but not
+run, because they need the <code>worrms</code> package and an internet
+connection. Everything else runs on the public ICES stomach-content
+extract that ships with the package (ICES Stomach Content Database,
+ICES, Copenhagen; extract distributed with the R package stomachr,
+Lindmark 2026; see <code><a href="../reference/ices_diet.html">?ices_diet</a></code>) and on its frozen lineage,
+<code>ices_lineage</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SostheneA/DietView" class="external-link">DietView</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span>,</span>
-<span>  na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span></span>
-<span>  predator  <span class="op">=</span> <span class="st">"predator_species_latin_name"</span>,</span>
-<span>  stomach   <span class="op">=</span> <span class="st">"stomach_id"</span>,</span>
-<span>  prey_id   <span class="op">=</span> <span class="st">"aphia_id"</span>,</span>
-<span>  prey_name <span class="op">=</span> <span class="st">"verified_name"</span>,</span>
-<span>  weight    <span class="op">=</span> <span class="st">"prey_weight"</span></span>
-<span><span class="op">)</span></span>
+<span><span class="co"># drop non-food items and nematodes (mostly parasites, not prey)</span></span>
+<span><span class="va">phylum</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">phylum</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">prey_aphia_id</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">ices_diet</span><span class="op">[</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span> <span class="op">!=</span> <span class="st">"non_food"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span>, <span class="op">]</span></span>
 <span></span>
-<span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"worms"</span><span class="op">)</span>   <span class="co"># id / exact / fuzzy / unresolved</span></span>
-<span><span class="va">prep</span></span></code></pre></div>
+<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span></span>
+<span>  predator       <span class="op">=</span> <span class="st">"predator_common"</span>,</span>
+<span>  predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span>
+<span>  stomach        <span class="op">=</span> <span class="st">"stomach_id"</span>,</span>
+<span>  prey_id        <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,</span>
+<span>  prey_name      <span class="op">=</span> <span class="st">"prey_name"</span>,</span>
+<span>  weight         <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span>
+<span>  count          <span class="op">=</span> <span class="st">"prey_count"</span>,</span>
+<span>  digestion      <span class="op">=</span> <span class="st">"digestion_label"</span>,</span>
+<span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="section level2">
+<h2 id="why-a-lineage-and-why-unidentified-records-stay">Why a lineage, and why unidentified records stay<a class="anchor" aria-label="anchor" href="#why-a-lineage-and-why-unidentified-records-stay"></a>
+</h2>
+<p>DietView shows the diet at seven ranks, kingdom to species, by
+default. Your records rarely carry all seven: identification often stops
+at a coarse rank. In the ICES data, prey are recorded at every level
+WoRMS knows:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/na.fail.html" class="external-link">na.omit</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">ices_lineage</span><span class="op">$</span><span class="va">worms_rank</span><span class="op">[</span><span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">ids</span><span class="op">]</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;           Species            Family             Genus             Class </span></span>
+<span><span class="co">#&gt;               110                53                36                13 </span></span>
+<span><span class="co">#&gt;             Order            Phylum        Infraorder          Subclass </span></span>
+<span><span class="co">#&gt;                13                 7                 4                 3 </span></span>
+<span><span class="co">#&gt;        Parvphylum         Subphylum        Superclass         Gigaclass </span></span>
+<span><span class="co">#&gt;                 2                 2                 2                 1 </span></span>
+<span><span class="co">#&gt;       Infraphylum Phylum (Division)         Subfamily          Suborder </span></span>
+<span><span class="co">#&gt;                 1                 1                 1                 1 </span></span>
+<span><span class="co">#&gt;        Subspecies        Superorder </span></span>
+<span><span class="co">#&gt;                 1                 1</span></span></code></pre></div>
+<p>Only some of these 252 prey names are species. The others stop at a
+genus, a family, or something as coarse as “Crustacea” (a subphylum) or
+“Pisces” (a superclass). DietView never fills in the missing ranks.
+Below the last rank reached, the record is shown as unidentified at that
+rank, so every ring of the sunburst still holds all the records and adds
+up to 100%.</p>
 </div>
 <div class="section level2">
-<h2 id="reviewing-fuzzy-and-unresolved-matches">Reviewing fuzzy and unresolved matches<a class="anchor" aria-label="anchor" href="#reviewing-fuzzy-and-unresolved-matches"></a>
+<h2 id="running-the-lookup">Running the lookup<a class="anchor" aria-label="anchor" href="#running-the-lookup"></a>
 </h2>
-<p>Nothing is guessed silently. <code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code>
-returns exactly the prey that need a human eye, sorted by how many
-records they affect.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">review</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report</a></span><span class="op">(</span><span class="va">prep</span>, which <span class="op">=</span> <span class="st">"review"</span><span class="op">)</span>   <span class="co"># fuzzy + unresolved</span></span>
+<p><code>dv_prepare(taxonomy = "worms")</code> calls
+<code><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms()</a></code> once for each distinct prey key, not
+once per record: here 252 AphiaIDs for 8,530 records. Each record is
+keyed by its AphiaID when it has one, and by its name otherwise.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"worms"</span><span class="op">)</span></span>
+<span><span class="va">prep</span></span></code></pre></div>
+<p>In the ICES data, the only records without an AphiaID are the
+unidentified material, named “Unidentified material”. That name would be
+sent to WoRMS as a name, fail the exact match and go to fuzzy matching,
+which has nothing useful to find. Remove the name from the lookup, so
+these records stay plainly unidentified (<code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> then
+warns that they have no key, which is what you want):</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">lookup</span> <span class="op">&lt;-</span> <span class="va">dat</span></span>
+<span><span class="va">lookup</span><span class="op">$</span><span class="va">prey_name</span><span class="op">[</span><span class="va">lookup</span><span class="op">$</span><span class="va">item_type</span> <span class="op">==</span> <span class="st">"unidentified"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">lookup</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"worms"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="how-each-prey-is-matched">How each prey is matched<a class="anchor" aria-label="anchor" href="#how-each-prey-is-matched"></a>
+</h2>
+<p>Each distinct prey gets one row in the log, with a
+<code>match_type</code>:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th><code>match_type</code></th>
+<th>Meaning</th>
+<th>What to do</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>id</code></td>
+<td>The AphiaID is accepted in WoRMS</td>
+<td>Nothing, unless <code>name_check</code> is
+<code>"differs"</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>id_synonym</code></td>
+<td>The AphiaID is unaccepted; its accepted ID was used</td>
+<td>Check that the accepted name is the taxon you meant</td>
+</tr>
+<tr class="odd">
+<td><code>id_unchecked</code></td>
+<td>WoRMS could not be reached to check the ID</td>
+<td>Run again later</td>
+</tr>
+<tr class="even">
+<td><code>exact</code></td>
+<td>No ID; the name matched exactly</td>
+<td>Nothing</td>
+</tr>
+<tr class="odd">
+<td><code>fuzzy</code></td>
+<td>No ID; the name was matched by TAXAMATCH, which tolerates
+misspellings</td>
+<td>Check every one: a near match can be a different taxon</td>
+</tr>
+<tr class="even">
+<td><code>unresolved</code></td>
+<td>No match</td>
+<td>Correct the name, or accept that the prey stays unidentified</td>
+</tr>
+</tbody>
+</table>
+<div class="section level3">
+<h3 id="matching-by-aphiaid-id-and-id_synonym">Matching by AphiaID: <code>id</code> and
+<code>id_synonym</code><a class="anchor" aria-label="anchor" href="#matching-by-aphiaid-id-and-id_synonym"></a>
+</h3>
+<p>Every ICES prey record carries an AphiaID, so a lookup on these data
+runs almost entirely through the first two rows of the table. Most IDs
+are accepted (<code>id</code>). Some are not. The frozen lineage shows
+two pairs of names that differ by one letter:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pairs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Aphrodita aculeata"</span>, <span class="st">"Aphrodite aculeata"</span>,</span>
+<span>           <span class="st">"Trisopterus esmarkii"</span>, <span class="st">"Trisopterus esmarki"</span><span class="op">)</span></span>
+<span><span class="va">lin_pairs</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">[</span><span class="va">ices_lineage</span><span class="op">$</span><span class="va">scientific_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span>,</span>
+<span>                          <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"prey_aphia_id"</span>, <span class="st">"scientific_name"</span>, <span class="st">"family"</span>, <span class="st">"species"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">lin_pairs</span><span class="op">$</span><span class="va">n_records</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">lin_pairs</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">lin_pairs</span></span>
+<span><span class="co">#&gt;     prey_aphia_id      scientific_name       family              species</span></span>
+<span><span class="co">#&gt; 24         126444 Trisopterus esmarkii      Gadidae Trisopterus esmarkii</span></span>
+<span><span class="co">#&gt; 139        129840   Aphrodita aculeata Aphroditidae   Aphrodita aculeata</span></span>
+<span><span class="co">#&gt; 310        231869   Aphrodite aculeata Aphroditidae   Aphrodite aculeata</span></span>
+<span><span class="co">#&gt; 311        400596  Trisopterus esmarki      Gadidae  Trisopterus esmarki</span></span>
+<span><span class="co">#&gt;     n_records</span></span>
+<span><span class="co">#&gt; 24         35</span></span>
+<span><span class="co">#&gt; 139        47</span></span>
+<span><span class="co">#&gt; 310        31</span></span>
+<span><span class="co">#&gt; 311        73</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_name</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span><span class="op">]</span>, <span class="va">dat</span><span class="op">$</span><span class="va">country</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                       </span></span>
+<span><span class="co">#&gt;                        DE DK NL NO SE</span></span>
+<span><span class="co">#&gt;   Aphrodita aculeata    8  0 12  0 27</span></span>
+<span><span class="co">#&gt;   Aphrodite aculeata    0 31  0  0  0</span></span>
+<span><span class="co">#&gt;   Trisopterus esmarki   0 73  0  0  0</span></span>
+<span><span class="co">#&gt;   Trisopterus esmarkii  9  0 21  1  4</span></span></code></pre></div>
+<p>Each pair is one species (a sea mouse and Norway pout) under two
+AphiaIDs, and one spelling of each comes from a single country. WoRMS
+keeps variant spellings like these as unaccepted names with AphiaIDs of
+their own. A live lookup reads each AphiaID’s record; when it is
+unaccepted, it follows it to the accepted AphiaID, logs it as
+<code>id_synonym</code> and gives both spellings the same lineage. The
+frozen <code>ices_lineage</code> was built from the AphiaIDs as
+reported, so it keeps them apart, and the species ring counts each
+species twice. It matters for any species-level statement:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cod</span> <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">predator_common</span> <span class="op">==</span> <span class="st">"Atlantic cod"</span>, <span class="op">]</span></span>
+<span><span class="va">prep_cod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
+<span>                       verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_fo_table.html">dv_fo_table</a></span><span class="op">(</span><span class="va">prep_cod</span>, rank <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span>
+<span><span class="va">fo</span><span class="op">[</span><span class="va">fo</span><span class="op">$</span><span class="va">taxon</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span>, <span class="op">]</span></span>
+<span><span class="co">#&gt;       rank                taxon n_stomachs n_total pct_fo</span></span>
+<span><span class="co">#&gt; 5  species   Aphrodita aculeata         42     991   4.24</span></span>
+<span><span class="co">#&gt; 6  species   Aphrodite aculeata         25     991   2.52</span></span>
+<span><span class="co">#&gt; 9  species  Trisopterus esmarki         21     991   2.12</span></span>
+<span><span class="co">#&gt; 14 species Trisopterus esmarkii         15     991   1.51</span></span></code></pre></div>
+<p>When you work offline, the same correction is one line per pair, made
+on your copy of the data before <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code>. Keep it in
+the script, so the change is visible:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">accepted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"231869"</span> <span class="op">=</span> <span class="fl">129840L</span>,   <span class="co"># Aphrodite aculeata  -&gt; Aphrodita aculeata</span></span>
+<span>              <span class="st">"400596"</span> <span class="op">=</span> <span class="fl">126444L</span><span class="op">)</span>   <span class="co"># Trisopterus esmarki -&gt; Trisopterus esmarkii</span></span>
+<span><span class="va">fix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">cod</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">accepted</span><span class="op">)</span></span>
+<span><span class="va">cod</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">[</span><span class="va">fix</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">accepted</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">cod</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">[</span><span class="va">fix</span><span class="op">]</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">cod</span><span class="op">$</span><span class="va">prey_name</span><span class="op">[</span><span class="va">fix</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">scientific_name</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">cod</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">[</span><span class="va">fix</span><span class="op">]</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">prep_cod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
+<span>                       verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_fo_table.html">dv_fo_table</a></span><span class="op">(</span><span class="va">prep_cod</span>, rank <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span>
+<span><span class="va">fo</span><span class="op">[</span><span class="va">fo</span><span class="op">$</span><span class="va">taxon</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span>, <span class="op">]</span></span>
+<span><span class="co">#&gt;      rank                taxon n_stomachs n_total pct_fo</span></span>
+<span><span class="co">#&gt; 3 species   Aphrodita aculeata         67     991   6.76</span></span>
+<span><span class="co">#&gt; 6 species Trisopterus esmarkii         36     991   3.63</span></span></code></pre></div>
+<p>Merged, the sea mouse is found in 67 cod stomachs (6.76%) and ranks
+number 2 among the named species of the cod diet by frequency of
+occurrence; split, its more common spelling ranked number 4.</p>
+<p><code>name_check</code> compares the name in your table with the name
+WoRMS holds for the AphiaID. In <code>ices_diet</code> the prey names
+were taken from WoRMS by AphiaID, so they agree by construction. In your
+own data, <code>"differs"</code> usually means that a name or an ID was
+mistyped, and the two point to different taxa.</p>
+</div>
+<div class="section level3">
+<h3 id="matching-by-name-exact-and-fuzzy">Matching by name: <code>exact</code> and <code>fuzzy</code><a class="anchor" aria-label="anchor" href="#matching-by-name-exact-and-fuzzy"></a>
+</h3>
+<p>Names are used only when there is no AphiaID. To see what that path
+does, take a few ICES prey names, one of them misspelled:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">keys</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>prey_id   <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>                   prey_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Crangon crangon"</span>, <span class="st">"Ammodytidae"</span>, <span class="st">"Crangon crangom"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms</a></span><span class="op">(</span><span class="va">keys</span><span class="op">)</span></span></code></pre></div>
+<p>The first two names should come back as <code>exact</code>. The third
+fails the exact match; with <code>fuzzy = TRUE</code>, WoRMS TAXAMATCH
+proposes the closest name it knows and the row is logged as
+<code>fuzzy</code>, with the proposal in <code>matched_name</code>. For
+a one-letter slip the proposal is usually the intended name, but a near
+match can just as well be another taxon one letter away. Check every
+fuzzy row.</p>
+</div>
+<div class="section level3">
+<h3 id="the-other-columns-of-the-log">The other columns of the log<a class="anchor" aria-label="anchor" href="#the-other-columns-of-the-log"></a>
+</h3>
+<p><code>lineage_ok</code> is <code>FALSE</code> when the prey was
+matched but WoRMS returned no classification, for example because the
+connection failed. Those prey count as unidentified at every rank until
+you run the lookup again. Failed lookups are not stored in the cache, so
+the next run asks WoRMS again. <code>names_seen</code> lists every name
+found under one key: more than one name under the same AphiaID is worth
+a look. <code>homonym</code> flags a name with several accepted WoRMS
+records.</p>
+<p>Successful lookups are cached on disk (in
+<code>tools::R_user_dir("DietView", "cache")</code>), so a rerun only
+queries what changed. The log also records when the taxonomy was
+retrieved and which <code>worrms</code> version was used, in its
+<code>retrieved</code> and <code>worrms_version</code> attributes.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="reading-the-report">Reading the report<a class="anchor" aria-label="anchor" href="#reading-the-report"></a>
+</h2>
+<p><code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code> returns the prey that need a look,
+largest number of records first:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">review</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report</a></span><span class="op">(</span><span class="va">prep</span>, which <span class="op">=</span> <span class="st">"review"</span><span class="op">)</span></span>
 <span><span class="va">review</span></span>
 <span></span>
-<span><span class="co"># write it out for a co-author to check</span></span>
-<span><span class="fu"><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report</a></span><span class="op">(</span><span class="va">prep</span>, which <span class="op">=</span> <span class="st">"all"</span>, file <span class="op">=</span> <span class="st">"taxonomy_log.csv"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># the whole log, to archive or to send to a co-author</span></span>
+<span><span class="fu"><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report</a></span><span class="op">(</span><span class="va">prep</span>, which <span class="op">=</span> <span class="st">"all"</span>, file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"taxonomy_log.csv"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>On the ICES data, the rows to expect there are unaccepted AphiaIDs
+(<code>id_synonym</code>), with the number of records each one affects.
+Unresolved prey you did not expect are the ones to chase.</p>
 </div>
 <div class="section level2">
-<h2 id="correcting-what-is-wrong">Correcting what is wrong<a class="anchor" aria-label="anchor" href="#correcting-what-is-wrong"></a>
+<h2 id="the-frozen-alternative-ices_lineage">The frozen alternative: <code>ices_lineage</code><a class="anchor" aria-label="anchor" href="#the-frozen-alternative-ices_lineage"></a>
 </h2>
-<p>Once you have reviewed the report, fix the source names, or freeze a
-curated lineage table and switch to the offline, reproducible path:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lineage</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"my_curated_lineage.csv"</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span>
+<p>A lineage table is the reproducible path: no network, no change
+between runs. <code>ices_lineage</code> is one such table, with one row
+per AphiaID:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">ices_lineage</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 461  10</span></span>
+<span><span class="va">ices_lineage</span><span class="op">[</span><span class="va">ices_lineage</span><span class="op">$</span><span class="va">scientific_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Crangon crangon"</span>, <span class="st">"Ammodytidae"</span>,</span>
+<span>                                                  <span class="st">"Crustacea"</span>, <span class="st">"Pisces"</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="co">#&gt;    prey_aphia_id scientific_name worms_rank  kingdom     phylum        class</span></span>
+<span><span class="co">#&gt; 48        107552 Crangon crangon    Species Animalia Arthropoda Malacostraca</span></span>
+<span><span class="co">#&gt; 77          1066       Crustacea  Subphylum Animalia Arthropoda         &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 81         11676          Pisces Superclass Animalia   Chordata         &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 92        125516     Ammodytidae     Family Animalia   Chordata    Teleostei</span></span>
+<span><span class="co">#&gt;          order      family   genus         species</span></span>
+<span><span class="co">#&gt; 48    Decapoda Crangonidae Crangon Crangon crangon</span></span>
+<span><span class="co">#&gt; 77        &lt;NA&gt;        &lt;NA&gt;    &lt;NA&gt;            &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 81        &lt;NA&gt;        &lt;NA&gt;    &lt;NA&gt;            &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 92 Perciformes Ammodytidae    &lt;NA&gt;            &lt;NA&gt;</span></span></code></pre></div>
+<p>It was not produced by <code><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms()</a></code>. It comes
+from the WoRMS classification that the R package stomachr (Lindmark
+2026) compiled for the AphiaIDs of the ICES extract; the script
+<code>data-raw/ices_data.R</code> in the package sources reshapes it
+into DietView’s seven ranks. Two columns are derived there rather than
+read from WoRMS: <code>kingdom</code>, from the phylum, and
+<code>species</code>, from the name when its WoRMS rank is species or
+subspecies (a subspecies is reported under its species). A name above
+species keeps only the ranks WoRMS gives it, so “Crustacea” has a phylum
+and nothing below. It is used with <code>taxonomy = "table"</code>; the
+key column <code>prey_aphia_id</code> has the same name as the prey key
+of <code>ices_diet</code>:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
+<span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">prep</span></span>
+<span><span class="co">#&gt; &lt;dietview_prep&gt;</span></span>
+<span><span class="co">#&gt;   records   : 8530 </span></span>
+<span><span class="co">#&gt;   stomachs  : 4222 </span></span>
+<span><span class="co">#&gt;   predators : 22 </span></span>
+<span><span class="co">#&gt;   ranks     : kingdom &gt; phylum &gt; class &gt; order &gt; family &gt; genus &gt; species </span></span>
+<span><span class="co">#&gt;   covariates: region, year, quarter </span></span>
+<span><span class="co">#&gt;   source    : table</span></span></code></pre></div>
+<p>A table path has no match log: the lineage is taken as given.
+<code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> warns if a prey key is missing from the table,
+and those records are kept as unidentified at every rank.</p>
+</div>
+<div class="section level2">
+<h2 id="correcting-and-freezing-your-own-lookup">Correcting and freezing your own lookup<a class="anchor" aria-label="anchor" href="#correcting-and-freezing-your-own-lookup"></a>
+</h2>
+<p>Fix the names or IDs the report lists in your source table and run
+the lookup again. When the log is clean, save the lineage, keyed by the
+same column as your data, and switch to the offline path for every later
+run:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">lineage</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">spec</span><span class="op">$</span><span class="va">prey_id</span>, <span class="va">prep</span><span class="op">$</span><span class="va">ranks</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">lin_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"lineage_2026-10-20.csv"</span><span class="op">)</span>   <span class="co"># use your project folder</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">lineage</span>, <span class="va">lin_file</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">lineage</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">lin_file</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">lineage</span><span class="op">)</span></span></code></pre></div>
+<p>The lineage table fixes the taxonomic snapshot your figures were made
+from. Archive it with your data, together with the log, and note the
+retrieval date and the <code>worrms</code> version, because WoRMS
+changes.</p>
 </div>
 <div class="section level2">
-<h2 id="exact-only-conservative-matching">Exact-only, conservative matching<a class="anchor" aria-label="anchor" href="#exact-only-conservative-matching"></a>
+<h2 id="exact-matching-only">Exact matching only<a class="anchor" aria-label="anchor" href="#exact-matching-only"></a>
 </h2>
-<p>To disable fuzzy matching entirely (exact names and known AphiaIDs
-only):</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>To turn off TAXAMATCH matching and keep only known AphiaIDs and exact
+names:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"worms"</span>, fuzzy <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -184,7 +431,7 @@ only):</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthene A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
 </div>
 
 <div class="pkgdown-footer-right">

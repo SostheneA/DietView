@@ -2,24 +2,25 @@
 
 ## Authors
 
-- **Sosthene A. V. Akia**. Author, maintainer.
+- **Sosthène A. V. Akia**. Author, maintainer.
 
-- **CADI Gulf Center**. Author, copyright holder.
+- **CADI Gulf Center**. Funder.
 
 ## Citation
 
 Source:
 [`inst/CITATION`](https://github.com/SostheneA/DietView/blob/HEAD/inst/CITATION)
 
-Akia S, CADI Gulf Center (2026). *DietView: An R Package for
-Interactive, Taxonomically Complete Diet Visualization from
-Stomach-Content Data*. R package version 0.1.0,
-<https://sosthenea.github.io/DietView/>.
+Akia SA (2026). *DietView: An R package for interactive, hierarchical
+visualization of predator stomach-content data*.
+[doi:10.5281/zenodo.XXXXXXX](https://doi.org/10.5281/zenodo.XXXXXXX), R
+package version 0.1.0, <https://sosthenea.github.io/DietView/>.
 
     @Manual{,
-      title = {DietView: An R Package for Interactive, Taxonomically Complete Diet Visualization from Stomach-Content Data},
-      author = {Sosthene A. V. Akia and {CADI Gulf Center}},
+      title = {{DietView}: An {R} package for interactive, hierarchical visualization of predator stomach-content data},
+      author = {Sosthène A. V. Akia},
       year = {2026},
       note = {R package version 0.1.0},
       url = {https://sosthenea.github.io/DietView/},
+      doi = {10.5281/zenodo.XXXXXXX},
     }

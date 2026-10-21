@@ -1,9 +1,15 @@
 # Adapting DietView to your own survey
 
-DietView is survey-agnostic. Adapting it is almost entirely a matter of
-writing a different
-[`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md).
-This article collects the extension points.
+DietView makes few assumptions about your data: one row per prey record,
+a predator column, a stomach column and a prey key. Everything else is
+declared. This article goes through the choices you make when you bring
+a survey of your own, in the order you meet them. The worked example is
+the public ICES stomach data that ship with the package (ICES Stomach
+Content Database, ICES, Copenhagen; extract distributed with the R
+package stomachr, Lindmark 2026; see
+[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)):
+a real survey export, with its own column names and codes, that was not
+designed for DietView.
 
 ``` r
 
@@ -12,64 +18,373 @@ library(DietView)
 
 ## 1. Map your columns
 
-Nothing is hard-coded — declare roles once and every function follows:
+Start from the table as you have it. `ices_diet` keeps the column names
+of the stomachr extract:
 
 ``` r
 
-spec <- dv_spec(predator = "sp", stomach = "stom", prey_id = "aphia",
-                weight = "wt_g", covariates = c("yr", "zone"))
+names(ices_diet)
+#>  [1] "stomach_id"        "prey_aphia_id"     "prey_name"        
+#>  [4] "item_type"         "digestion_stage"   "digestion_label"  
+#>  [7] "prey_count"        "prey_weight_g"     "prey_length_cm"   
+#> [10] "haul_id"           "country"           "survey"           
+#> [13] "year"              "month"             "quarter"          
+#> [16] "lat"               "lon"               "ices_rectangle"   
+#> [19] "depth_m"           "region"            "predator_aphia_id"
+#> [22] "predator_latin"    "predator_common"   "n_fish_pooled"    
+#> [25] "length_cm"         "weight_g"          "stomach_empty"    
+#> [28] "regurgitated"
 ```
 
-## 2. Go fully offline and reproducible
+Then decide which column plays which role. Your table keeps its own
+column names;
+[`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)
+only records the mapping:
 
-Freeze taxonomy into a lineage table and use `taxonomy = "table"` — no
-`worrms`, no network, identical results every run:
+| Role | ICES column | Note |
+|----|----|----|
+| `predator` | `predator_common` | a display label; `predator_aphia_id` or `predator_latin` would do as well |
+| `predator_latin` | `predator_latin` | used for the species cards |
+| `stomach` | `stomach_id` | must be unique across the whole table |
+| `prey_id` | `prey_aphia_id` | the WoRMS AphiaID, `NA` for unidentified material |
+| `prey_name` | `prey_name` | the scientific name, used when there is no ID |
+| `weight` | `prey_weight_g` | grams |
+| `count` | `prey_count` | individuals per record, for %N |
+| `digestion` | `digestion_stage` or a label built from it | see below |
+| `covariates` | `region`, `year`, `quarter`, … | anything you will compare across |
+
+Survey exports usually need a few decisions before the mapping is
+complete. The ICES data need four.
+
+**The stomach identifier.** It must be unique across the whole table,
+not only within a predator, a haul or a year: stomach counts (frequency
+of occurrence, aggregation thresholds, matrices) count distinct
+identifiers, so two stomachs that share an identifier count as one.
+Check it:
 
 ``` r
 
-lineage <- read.csv("my_curated_lineage.csv", na.strings = c("NA", ""))
-prep <- dv_prepare(mydata, spec, taxonomy = "table", lineage = lineage)
+pred_per_stomach <- tapply(ices_diet$predator_common, ices_diet$stomach_id,
+                           function(z) length(unique(z)))
+table(pred_per_stomach)
+#> pred_per_stomach
+#>    1 
+#> 4231
+hauls_per_stomach <- tapply(ices_diet$haul_id, ices_diet$stomach_id,
+                            function(z) length(unique(z)))
+table(hauls_per_stomach)
+#> hauls_per_stomach
+#>    1 
+#> 4231
 ```
 
-## 3. Custom ranks
+Each ICES stomach belongs to one predator and one haul. If your
+identifiers restart in each haul or each year, build a unique one first,
+for example
+`mydata$stom <- paste(mydata$haul_id, mydata$fish_no, sep = "_")`. A
+related case: 7 stomach samples in `ices_diet` pool two fish
+(`n_fish_pooled == 2`). They are one identifier and are counted as one
+stomach; say so, or drop them.
 
-Display fewer or different ranks by passing your own `ranks`:
+**What counts as diet.** The export lists everything found in the
+stomach:
 
 ``` r
 
-spec <- dv_spec(predator = "sp", stomach = "stom", prey_name = "prey",
-                ranks = c("phylum", "class", "order", "family", "genus"))
+table(ices_diet$item_type)
+#> 
+#>     non_food         prey unidentified 
+#>           67         8019         1553
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+sum(phylum %in% "Nematoda")
+#> [1] 1042
 ```
 
-## 4. Custom colours
-
-Pass a named vector to `dv_sunburst(colors = )`, or build one with
-[`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md):
+Non-food items (sand, stones, plastic) are not diet. Nematodes in fish
+stomachs are mostly parasites. Unidentified material is diet whose taxon
+is unknown, and it stays. DietView does not filter for you; the
+documentation drops the first two:
 
 ``` r
 
-pal <- dv_palette(c("Teleostei", "Malacostraca", "Polychaeta", "NA"))
-pal
-#>    Teleostei Malacostraca   Polychaeta           NA 
-#>    "#1f77b4"    "#aec7e8"    "#ff7f0e"    "#FFFFFF"
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
 ```
 
-## 5. New covariates on the fly
-
-Add columns, list them in `dv_spec(covariates = )`, and derive periods
-and length bins with the helpers:
+**Digestion codes.** ICES reports the digestion stage as a code (0, 1,
+2), missing for many records. You can declare the code column directly
+(`digestion = "digestion_stage"`), but the missing stages then appear as
+an `NA` group in
+[`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md),
+easy to confuse with unidentified prey, and a bare code is hard to read
+in a table. The bundled data carry a label column built like this:
 
 ``` r
 
-dv_add_period(c(2005, 2012, 2019), breaks = c(2003, 2010, 2020))
-#> [1] 2003-2010 2010-2020 2010-2020
-#> Levels: 2003-2010 2010-2020
-dv_size_bins(c(22, 41, 58), breaks = c(0, 30, 45, 60))
-#> [1] [0-30[  [30-45[ [45-60[
-#> Levels: [0-30[ [30-45[ [45-60[
+lab <- c("0" = "0 pristine", "1" = "1 affected", "2" = "2 skeletal remains")
+dl  <- unname(lab[as.character(dat$digestion_stage)])
+dl[is.na(dl)] <- "not recorded"
+identical(dl, dat$digestion_label)
+#> [1] TRUE
+table(dl)
+#> dl
+#>         0 pristine         1 affected 2 skeletal remains       not recorded 
+#>                561               3494               2206               2269
 ```
 
-## 6. Non-marine or mixed taxa
+The labels are inferred from the older ICES format, whose three classes
+match the shares of codes 0, 1 and 2; check them against the ICES
+vocabulary before you rely on them. “not recorded” keeps the records
+without a stage in the table as a group of their own.
 
-WoRMS is marine-focused. For terrestrial or freshwater prey, supply your
-own lineage table (step 2) rather than the `"worms"` path.
+**Units.** Check them before anything else, against the survey
+documentation and against the values. When the bundled data were built,
+two unit errors in the predator variables were fixed (Belgian lengths
+reported in mm, Danish weights in kg). A quick look at the range of each
+numeric column per country catches most of them:
+
+``` r
+
+round(sapply(split(dat$length_cm, dat$country), max, na.rm = TRUE))
+#>  BE  DE  DK  NL  NO  SE 
+#>  35  85 104  95  57  97
+```
+
+With those decisions made, declare and validate:
+
+``` r
+
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+dv_validate(dat, spec)
+#> 8530 records from 4222 stomachs of 22 predator(s); 2305 stomach(s) hold a single record; 531 record(s) lack a weight.
+```
+
+Give both a prey ID and a prey name when you have them: the ID is used
+for the lookup, and the name lets DietView check that the two agree. In
+the ICES data every identified prey has an AphiaID; the 1,553 records
+without one are the unidentified material.
+
+## 2. Attach a taxonomy you can check
+
+With `taxonomy = "worms"`, DietView looks each distinct prey up in the
+World Register of Marine Species and keeps a log of how it was matched.
+Read that log before you use the result:
+
+``` r
+
+prep <- dv_prepare(dat, spec, taxonomy = "worms")
+dv_taxonomy_report(prep)   # the matches that need a look, largest first
+```
+
+For the ICES data that means 252 lookups by AphiaID, plus one by name
+for “Unidentified material”, which is expected to stay unresolved. Each
+prey gets a `match_type`:
+
+| `match_type` | Meaning | What to do |
+|----|----|----|
+| `id` | The AphiaID is accepted in WoRMS | Nothing, unless `name_check` is `"differs"` |
+| `id_synonym` | The AphiaID is unaccepted; its accepted ID was used | Check that the accepted name is the taxon you meant |
+| `id_unchecked` | WoRMS could not be reached to check the ID | Run again later |
+| `exact` | No ID; the name matched exactly | Nothing |
+| `fuzzy` | No ID; the name was matched by TAXAMATCH, which tolerates misspellings | Check every one: a near match can be a different taxon |
+| `unresolved` | No match | Correct the name, or accept that the prey stays unidentified |
+
+A `name_check` of `"differs"` means the name in your table is not the
+name WoRMS holds for that AphiaID: either the ID or the name was
+mistyped. A `lineage_ok` of `FALSE` means the prey was matched but its
+classification could not be retrieved; its records count as unidentified
+until you run the lookup again. Fix what the report lists, then save the
+lineage.
+
+## 3. Freeze the taxonomy for the analysis
+
+WoRMS changes. For an analysis you will publish, resolve the taxonomy
+once, save it as a lineage table, and run every later step from that
+file. `ices_lineage` is such a table:
+
+``` r
+
+dim(ices_lineage)
+#> [1] 461  10
+ices_lineage[ices_lineage$scientific_name %in% c("Crangon crangon", "Crustacea", "Pisces"), ]
+#>    prey_aphia_id scientific_name worms_rank  kingdom     phylum        class
+#> 48        107552 Crangon crangon    Species Animalia Arthropoda Malacostraca
+#> 77          1066       Crustacea  Subphylum Animalia Arthropoda         <NA>
+#> 81         11676          Pisces Superclass Animalia   Chordata         <NA>
+#>       order      family   genus         species
+#> 48 Decapoda Crangonidae Crangon Crangon crangon
+#> 77     <NA>        <NA>    <NA>            <NA>
+#> 81     <NA>        <NA>    <NA>            <NA>
+```
+
+It has one row per AphiaID, a key column named like the `prey_id` column
+of the data (`prey_aphia_id`), and one column per rank; an empty cell
+means the prey was not identified to that rank. `scientific_name` and
+`worms_rank` are kept for the reader and ignored by DietView.
+
+Freezing your own takes two lines after a WoRMS run, and the frozen
+table gives exactly the same result offline. Here, starting from a
+prepared object:
+
+``` r
+
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+                   verbose = FALSE)
+
+keep <- !is.na(prep$data$prey_aphia_id)
+lineage <- unique(prep$data[keep, c("prey_aphia_id", prep$ranks)])
+nrow(lineage)
+#> [1] 252
+
+f <- file.path(tempdir(), "lineage_2026-10-20.csv")
+write.csv(lineage, f, row.names = FALSE)
+
+lineage2 <- read.csv(f, na.strings = c("NA", ""))
+prep2 <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage2,
+                    verbose = FALSE)
+identical(dv_tree(prep), dv_tree(prep2))
+#> [1] TRUE
+```
+
+This path needs neither `worrms` nor a network connection, and it gives
+the same result every time it is run on the same files. Archive the
+lineage table with your data and record the date it was retrieved. A
+prey that is missing from the lineage table, or a key that appears
+twice, triggers a warning or an error instead of passing unnoticed:
+
+``` r
+
+crangon <- ices_lineage$prey_aphia_id[ices_lineage$scientific_name == "Crangon crangon"]
+prep3 <- dv_prepare(dat, spec, taxonomy = "table",
+                    lineage = lineage2[lineage2$prey_aphia_id != crangon, ],
+                    verbose = FALSE)
+#> Warning: 1 prey key(s) are absent from `lineage` (e.g. 107552); their records
+#> are treated as fully unidentified.
+```
+
+If you build the lineage table by hand, for example for prey outside
+WoRMS, take the classification from one stated authority and cite it.
+
+## 4. Choose the ranks
+
+By default DietView shows seven ranks, kingdom to species. Pass `ranks`
+to show others; every rank you list must be a column of the lineage
+table:
+
+``` r
+
+spec5 <- dv_spec(predator = "predator_common", stomach = "stomach_id",
+                 prey_id = "prey_aphia_id", prey_name = "prey_name",
+                 weight = "prey_weight_g",
+                 ranks = c("phylum", "class", "order", "family", "genus"))
+prep5 <- dv_prepare(dat, spec5, taxonomy = "table", lineage = ices_lineage,
+                    verbose = FALSE)
+c(seven_ranks = nrow(dv_tree(prep)), five_ranks = nrow(dv_tree(prep5)))
+#> seven_ranks  five_ranks 
+#>         702         458
+```
+
+Rank names are WoRMS rank names in lower case, so on the WoRMS path
+intermediate ranks such as `"subclass"` or `"infraorder"` can be added.
+A frozen table holds only the ranks it was built with: `ices_lineage`
+has the seven default ones, so adding `"infraorder"` (which would
+separate crabs from shrimps inside Decapoda) means going back to WoRMS
+once and freezing again.
+
+Fewer ranks make a simpler figure, but they also merge information:
+without `"species"`, a prey named to species and one named only to its
+genus look the same. Check one more thing on your own prey list: some
+taxa have no entry at one of the requested ranks in WoRMS. Such a prey
+shows an unidentified node at that rank with named taxa beyond it, and
+that node then mixes prey that were not identified with prey that were
+identified but have no taxon at that rank. Find those nodes before you
+report an unidentified share:
+
+``` r
+
+tree <- dv_tree(prep)
+named_kids <- tapply(tree$label != "NA", tree$parent, any)
+holes <- tree[tree$label == "NA" & tree$id %in% names(named_kids)[named_kids], ]
+holes[, c("id", "rank", "value_occ")]
+#>                                  id  rank value_occ
+#> 45           Animalia|Priapulida|NA Class         7
+#> 55  Animalia|Annelida|Polychaeta|NA Order       470
+#> 69 Animalia|Chordata|Leptocardii|NA Order         1
+```
+
+In the ICES data these are the polychaetes, whose unidentified order
+node holds 470 records, some of them in families that WoRMS places in no
+order; a lancelet (Leptocardii) with a family but no order; and
+Priapulida, which have no class. Their `NA` rows in
+[`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md)
+at that rank are not all unidentified prey.
+
+## 5. Colors
+
+[`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md)
+gives each name a color and unidentified nodes white. Build it from the
+names in your own data rather than typing them:
+
+``` r
+
+pal <- dv_palette(prep$data$class)
+length(pal)
+#> [1] 21
+head(pal, 6)
+#> Malacostraca    Teleostei     Bivalvia  Cephalopoda   Polychaeta Phaeophyceae 
+#>    "#1f77b4"    "#aec7e8"    "#ff7f0e"    "#ffbb78"    "#2ca02c"    "#98df8a"
+```
+
+Pass the result to `dv_sunburst(colors = pal)`. To give one taxon a
+color of your choice, change that element:
+`pal[["Malacostraca"]] <- "#1f77b4"`. The palette has 20 colors and
+reuses them after that. With several hundred taxa, as here,
+`dv_palette_tree(tree)` is the better choice: one hue per phylum, tints
+below it.
+
+## 6. Periods and length classes
+
+Add a covariate column, list it in `dv_spec(covariates = )`, and build
+periods and length bins with the helpers:
+
+``` r
+
+table(dat$year)
+#> 
+#> 2020 2021 2022 2023 2024 
+#>   17   13 3396 2029 3075
+dv_add_period(c(2020, 2022, 2023, 2024), breaks = c(2019, 2022, 2024))
+#> [1] 2019-2022 2019-2022 2023-2024 2023-2024
+#> Levels: 2019-2022 2023-2024
+dv_size_bins(c(15, 20, 34, 58), breaks = c(0, 20, 35, 50, 110))
+#> [1] [0, 20)   [20, 35)  [20, 35)  [50, 110)
+#> Levels: [0, 20) [20, 35) [35, 50) [50, 110)
+```
+
+A year on an inner break goes to the earlier period (2022 above), and a
+length on an inner break goes to the bin that starts there (20 cm
+above). Values outside the breaks get no level. The ICES years are very
+uneven, so choose breaks from the table of years, not from round
+numbers. The article on covariates shows how to compare diets across the
+levels.
+
+## 7. Freshwater, terrestrial and mixed prey
+
+WoRMS covers marine taxa and many brackish and freshwater ones. When
+DietView matches a name without an ID, it restricts the search to marine
+records, so a strictly freshwater or terrestrial prey named without an
+AphiaID will often be `unresolved`. For such prey, build a lineage table
+from an authority that covers them (for example GBIF or the Catalogue of
+Life) and use `taxonomy = "table"` (section 3). If your prey list mixes
+marine and other taxa, resolve the marine part with WoRMS, append the
+rest by hand from the other authority, and say in your methods which
+authority supplied which part.

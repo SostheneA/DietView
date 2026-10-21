@@ -6,7 +6,21 @@ What DietView is and how the pieces fit together.
 
 - [`DietView`](https://sosthenea.github.io/DietView/reference/DietView-package.md)
   [`DietView-package`](https://sosthenea.github.io/DietView/reference/DietView-package.md)
-  : DietView: taxonomically complete visualization of diet data
+  : DietView: interactive, hierarchical visualization of predator
+  stomach-content data
+
+## Example data
+
+Public stomach-content data from the ICES Stomach Content Database
+(North Sea, Skagerrak-Kattegat and Baltic Sea, 2020-2024), with their
+frozen WoRMS lineage, used throughout the examples and articles.
+
+- [`ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)
+  : Stomach contents of North-East Atlantic fishes (ICES, 2020-2024)
+- [`ices_stomachs`](https://sosthenea.github.io/DietView/reference/ices_stomachs.md)
+  : Sampled stomachs of the ICES example data, empty ones included
+- [`ices_lineage`](https://sosthenea.github.io/DietView/reference/ices_lineage.md)
+  : Frozen WoRMS lineage for the ICES example data
 
 ## 1 · Declare and validate your data
 
@@ -16,21 +30,21 @@ hard-coded; every other function reads this spec.
 - [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)
   : Declare how your columns map to DietView's roles
 - [`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.md)
-  : Validate a long table against a spec
+  : Check a long diet table against a spec before any work is done
 
 ## 2 · Attach taxonomy
 
-Resolve prey to the WoRMS classification (or join your own lineage),
-keeping unresolved prey as an explicit NA category and logging every
-match for review.
+Resolve prey to the WoRMS classification (or join your own lineage
+table), keeping unresolved prey as an explicit unidentified category and
+logging every match for review.
 
 - [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)
   : Prepare a diet table for DietView (validate + add taxa)
 - [`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.md)
-  : Resolve prey to the WoRMS classification (exact, then optional
+  : Resolve prey to the WoRMS classification (id, exact name, then
   fuzzy)
 - [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md)
-  : Review fuzzy and unresolved prey matches
+  : Review doubtful prey matches
 
 ## 3 · Build covariates
 
@@ -44,8 +58,12 @@ Derive periods and length bins to stratify the views.
 ## 4 · Compute within-rank importance
 
 Aggregate records into a multi-rank tree where each rank sums to 100
-percent, NA included, in both occurrence and weight currencies.
+percent, unidentified records included, by prey records (or numbers) and
+by weight.
 
+- [`dv_tree()`](https://sosthenea.github.io/DietView/reference/dv_tree.md)
+  : Build the diet tree from a prepared dataset, using the columns in
+  its spec
 - [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)
   : Build the multi-rank tree with within-rank importance
 - [`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md)
@@ -53,12 +71,14 @@ percent, NA included, in both occurrence and weight currencies.
 
 ## 5 · Draw figures
 
-Render the multi-rank sunburst and the stable colour dictionary.
+Render the multi-rank sunburst and its color dictionaries.
 
 - [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md)
   : Render a diet sunburst
 - [`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md)
-  : Build a colour dictionary for taxon labels
+  : Build a color dictionary for taxon labels
+- [`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)
+  : Colors that follow the taxonomic hierarchy
 
 ## 6 · Quantify the digestion identification bias
 

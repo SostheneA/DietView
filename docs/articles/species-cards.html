@@ -41,14 +41,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/dietview.html">Getting started with DietView</a></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
     <li><a class="dropdown-item" href="../articles/covariates.html">Covariate stratification</a></li>
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
+    <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
@@ -89,59 +91,245 @@
 
     
     
-<p>Each predator in the dashboard gets an identification card with a
-photo and a short description. <code><a href="../reference/dv_species_card_assets.html">dv_species_card_assets()</a></code>
-resolves those assets and returns a base64 data URI, so the dashboard
-stays a single self-contained file.</p>
-<div class="section level2">
-<h2 id="resolution-order">Resolution order<a class="anchor" aria-label="anchor" href="#resolution-order"></a>
-</h2>
-<p>Photos are resolved in priority order, stopping at the first hit:</p>
-<ol style="list-style-type: decimal">
-<li>an explicit local path you provide in
-<code>species_info</code>;</li>
-<li>a local file named after the predator (in
-<code>image_dir</code>);</li>
-<li>a local file named after the Latin name;</li>
-<li>a named Wikimedia Commons file;</li>
-<li>a Wikipedia thumbnail fetched by Latin name (or common name), cached
-to disk.</li>
-</ol>
-<p>Descriptions come from an explicit string, a Wikipedia summary
-extract, or a Commons image description. Every network lookup is wrapped
-so that a failure degrades gracefully to a text-only card.</p>
-</div>
-<div class="section level2">
-<h2 id="fully-offline">Fully offline<a class="anchor" aria-label="anchor" href="#fully-offline"></a>
-</h2>
-<p>Disable all network lookups with <code>use_wiki = FALSE</code> and
-supply your own assets:</p>
+<p>Each predator in the dashboard gets a card with a photo and a short
+description. <code><a href="../reference/dv_species_card_assets.html">dv_species_card_assets()</a></code> finds those for one
+predator and returns the photo as a data URI, so the dashboard stays a
+single file. Cards exist for predators only; prey have no cards.</p>
+<p>The examples use the predators of the public ICES stomach data that
+ship with the package (ICES Stomach Content Database, ICES, Copenhagen;
+extract distributed with the R package stomachr, Lindmark 2026; see
+<code><a href="../reference/ices_diet.html">?ices_diet</a></code>). The offline chunks run, with stand-in images
+drawn in a temporary folder; the chunks that go online are shown but not
+run.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SostheneA/DietView" class="external-link">DietView</a></span><span class="op">)</span></span>
-<span><span class="va">info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  <span class="st">"Atlantic cod"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    desc  <span class="op">=</span> <span class="st">"Demersal gadid; opportunistic predator of fish and invertebrates."</span>,</span>
-<span>    photo <span class="op">=</span> <span class="st">"images/atlantic_cod.jpg"</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  <span class="st">"American plaice"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    desc  <span class="op">=</span> <span class="st">"Right-eyed flounder; feeds on brittle stars, polychaetes, and small crustaceans."</span>,</span>
-<span>    photo <span class="op">=</span> <span class="st">"images/american_plaice.jpg"</span></span>
-<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="co"># drop non-food items and nematodes (mostly parasites, not prey)</span></span>
+<span><span class="va">phylum</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">phylum</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">prey_aphia_id</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">ices_diet</span><span class="op">[</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span> <span class="op">!=</span> <span class="st">"non_food"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span>, <span class="op">]</span></span>
+<span></span>
+<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span></span>
+<span>  predator       <span class="op">=</span> <span class="st">"predator_common"</span>,</span>
+<span>  predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span>
+<span>  stomach        <span class="op">=</span> <span class="st">"stomach_id"</span>,</span>
+<span>  prey_id        <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,</span>
+<span>  prey_name      <span class="op">=</span> <span class="st">"prey_name"</span>,</span>
+<span>  weight         <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span>
+<span>  count          <span class="op">=</span> <span class="st">"prey_count"</span>,</span>
+<span>  digestion      <span class="op">=</span> <span class="st">"digestion_label"</span>,</span>
+<span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/dv_build_html.html">dv_build_html</a></span><span class="op">(</span><span class="va">prep</span>, output <span class="op">=</span> <span class="st">"diet_dashboard.html"</span>,</span>
-<span>              species_info <span class="op">=</span> <span class="va">info</span>, image_dir <span class="op">=</span> <span class="st">"images"</span>, use_wiki <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
+<span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># the predators that will get a card, with the Latin names used online</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">dat</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">predator_common</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Atlantic cod"</span>, <span class="st">"Whiting"</span>,</span>
+<span>                                      <span class="st">"European plaice"</span>, <span class="st">"Atlantic mackerel"</span><span class="op">)</span>,</span>
+<span>           <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"predator_common"</span>, <span class="st">"predator_latin"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        predator_common        predator_latin</span></span>
+<span><span class="co">#&gt; 1              Whiting  Merlangius merlangus</span></span>
+<span><span class="co">#&gt; 18        Atlantic cod          Gadus morhua</span></span>
+<span><span class="co">#&gt; 162  Atlantic mackerel      Scomber scombrus</span></span>
+<span><span class="co">#&gt; 6491   European plaice Pleuronectes platessa</span></span></code></pre></div>
+<div class="section level2">
+<h2 id="where-the-photo-comes-from">Where the photo comes from<a class="anchor" aria-label="anchor" href="#where-the-photo-comes-from"></a>
+</h2>
+<p>DietView takes the first photo it finds, in this order:</p>
+<ol style="list-style-type: decimal">
+<li>a local file you name in <code>species_info</code>;</li>
+<li>a local file in <code>image_dir</code> named after the predator
+(<code>atlantic_cod.jpg</code>);</li>
+<li>a local file in <code>image_dir</code> named after its Latin name
+(<code>gadus_morhua.jpg</code>);</li>
+<li>with <code>photo_source = "inaturalist"</code>, a photo of the taxon
+on <a href="https://www.inaturalist.org/" class="external-link">iNaturalist</a>, if its
+license is one you accept;</li>
+<li>with <code>photo_source = "wikipedia"</code>, a Wikimedia Commons
+file you name, or the image of the Wikipedia article, if it is hosted on
+Commons.</li>
+</ol>
+<p>File names are the name in lower case with every run of other
+characters replaced by <code>_</code>, and the extension is
+<code>.jpg</code>, <code>.jpeg</code>, <code>.png</code> or
+<code>.webp</code>. The default, <code>photo_source = "none"</code>,
+never goes online. You can name both online sources, tried in the order
+given: <code>photo_source = c("inaturalist", "wikipedia")</code> uses
+Wikimedia Commons only for predators with no acceptable photo on
+iNaturalist.</p>
+<p>The description is the text you give in <code>species_info</code>.
+Otherwise, with either online source, it is the summary of the taxon’s
+Wikipedia article (iNaturalist returns the same summary). Wikipedia text
+is under CC BY-SA, so the card credits it under the description. If a
+network lookup fails, the card is built without that element.</p>
 </div>
 <div class="section level2">
-<h2 id="calling-the-resolver-directly">Calling the resolver directly<a class="anchor" aria-label="anchor" href="#calling-the-resolver-directly"></a>
+<h2 id="your-own-photos-offline">Your own photos, offline<a class="anchor" aria-label="anchor" href="#your-own-photos-offline"></a>
 </h2>
+<p>With your own photos nothing is fetched. Here four stand-in images
+play the part of your photographs; in a real project they are files you
+took or licensed:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">img_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"ices-cards"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">img_dir</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">stand_in</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">file</span>, <span class="va">label</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/png.html" class="external-link">png</a></span><span class="op">(</span><span class="va">file</span>, width <span class="op">=</span> <span class="fl">400</span>, height <span class="op">=</span> <span class="fl">250</span><span class="op">)</span></span>
+<span>  <span class="va">op</span> <span class="op">&lt;-</span> <span class="fu">graphics</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">graphics</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/graphics/frame.html" class="external-link">plot.new</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="fu">graphics</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/graphics/rect.html" class="external-link">rect</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, col <span class="op">=</span> <span class="st">"#dfe9f3"</span>, border <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
+<span>  <span class="fu">graphics</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/graphics/text.html" class="external-link">text</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="va">label</span>, cex <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span>  <span class="fu">graphics</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span></span>
+<span>  <span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.off</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu">stand_in</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">img_dir</span>, <span class="st">"atlantic_cod.png"</span><span class="op">)</span>, <span class="st">"Atlantic cod"</span><span class="op">)</span>     <span class="co"># common name</span></span>
+<span><span class="co">#&gt; agg_png </span></span>
+<span><span class="co">#&gt;       2</span></span>
+<span><span class="fu">stand_in</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">img_dir</span>, <span class="st">"merlangius_merlangus.png"</span><span class="op">)</span>, <span class="st">"Whiting"</span><span class="op">)</span>  <span class="co"># Latin name</span></span>
+<span><span class="co">#&gt; agg_png </span></span>
+<span><span class="co">#&gt;       2</span></span>
+<span><span class="fu">stand_in</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">img_dir</span>, <span class="st">"plaice_photo.png"</span><span class="op">)</span>, <span class="st">"European plaice"</span><span class="op">)</span>  <span class="co"># any name</span></span>
+<span><span class="co">#&gt; agg_png </span></span>
+<span><span class="co">#&gt;       2</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">img_dir</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "atlantic_cod.png"         "merlangius_merlangus.png"</span></span>
+<span><span class="co">#&gt; [3] "plaice_photo.png"</span></span></code></pre></div>
+<p>A photo carries its credit in one of two places. In
+<code>species_info</code>, next to the description:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">info</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Atlantic cod"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    desc    <span class="op">=</span> <span class="st">"Demersal gadid; small cod eat mostly crustaceans, large cod mostly fish."</span>,</span>
+<span>    author  <span class="op">=</span> <span class="st">"Survey photographer"</span>,</span>
+<span>    license <span class="op">=</span> <span class="st">"CC BY"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  <span class="st">"European plaice"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    desc    <span class="op">=</span> <span class="st">"Right-eyed flatfish of sandy bottoms; feeds on polychaetes, bivalves and brittle stars."</span>,</span>
+<span>    photo   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">img_dir</span>, <span class="st">"plaice_photo.png"</span><span class="op">)</span>,</span>
+<span>    credit  <span class="op">=</span> <span class="st">"Photo: survey archive, used with permission"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Or in a <code>.json</code> file with the same name as the image,
+which travels with it:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">'{"author": "Jane Doe", "license": "CC BY-SA",</span></span>
+<span><span class="st">  "url": "https://www.example.org/photos/whiting"}'</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">img_dir</span>, <span class="st">"merlangius_merlangus.json"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Now resolve each card, offline:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cards</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Atlantic cod"</span>, <span class="st">"Whiting"</span>, <span class="st">"European plaice"</span>, <span class="st">"Atlantic mackerel"</span><span class="op">)</span>,</span>
+<span>  <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">latin</span> <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">$</span><span class="va">predator_latin</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">p</span>, <span class="va">dat</span><span class="op">$</span><span class="va">predator_common</span><span class="op">)</span><span class="op">]</span></span>
+<span>    <span class="va">a</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_species_card_assets.html">dv_species_card_assets</a></span><span class="op">(</span><span class="va">p</span>, <span class="va">latin</span>, info <span class="op">=</span> <span class="va">info</span><span class="op">[[</span><span class="va">p</span><span class="op">]</span><span class="op">]</span>, image_dir <span class="op">=</span> <span class="va">img_dir</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>predator <span class="op">=</span> <span class="va">p</span>,</span>
+<span>               photo    <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">a</span><span class="op">$</span><span class="va">path</span><span class="op">)</span><span class="op">)</span> <span class="cn">NA</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">a</span><span class="op">$</span><span class="va">path</span><span class="op">)</span>,</span>
+<span>               source   <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">a</span><span class="op">$</span><span class="va">source</span><span class="op">)</span><span class="op">)</span> <span class="cn">NA</span> <span class="kw">else</span> <span class="va">a</span><span class="op">$</span><span class="va">source</span>,</span>
+<span>               credit   <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">a</span><span class="op">$</span><span class="va">credit</span><span class="op">)</span><span class="op">)</span> <span class="cn">NA</span> <span class="kw">else</span> <span class="va">a</span><span class="op">$</span><span class="va">credit</span><span class="op">)</span></span>
+<span>  <span class="op">}</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">cards</span><span class="op">)</span></span>
+<span><span class="co">#&gt;            predator                    photo source</span></span>
+<span><span class="co">#&gt; 1      Atlantic cod         atlantic_cod.png  local</span></span>
+<span><span class="co">#&gt; 2           Whiting merlangius_merlangus.png  local</span></span>
+<span><span class="co">#&gt; 3   European plaice         plaice_photo.png  local</span></span>
+<span><span class="co">#&gt; 4 Atlantic mackerel                     &lt;NA&gt;   &lt;NA&gt;</span></span>
+<span><span class="co">#&gt;                                        credit</span></span>
+<span><span class="co">#&gt; 1           Photo: Survey photographer, CC BY</span></span>
+<span><span class="co">#&gt; 2                   Photo: Jane Doe, CC BY-SA</span></span>
+<span><span class="co">#&gt; 3 Photo: survey archive, used with permission</span></span>
+<span><span class="co">#&gt; 4                                        &lt;NA&gt;</span></span></code></pre></div>
+<p>Cod is found by its common name and whiting by its Latin name; the
+plaice photo is the file named in <code>species_info</code>. The credit
+line is built from <code>author</code> and <code>license</code> when you
+do not write it yourself, and taken from the <code>.json</code> file for
+whiting. Mackerel has no file and no online source, so its card has no
+photo: the card is still built, with the stomach count and the length
+range.</p>
+<p>The same <code>species_info</code> and <code>image_dir</code> go to
+the dashboard, which calls <code><a href="../reference/dv_species_card_assets.html">dv_species_card_assets()</a></code> for
+every predator. Here for the four predators, one band and no strata, to
+keep the file small:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">four</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Atlantic cod"</span>, <span class="st">"Whiting"</span>, <span class="st">"European plaice"</span>, <span class="st">"Atlantic mackerel"</span><span class="op">)</span></span>
+<span><span class="va">prep4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">predator_common</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">four</span>, <span class="op">]</span>, <span class="va">spec</span>,</span>
+<span>                    taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_build_html.html">dv_build_html</a></span><span class="op">(</span><span class="va">prep4</span>, output <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"ices_cards.html"</span><span class="op">)</span>,</span>
+<span>                     strata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>, bands <span class="op">=</span> <span class="st">"occurrence"</span>,</span>
+<span>                     species_info <span class="op">=</span> <span class="va">info</span>, image_dir <span class="op">=</span> <span class="va">img_dir</span>,</span>
+<span>                     length_col <span class="op">=</span> <span class="st">"length_cm"</span>, self_contained <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">html</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">out</span>, warn <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>photos_embedded <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lengths.html" class="external-link">lengths</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/regmatches.html" class="external-link">regmatches</a></span><span class="op">(</span><span class="va">html</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gregexpr</a></span><span class="op">(</span><span class="st">"data:image/png;base64"</span>, <span class="va">html</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  whiting_credit  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Photo: Jane Doe, CC BY-SA"</span>, <span class="va">html</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; photos_embedded  whiting_credit </span></span>
+<span><span class="co">#&gt;               3               1</span></span></code></pre></div>
+<p>Three photos are embedded in the file and each card shows its credit
+line, linked to the photo’s page when a <code>url</code> is given.</p>
+</div>
+<div class="section level2">
+<h2 id="photos-from-inaturalist">Photos from iNaturalist<a class="anchor" aria-label="anchor" href="#photos-from-inaturalist"></a>
+</h2>
+<p>iNaturalist photos belong to the observers who took them, and each
+one carries its own license. DietView looks the predator up by its Latin
+name, keeps only a taxon whose name matches it, and tries the taxon’s
+default photo first, then its other photos, until one has a license you
+accept.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">asset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_species_card_assets.html">dv_species_card_assets</a></span><span class="op">(</span></span>
 <span>  predator <span class="op">=</span> <span class="st">"Atlantic cod"</span>, latin <span class="op">=</span> <span class="st">"Gadus morhua"</span>,</span>
-<span>  image_dir <span class="op">=</span> <span class="st">"images"</span>, use_wiki <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">asset</span><span class="op">)</span>   <span class="co"># list(uri = &lt;data URI&gt;, desc = &lt;text&gt;, credit = &lt;attribution&gt;)</span></span></code></pre></div>
-<p>Please respect image licences: when a photo comes from
-Wikimedia/Wikipedia, the returned <code>credit</code> field carries the
-attribution to display.</p>
+<span>  photo_source <span class="op">=</span> <span class="st">"inaturalist"</span>,</span>
+<span>  image_dir <span class="op">=</span> <span class="st">"images"</span><span class="op">)</span>        <span class="co"># a permanent folder keeps the photos</span></span>
+<span></span>
+<span><span class="va">asset</span><span class="op">$</span><span class="va">credit</span>    <span class="co"># "Photo: &lt;author&gt;, CC BY, via iNaturalist"</span></span>
+<span><span class="va">asset</span><span class="op">$</span><span class="va">author</span>    <span class="co"># the photographer</span></span>
+<span><span class="va">asset</span><span class="op">$</span><span class="va">license</span>   <span class="co"># "CC0", "CC BY" or "CC BY-SA" by default</span></span>
+<span><span class="va">asset</span><span class="op">$</span><span class="va">url</span>       <span class="co"># the photo's page on iNaturalist</span></span></code></pre></div>
+<p>By default only three licenses are accepted: CC0, CC BY and CC BY-SA.
+Each one lets you redistribute the photo inside a dashboard, provided
+you credit the author, and for CC BY-SA keep the same license. Photos
+marked “all rights reserved” are never used. Many iNaturalist photos are
+CC BY-NC (no commercial use); accept them only if every use of the
+dashboard will be non-commercial:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/dv_build_html.html">dv_build_html</a></span><span class="op">(</span><span class="va">prep</span>, output <span class="op">=</span> <span class="st">"ices_dashboard.html"</span>,</span>
+<span>              photo_source <span class="op">=</span> <span class="st">"inaturalist"</span>,</span>
+<span>              licenses <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cc0"</span>, <span class="st">"cc-by"</span>, <span class="st">"cc-by-sa"</span>, <span class="st">"cc-by-nc"</span><span class="op">)</span>,</span>
+<span>              image_dir <span class="op">=</span> <span class="st">"images"</span><span class="op">)</span></span></code></pre></div>
+<p>The other codes are <code>"cc-by-nc-sa"</code>,
+<code>"cc-by-nd"</code> and <code>"cc-by-nc-nd"</code>. If no photo of
+the taxon has an accepted license, the card has no photo.</p>
+<p>On the card, the credit line sits under the photo and links to the
+photo’s page on iNaturalist. Each downloaded photo is saved in
+<code>image_dir</code> together with a <code>.json</code> file holding
+its source, author, license and page, so a photo reused in a later
+session keeps its credit. To fetch a photo again, delete the image and
+its <code>.json</code> file.</p>
+</div>
+<div class="section level2">
+<h2 id="photos-from-wikimedia-commons">Photos from Wikimedia Commons<a class="anchor" aria-label="anchor" href="#photos-from-wikimedia-commons"></a>
+</h2>
+<p>With <code>photo_source = "wikipedia"</code>, DietView takes the
+image of the Wikipedia article for the Latin name, and uses it only if
+it is a Wikimedia Commons file whose license Commons reports; images
+hosted outside Commons, which may be non-free, are never used. To choose
+the file yourself, name it in <code>species_info</code>:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">info_online</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="st">"European plaice"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>commons_file <span class="op">=</span> <span class="st">"File:Pleuronectes platessa.jpg"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/dv_species_card_assets.html">dv_species_card_assets</a></span><span class="op">(</span><span class="st">"European plaice"</span>, latin <span class="op">=</span> <span class="st">"Pleuronectes platessa"</span>,</span>
+<span>                       info <span class="op">=</span> <span class="va">info_online</span><span class="op">[[</span><span class="st">"European plaice"</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>                       photo_source <span class="op">=</span> <span class="st">"wikipedia"</span>, image_dir <span class="op">=</span> <span class="st">"images"</span><span class="op">)</span></span></code></pre></div>
+<p>The file name above is an example: check on Commons that the file
+exists, that it shows the species, and that its license suits your use.
+The credit line then names the author and the license reported by
+Commons.</p>
+</div>
+<div class="section level2">
+<h2 id="before-you-share-a-dashboard">Before you share a dashboard<a class="anchor" aria-label="anchor" href="#before-you-share-a-dashboard"></a>
+</h2>
+<p>The photos are embedded in the HTML file, so the file keeps working
+when <code>image_dir</code> is deleted, and it carries the photos
+wherever it goes. Open the dashboard and check the credit line on every
+card. A photo with no credit line is one you supplied without author or
+license.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -150,7 +338,7 @@ attribution to display.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthene A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
 </div>
 
 <div class="pkgdown-footer-right">

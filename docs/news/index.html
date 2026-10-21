@@ -19,14 +19,16 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/dietview.html">Getting started with DietView</a></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
     <li><a class="dropdown-item" href="../articles/covariates.html">Covariate stratification</a></li>
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
+    <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
@@ -54,6 +56,83 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="dietview-development-version">DietView (development version)<a class="anchor" aria-label="anchor" href="#dietview-development-version"></a></h2>
+<div class="section level3">
+<h3 id="example-data-development-version">Example data<a class="anchor" aria-label="anchor" href="#example-data-development-version"></a></h3>
+<ul><li>Three datasets of real, public stomach-content data, from the ICES Stomach Content Database (ICES, Copenhagen), as extracted in the R package stomachr (Lindmark 2026); see <code><a href="../reference/ices_diet.html">?ices_diet</a></code>:
+<ul><li>
+<code>ices_diet</code>: 9,639 prey records from 4,231 stomachs of 22 fish species, North Sea, Skagerrak-Kattegat and Baltic Sea, 2020-2024, one row per prey record, in the format DietView expects;</li>
+<li>
+<code>ices_stomachs</code>: the 8,886 sampled stomachs, one row each, the 1,197 empty ones included;</li>
+<li>
+<code>ices_lineage</code>: the frozen WoRMS classification of the 461 prey keys, for an offline, reproducible <code>dv_prepare(taxonomy = "table")</code>.</li>
+</ul>
+Rows that only mark an empty stomach in the ICES export were dropped, and two unit errors in the predator variables were fixed (Belgian lengths reported in mm, Danish individual weights reported in kg). Everything else is kept as exported, including unidentified material, Nematoda (mostly parasites) and non-food items, so the data show what real surveys look like; the analyst decides what to drop. The digestion labels are inferred from the older ICES format.</li>
+<li>The examples, the README, the vignettes and the website articles now use the ICES data instead of the invented example. A new article, “Case study: a complete analysis of public ICES stomach data”, works through a full analysis of them.</li>
+<li>The small 24-record example (<code>inst/extdata/dietview_example.csv</code> and its lineage table) is kept for the tests and for quick checks of the mechanics.</li>
+<li>
+<code><a href="../reference/dv_validate.html">dv_validate()</a></code> gains an example.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>
+<code>dv_prepare(taxonomy = "worms")</code> no longer stops with “arguments imply differing number of rows” when some records have no AphiaID (as in the bundled example). Each record is now keyed by its AphiaID, or by its own prey name when it has none, so records without an AphiaID no longer share one lineage, and the provenance log counts every record once. One AphiaID recorded under several spellings no longer errors; the log lists the names seen under each key (<code>names_seen</code>).</li>
+<li>Failed WoRMS lookups are no longer cached; empty lineages cached by 0.1.0 are discarded. A prey that was matched but got no classification (network or server error, unknown AphiaID) is flagged with <code>lineage_ok = FALSE</code>, reported by a warning and by <code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code>, and retried on the next run. The cache is saved even when a run is interrupted.</li>
+<li>Known AphiaIDs are now checked against WoRMS: unaccepted AphiaIDs are followed to their accepted one (<code>match_type = "id_synonym"</code>), the stored prey name is compared with the WoRMS name (<code>name_check</code>), and an AphiaID whose record cannot be read is marked <code>"id_unchecked"</code>.</li>
+<li>Fuzzy name matching now uses WoRMS TAXAMATCH (<code><a href="https://docs.ropensci.org/worrms/reference/wm_records_taxamatch.html" class="external-link">worrms::wm_records_taxamatch()</a></code>), which tolerates misspellings, instead of a prefix (LIKE) search. Names with several accepted WoRMS records are flagged (<code>homonym</code>), and the number of records WoRMS returned is logged (<code>n_candidates</code>).</li>
+<li>The exact WoRMS name search no longer passes a <code>fuzzy</code> argument that current <code>worrms</code> (0.4.x) does not have and handed to the HTTP client, which made every exact name lookup fail.</li>
+<li>
+<code>dv_prepare(taxonomy = "table")</code> now stops on duplicated keys in the lineage table, warns about prey keys absent from it, and no longer lets a record without a key inherit the lineage of a lineage row without a key.</li>
+<li>
+<code><a href="../reference/dv_aggregate_threshold.html">dv_aggregate_threshold()</a></code> now guarantees that every reported category is found in at least <code>threshold</code> stomachs: a residual category below the threshold moves up one more rank. Residuals of a node that also has retained descendants are labelled <code>"&lt;taxon&gt; (other)"</code>, and the default <code>other_label</code> is now <code>"other (below threshold)"</code>.</li>
+<li>
+<code>dv_validate(strict_covariates = FALSE)</code> now really drops the missing covariates: the corrected spec is returned as the <code>dv_spec</code> attribute, and <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> gains <code>strict_covariates</code> and uses it.</li>
+<li>
+<code>dv_prey_accumulation(seed = )</code> no longer changes the user’s random stream.</li>
+<li>
+<code><a href="../reference/run_dietview.html">run_dietview()</a></code> no longer assumes a “class” rank for its default table.</li>
+<li>
+<code><a href="../reference/dv_build_html.html">dv_build_html()</a></code> writes titles containing quotes or apostrophes correctly.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="changes-in-behavior-development-version">Changes in behavior<a class="anchor" aria-label="anchor" href="#changes-in-behavior-development-version"></a></h3>
+<ul><li>One definition of the record currency everywhere: <code><a href="../reference/dv_build_html.html">dv_build_html()</a></code> and <code><a href="../reference/run_dietview.html">run_dietview()</a></code> now count prey records by default, even when the spec declares <code>count</code>, and gain <code>currency = c("records", "numbers")</code>. New <code>dv_tree(prep, currency)</code> builds the tree from a prepared dataset the same way. The numbers currency warns that records without a count (usually unidentified material) contribute 0.</li>
+<li>
+<code><a href="../reference/dv_validate.html">dv_validate()</a></code> now checks prey keys (AphiaIDs must be positive whole numbers; records with no usable key are reported), weights (negative weights are an error, non-numeric ones a warning), the number of digestion levels, and stomach IDs shared between predators. It prints a one-line summary of the sample (records, stomachs, predators, single-record stomachs, missing weights) and returns the counts as the <code>dv_report</code> attribute; <code>quiet = TRUE</code> silences the messages. A missing weight column is now a message, not a warning.</li>
+<li>
+<code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> stores <code>taxonomy_source</code>, and its print method shows the number of stomachs and the taxonomy source. The WoRMS log records the retrieval time and the <code>worrms</code> version (attributes <code>retrieved</code>, <code>worrms_version</code>) and the date each lineage was fetched (<code>retrieved</code> column).</li>
+<li>WoRMS cache entries now carry a date; entries older than <code>cache_max_age</code> days (new argument of <code><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms()</a></code> and <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code>, default 180) are fetched again. Undated entries written by 0.1.0 are fetched again once.</li>
+<li>
+<code>dv_taxonomy_report(which = "review")</code> also lists <code>id_synonym</code>, <code>id_unchecked</code>, name disagreements, possible homonyms and failed classifications.</li>
+<li>
+<code><a href="../reference/dv_build_html.html">dv_build_html()</a></code> has no default <code>output</code> any more, and defaults to no network access and an image folder in <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code>, so a default call touches neither the network nor the working directory. <code><a href="../reference/dv_species_card_assets.html">dv_species_card_assets()</a></code> has the same new defaults.</li>
+<li>Predator photos can now come from iNaturalist: <code>photo_source = "inaturalist"</code> in <code><a href="../reference/dv_species_card_assets.html">dv_species_card_assets()</a></code>, <code><a href="../reference/dv_build_html.html">dv_build_html()</a></code> and <code><a href="../reference/dv_deploy.html">dv_deploy()</a></code>. Only photos whose license is in <code>licenses</code> are used (default CC0, CC BY, CC BY-SA; “all rights reserved” photos never), and only for a taxon whose name matches the query. <code>photo_source = "wikipedia"</code> keeps the Wikipedia / Wikimedia Commons lookup, which now uses only Commons files with a known license. <code>use_wiki</code> is deprecated (<code>TRUE</code> means <code>"wikipedia"</code>, <code>FALSE</code> means <code>"none"</code>). Several sources can be given, tried in order, e.g. <code>photo_source = c("inaturalist", "wikipedia")</code>; each request times out after <code>getOption("DietView.timeout", 15)</code> seconds, and the result includes the image file (<code>path</code>), so other tools (such as a web export) can reuse it.</li>
+<li>Every card photo carries its author and license: <code><a href="../reference/dv_species_card_assets.html">dv_species_card_assets()</a></code> returns <code>credit</code>, <code>author</code>, <code>license</code>, <code>source</code> and <code>url</code>, and the dashboard shows the credit under the photo, linked to the photo’s page. The Wikipedia text used as a description is credited too (<code>desc_credit</code>). Credit fields can be given for your own photos in <code>species_info</code>.</li>
+<li>Downloaded photos are saved with a <code>.json</code> file holding their credit, so a cached photo keeps its author and license in later sessions (in 0.1.0 a cached photo lost its credit line).</li>
+<li>Sunbursts are sized from leaf values with <code>branchvalues = "remainder"</code>, so a parent always equals the sum of its children; every wedge has a thin gray outline so white (unidentified) wedges stay visible, and the hover text says “Not identified at this rank”. Unidentified nodes are placed last within each parent in <code><a href="../reference/dv_build_tree.html">dv_build_tree()</a></code> output, which also carries a <code>currency</code> attribute.</li>
+<li>New <code><a href="../reference/dv_palette_tree.html">dv_palette_tree()</a></code>: one hue per node at a chosen rank, lighter tints for its descendants, keyed by node id. <code>dv_sunburst(colors = )</code> accepts colors keyed by node id or by label.</li>
+<li>Display vocabulary: “Prey records (% of all records)”, “Weight (% of total weight)” and “Distinct prey items” replace “Occurrence counts”, “Occurrence %” and “Distinct diet counts” in the app and the dashboard. The <code>mode = "occurrence"</code> value is unchanged.</li>
+<li>
+<code><a href="../reference/dv_summary.html">dv_summary()</a></code> and <code><a href="../reference/dv_prey_accumulation.html">dv_prey_accumulation()</a></code> gain <code>rank</code>, to count taxa at one stated rank instead of the finest resolved label (which mixes ranks and inflates richness). <code><a href="../reference/dv_summary.html">dv_summary()</a></code>’s <code>prey_per_stomach</code> column is renamed <code>records_per_stomach</code>.</li>
+<li>
+<code><a href="../reference/dv_matrix.html">dv_matrix()</a></code> gains <code>rank</code>, for a sample-by-taxon matrix at a chosen rank.</li>
+<li>
+<code><a href="../reference/dv_size_bins.html">dv_size_bins()</a></code> labels follow <code>right</code> and use interval notation (<code>[40, 50)</code> rather than <code>[40-50[</code>); it gains <code>labels</code>. The example data’s <code>size_bin</code> column uses the new labels.</li>
+<li>
+<code><a href="../reference/dv_add_period.html">dv_add_period()</a></code> labels name the years each period contains (<code>2003-2007</code>, <code>2008-2020</code> rather than <code>2003-2007</code>, <code>2007-2020</code>).</li>
+<li>
+<code><a href="../reference/dv_threshold_sweep.html">dv_threshold_sweep()</a></code> reports <code>pct_coarser</code> (share of records whose category is coarser than the finest rank) instead of the constant <code>n_records</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-and-metadata-development-version">Documentation and metadata<a class="anchor" aria-label="anchor" href="#documentation-and-metadata-development-version"></a></h3>
+<ul><li>New title: “Interactive, Hierarchical Visualization of Stomach-Content Data”; new Description, author name split correctly (with ORCID placeholder), CADI Gulf Center listed as funder, unused packages removed from Suggests; <code>inst/CITATION</code> and <code>CITATION.cff</code> updated.</li>
+<li>“Taxonomically complete” replaced by “hierarchical” throughout.</li>
+<li>The data dictionary states that the example data are invented, defines the weight and digestion scale, and requires stomach IDs to be unique across the whole table.</li>
+<li>New tests cover the tree invariants, frequency of occurrence, the digestion diagnostic, threshold aggregation, the matrix, validation, the lineage-table join, covariate labels and the WoRMS path (with mocked <code>worrms</code> calls).</li>
+<li>Internal notes (<code>CRAN_SUBMISSION.md</code>, <code>DEPLOYMENT.md</code>) moved to <code>dev/</code> and no longer published on the website.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="dietview-010">DietView 0.1.0<a class="anchor" aria-label="anchor" href="#dietview-010"></a></h2>
 <p>First release.</p>
 <div class="section level3">
@@ -63,7 +142,7 @@
 <li>
 <code><a href="../reference/dv_build_tree.html">dv_build_tree()</a></code>, <code><a href="../reference/dv_rank_table.html">dv_rank_table()</a></code> — within-rank importance in occurrence and weight, with unidentified prey kept explicit.</li>
 <li>
-<code><a href="../reference/dv_sunburst.html">dv_sunburst()</a></code>, <code><a href="../reference/dv_palette.html">dv_palette()</a></code> — taxonomically complete sunbursts with a shared palette and the explicit-NA category in white.</li>
+<code><a href="../reference/dv_sunburst.html">dv_sunburst()</a></code>, <code><a href="../reference/dv_palette.html">dv_palette()</a></code> — hierarchical sunbursts with a shared palette and the explicit-NA category in white.</li>
 <li>
 <code><a href="../reference/dv_add_period.html">dv_add_period()</a></code>, <code><a href="../reference/dv_size_bins.html">dv_size_bins()</a></code> — covariate helpers.</li>
 <li>
@@ -90,7 +169,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthene A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
 </div>
 
 <div class="pkgdown-footer-right">

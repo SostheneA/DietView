@@ -225,14 +225,54 @@ formatting), and the dashboard pieces `.dv_head_tags()`, `.dv_home()`,
 
 ## Bundled data and the input contract
 
-The package ships an example base table
-(`inst/extdata/dietview_example.csv`), a matching lineage lookup
-(`dietview_example_lineage.csv`), and a data dictionary. One row = one
-prey record in one stomach; free column names mapped via
+One row = one prey record in one stomach; free column names mapped via
 [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md).
-The example deliberately includes class-only, order/family-only, and
-fully unidentified prey so the explicit-NA behaviour is visible end to
-end.
+The package ships three kinds of data.
+
+**The ICES datasets** (`data/`, lazy-loaded; documented in
+[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)),
+the data of the articles, vignettes and examples. They are a public
+extract of the ICES Stomach Content Database (ICES, Copenhagen),
+distributed with the R package stomachr (Lindmark 2026), and built by
+`data-raw/ices_data.R`.
+
+| Dataset | Rows | Content |
+|----|----|----|
+| `ices_diet` | 9,639 prey records | 4,231 stomachs of 22 predators, North Sea, Skagerrak-Kattegat and Baltic Sea, 2020-2024; prey AphiaID and name, `item_type` (prey / unidentified / non_food), digestion code and label, count, weight, length, haul, date, position, region, predator length and weight |
+| `ices_stomachs` | 8,886 stomachs | every sampled stomach of 23 predators, 1,197 flagged empty: the sampling frame for the share of empty stomachs |
+| `ices_lineage` | 461 AphiaIDs | the frozen WoRMS lineage (kingdom to species, plus `scientific_name` and `worms_rank`), keyed by `prey_aphia_id` for `taxonomy = "table"` |
+
+The data are kept close to the ICES export: prey identified to very
+uneven depth, 1,553 records of unidentified material, 67 non-food items
+and about 1,000 nematode records (mostly parasites) kept for the analyst
+to decide on, and digestion stage missing for many records. The
+digestion labels are inferred from the older ICES format. The standard
+set-up used throughout the documentation drops non-food items and
+nematodes:
+
+``` r
+
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+spec <- dv_spec(predator = "predator_common", predator_latin = "predator_latin",
+                stomach = "stomach_id", prey_id = "prey_aphia_id",
+                prey_name = "prey_name", weight = "prey_weight_g",
+                count = "prey_count", digestion = "digestion_label",
+                covariates = c("region", "year", "quarter"))
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+                   verbose = FALSE)
+```
+
+**The small example** (`inst/extdata/dietview_example.csv`, 24 invented
+records, with `dietview_example_lineage.csv` and a data dictionary)
+stays for the unit tests and for checking the mechanics on a table you
+can read in full. It includes class-only, order/family-only and fully
+unidentified prey.
+
+**The simulated survey** (`inst/extdata/dietview_sim.csv` and its
+lineage), built by `data-raw/simulate_known_diet.R`, has a known true
+diet; the “A known diet” vignette uses it to show what keeping or
+dropping unidentified prey does, which real data cannot show.
 
 ## Dependencies
 

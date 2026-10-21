@@ -23,14 +23,16 @@ table must be one prey record in a stomach."><meta property="og:image" content="
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/dietview.html">Getting started with DietView</a></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
     <li><a class="dropdown-item" href="../articles/covariates.html">Covariate stratification</a></li>
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
+    <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
@@ -89,7 +91,8 @@ table must be one prey record in a stomach.</p>
 
 
 <dt id="arg-stomach">stomach<a class="anchor" aria-label="anchor" href="#arg-stomach"></a></dt>
-<dd><p>Column with the stomach identifier (unit of occurrence).</p></dd>
+<dd><p>Column with the stomach identifier (unit of occurrence).
+It must be unique across the whole table, not only within a predator.</p></dd>
 
 
 <dt id="arg-prey-name">prey_name<a class="anchor" aria-label="anchor" href="#arg-prey-name"></a></dt>
@@ -105,8 +108,10 @@ table must be one prey record in a stomach.</p>
 
 
 <dt id="arg-count">count<a class="anchor" aria-label="anchor" href="#arg-count"></a></dt>
-<dd><p>Column with the number of prey individuals. Optional; if
-absent, one occurrence = one record.</p></dd>
+<dd><p>Column with the number of prey individuals. Optional. It is
+used only when an output is asked for the numbers currency
+(<code>currency = "numbers"</code> in <code><a href="dv_tree.html">dv_tree()</a></code>, <code><a href="dv_build_html.html">dv_build_html()</a></code> and
+<code><a href="run_dietview.html">run_dietview()</a></code>); otherwise each record counts once.</p></dd>
 
 
 <dt id="arg-digestion">digestion<a class="anchor" aria-label="anchor" href="#arg-digestion"></a></dt>
@@ -137,13 +142,17 @@ auto-fetch identification photos).</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu">dv_spec</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  predator <span class="op">=</span> <span class="st">"predator_species_common_name"</span>,</span></span>
-<span class="r-in"><span>  stomach  <span class="op">=</span> <span class="st">"stomach_id"</span>,</span></span>
-<span class="r-in"><span>  prey_id  <span class="op">=</span> <span class="st">"aphia_id"</span>,</span></span>
-<span class="r-in"><span>  prey_name <span class="op">=</span> <span class="st">"verified_name"</span>,</span></span>
-<span class="r-in"><span>  weight   <span class="op">=</span> <span class="st">"prey_weight"</span>,</span></span>
-<span class="r-in"><span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"period"</span>, <span class="st">"size_class"</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># the column roles of the public ICES data (see ?ices_diet)</span></span></span>
+<span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu">dv_spec</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  predator       <span class="op">=</span> <span class="st">"predator_common"</span>,</span></span>
+<span class="r-in"><span>  predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span></span>
+<span class="r-in"><span>  stomach        <span class="op">=</span> <span class="st">"stomach_id"</span>,</span></span>
+<span class="r-in"><span>  prey_id        <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,</span></span>
+<span class="r-in"><span>  prey_name      <span class="op">=</span> <span class="st">"prey_name"</span>,</span></span>
+<span class="r-in"><span>  weight         <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span></span>
+<span class="r-in"><span>  count          <span class="op">=</span> <span class="st">"prey_count"</span>,</span></span>
+<span class="r-in"><span>  digestion      <span class="op">=</span> <span class="st">"digestion_label"</span>,</span></span>
+<span class="r-in"><span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">spec</span><span class="op">$</span><span class="va">ranks</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "kingdom" "phylum"  "class"   "order"   "family"  "genus"   "species"</span>
@@ -154,7 +163,7 @@ auto-fetch identification photos).</p></dd>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthene A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
 </div>
 
 <div class="pkgdown-footer-right">

@@ -41,14 +41,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/dietview.html">Getting started with DietView</a></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
     <li><a class="dropdown-item" href="../articles/covariates.html">Covariate stratification</a></li>
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
+    <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
@@ -89,48 +91,90 @@
 
     
     
-<p><code><a href="../reference/run_dietview.html">run_dietview()</a></code> launches an interactive <a href="https://shiny.posit.co/" class="external-link">Shiny</a> app over a prepared dataset. It
-is the fastest way to explore a diet before committing to a static
-dashboard. (Chunks here are shown but not run — the app needs
-<code>shiny</code> and, for the table, <code>DT</code>.)</p>
+<p><code><a href="../reference/run_dietview.html">run_dietview()</a></code> opens an interactive <a href="https://shiny.posit.co/" class="external-link">Shiny</a> app on a prepared dataset. Use
+it to explore a diet on your own machine before you fix the figures you
+will report. The chunks here are shown but not run, because the app
+needs an interactive R session, the <code>shiny</code> package and, for
+the table, <code>DT</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"shiny"</span>, <span class="st">"DT"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SostheneA/DietView" class="external-link">DietView</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span>,</span>
-<span>                na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">lin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example_lineage.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span>,</span>
-<span>                na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span>predator <span class="op">=</span> <span class="st">"predator_species_common_name"</span>, stomach <span class="op">=</span> <span class="st">"stomach_id"</span>,</span>
-<span>                prey_id <span class="op">=</span> <span class="st">"aphia_id"</span>, prey_name <span class="op">=</span> <span class="st">"verified_name"</span>,</span>
-<span>                weight <span class="op">=</span> <span class="st">"prey_weight"</span>, digestion <span class="op">=</span> <span class="st">"digestion_level_id"</span>,</span>
-<span>                covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"period"</span>, <span class="st">"size_class"</span>, <span class="st">"size_bin"</span>, <span class="st">"region"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">lin</span><span class="op">)</span></span>
+<span><span class="co"># the public ICES stomach data that ship with the package (see ?ices_diet)</span></span>
+<span><span class="co"># drop non-food items and nematodes (mostly parasites, not prey)</span></span>
+<span><span class="va">phylum</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">phylum</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">prey_aphia_id</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">ices_diet</span><span class="op">[</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span> <span class="op">!=</span> <span class="st">"non_food"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span>, <span class="op">]</span></span>
+<span></span>
+<span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span></span>
+<span>  predator       <span class="op">=</span> <span class="st">"predator_common"</span>,</span>
+<span>  predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span>
+<span>  stomach        <span class="op">=</span> <span class="st">"stomach_id"</span>,</span>
+<span>  prey_id        <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,</span>
+<span>  prey_name      <span class="op">=</span> <span class="st">"prey_name"</span>,</span>
+<span>  weight         <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span>
+<span>  count          <span class="op">=</span> <span class="st">"prey_count"</span>,</span>
+<span>  digestion      <span class="op">=</span> <span class="st">"digestion_label"</span>,</span>
+<span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
+<span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/run_dietview.html">run_dietview</a></span><span class="op">(</span><span class="va">prep</span><span class="op">)</span></span></code></pre></div>
+<p>The data are the ICES Stomach Content Database (ICES, Copenhagen), as
+extracted in the R package stomachr (Lindmark 2026): 22 predators from
+the North Sea, the Skagerrak-Kattegat and the Baltic Sea. The app opens
+on all predators pooled; pick “Atlantic cod” and facet by
+<code>region</code> or <code>quarter</code> for a first comparison. To
+compare periods or length classes, add those columns before
+<code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> and declare them, as in the article on
+covariates:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">dat</span><span class="op">$</span><span class="va">period</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_add_period.html">dv_add_period</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">year</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2021.5</span>, <span class="fl">2022</span>, <span class="fl">2024</span><span class="op">)</span>,</span>
+<span>                              labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2022"</span>, <span class="st">"2023-2024"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">cod</span> <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">predator_common</span> <span class="op">==</span> <span class="st">"Atlantic cod"</span>, <span class="op">]</span></span>
+<span><span class="va">cod</span><span class="op">$</span><span class="va">size_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_size_bins.html">dv_size_bins</a></span><span class="op">(</span><span class="va">cod</span><span class="op">$</span><span class="va">length_cm</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">20</span>, <span class="fl">35</span>, <span class="fl">50</span>, <span class="fl">110</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">spec_cod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_spec.html">dv_spec</a></span><span class="op">(</span>predator <span class="op">=</span> <span class="st">"predator_common"</span>, stomach <span class="op">=</span> <span class="st">"stomach_id"</span>,</span>
+<span>                    prey_id <span class="op">=</span> <span class="st">"prey_aphia_id"</span>, prey_name <span class="op">=</span> <span class="st">"prey_name"</span>,</span>
+<span>                    weight <span class="op">=</span> <span class="st">"prey_weight_g"</span>, count <span class="op">=</span> <span class="st">"prey_count"</span>,</span>
+<span>                    digestion <span class="op">=</span> <span class="st">"digestion_label"</span>,</span>
+<span>                    covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"quarter"</span>, <span class="st">"period"</span>, <span class="st">"size_bin"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/run_dietview.html">run_dietview</a></span><span class="op">(</span><span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec_cod</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>,</span>
+<span>                        lineage <span class="op">=</span> <span class="va">ices_lineage</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Records from 2020 and 2021 have no period; the app shows them in a
+separate “NA” panel when you facet by <code>period</code>. That
+<code>NA</code> is a missing stratum, not an unidentified prey.</p>
+<p><code>run_dietview(prep, currency = "numbers")</code> sizes the
+record view by the number of individuals (<code>prey_count</code>)
+instead of the number of records. In the ICES data almost all the
+unidentified material has no count, so it nearly disappears from that
+view.</p>
 <div class="section level2">
 <h2 id="what-the-app-offers">What the app offers<a class="anchor" aria-label="anchor" href="#what-the-app-offers"></a>
 </h2>
 <ul>
-<li>a <strong>predator</strong> selector;</li>
-<li>a <strong>mode</strong> switch (count / occurrence / weight);</li>
-<li>an optional <strong>facet</strong> covariate to compare levels side
-by side;</li>
-<li>a <strong>rank</strong> selector for the importance table.</li>
+<li>a predator selector, with “(all predators)” to pool every
+predator;</li>
+<li>a choice of what sizes the wedges: prey records (% of all records),
+weight (% of total weight) or the number of distinct prey items;</li>
+<li>a covariate to facet by, which draws one sunburst per level;</li>
+<li>a second covariate to cross with the first, which draws one sunburst
+per combination of levels;</li>
+<li>a rank selector for the table under the figure.</li>
 </ul>
-<p>The server subsets the records for the chosen predator, builds the
-tree reactively with <code><a href="../reference/dv_build_tree.html">dv_build_tree()</a></code>, renders the sunburst
-with the shared palette, and shows the within-rank importance table for
-the chosen rank.</p>
+<p>For each selection the app takes the records of the chosen predator,
+builds the tree with <code><a href="../reference/dv_build_tree.html">dv_build_tree()</a></code>, draws the sunburst
+with one palette built from all the records, and shows the table for the
+chosen rank: one row per taxon at that rank, with its records, weight
+and shares.</p>
 </div>
 <div class="section level2">
-<h2 id="when-to-use-the-app-vs--the-dashboard">When to use the app vs. the dashboard<a class="anchor" aria-label="anchor" href="#when-to-use-the-app-vs--the-dashboard"></a>
+<h2 id="the-app-or-the-dashboard">The app or the dashboard?<a class="anchor" aria-label="anchor" href="#the-app-or-the-dashboard"></a>
 </h2>
-<p>Use the <strong>app</strong> for live exploration on your own
-machine. Use <code><a href="../reference/dv_build_html.html">dv_build_html()</a></code> / <code><a href="../reference/dv_deploy.html">dv_deploy()</a></code> to
-produce a <strong>self-contained HTML</strong> file you can archive,
-email, or serve — no R session required by the reader.</p>
+<p>Use the app to explore on your own machine. Use
+<code><a href="../reference/dv_build_html.html">dv_build_html()</a></code> or <code><a href="../reference/dv_deploy.html">dv_deploy()</a></code> to write a
+single HTML file that you can archive, email or put on a web server, and
+that the reader opens without R.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -139,7 +183,7 @@ email, or serve — no R session required by the reader.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthene A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
 </div>
 
 <div class="pkgdown-footer-right">

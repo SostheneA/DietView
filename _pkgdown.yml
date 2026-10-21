@@ -17,7 +17,7 @@ home:
     explicit unidentified category, record and weight currencies, covariate
     stratification and a digestion diagnostic.
   sidebar:
-    structure: [links, license, community, citation, authors, dev]
+    structure: [links, license, community, citation, authors]
 
 navbar:
   structure:

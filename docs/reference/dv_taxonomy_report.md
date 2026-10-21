@@ -1,10 +1,16 @@
-# Review fuzzy and unresolved prey matches
+# Review doubtful prey matches
 
 Returns the prey whose taxonomy needs a human eye: fuzzy matches (WoRMS
-proposed a close-but-not-identical name) and unresolved prey (no match).
-Use it to audit the enrichment, then correct anything wrong by supplying
-a lineage table (`dv_prepare(taxonomy = "table")`) or fixing the source
-names.
+TAXAMATCH proposed a close-but-not-identical name), unresolved prey (no
+match), AphiaIDs that WoRMS treats as unaccepted (`"id_synonym"`,
+followed to the accepted one) or whose record could not be read
+(`"id_unchecked"`), AphiaIDs whose stored name differs from the WoRMS
+name (`name_check = "differs"`), names with several accepted WoRMS
+records (`homonym`), and matches for which WoRMS returned no
+classification (`lineage_ok = FALSE`, usually a network or server error;
+run again to retry). Use it to audit the enrichment, then correct
+anything wrong by supplying a lineage table
+(`dv_prepare(taxonomy = "table")`) or fixing the source names.
 
 ## Usage
 
@@ -24,8 +30,8 @@ dv_taxonomy_report(
 
 - which:
 
-  Which rows to return: "review" (fuzzy + unresolved, the default),
-  "fuzzy", "unresolved", or "all".
+  Which rows to return: "review" (every doubtful row listed above, the
+  default), "fuzzy", "unresolved", or "all".
 
 - file:
 
@@ -33,15 +39,33 @@ dv_taxonomy_report(
 
 ## Value
 
-A data.frame with the prey name, what WoRMS matched, the match type, the
-AphiaID used, the number of records affected, and the resolved ranks.
+A data.frame with the prey name, the names seen under that key, what
+WoRMS matched, the match type and checks, the AphiaID used, the number
+of records affected, and the resolved ranks, sorted by number of
+records.
 
 ## Examples
 
 ``` r
+# the standard set-up: public ICES data, non-food items and nematodes dropped
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
 if (FALSE) { # \dontrun{
 # a WoRMS-prepared object carries a taxonomy log to review
-prep <- dv_prepare(dat, spec, taxonomy = "worms")
-dv_taxonomy_report(prep, which = "review")
+# (needs the 'worrms' package and internet access)
+cod <- dat[dat$predator_common == "Atlantic cod", ]
+prep_worms <- dv_prepare(cod, spec, taxonomy = "worms")
+dv_taxonomy_report(prep_worms, which = "review")
 } # }
 ```
