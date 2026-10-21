@@ -1,22 +1,22 @@
 cff-version: 1.2.0
 message: "If you use DietView, please cite it as below."
-title: "DietView: An R Package for Interactive, Taxonomically Complete Diet Visualization from Stomach-Content Data"
+title: "DietView: An R package for interactive, hierarchical visualization of predator stomach-content data"
 version: 0.1.0
 abstract: >-
   DietView turns a long table of stomach-content records into interactive,
-  taxonomically complete sunburst views of predator diet. It resolves prey to
-  the WoRMS classification, computes per-taxon relative importance in occurrence
-  and weight within each taxonomic rank (with unidentified prey kept as an
-  explicit NA category), quantifies the identification bias associated with
-  digestion level, and renders the whole diet across any user-declared
-  covariates as a Shiny app, a self-contained HTML dashboard, or plain plotly
-  figures.
+  hierarchical views of predator diet. It attaches a taxonomic lineage from the
+  World Register of Marine Species (with a log of how each prey was matched) or
+  from a user-supplied lineage table, keeps prey identified only to a coarse
+  rank as an explicit unidentified category below that rank, summarizes the diet
+  by prey records, numbers and weight at every rank, reports how identification
+  depth changes with digestion, and renders the result as a Shiny app, a
+  self-contained HTML dashboard or plotly figures.
 type: software
 authors:
-  - given-names: "Sosthene A. V."
+  - given-names: "Sosthène A. V."
     family-names: "Akia"
     email: "akiasosthene@gmail.com"
-  - name: "CADI Gulf Center"
+doi: "10.5281/zenodo.XXXXXXX"
 repository-code: "https://github.com/SostheneA/DietView"
 url: "https://sosthenea.github.io/DietView/"
 license: MIT

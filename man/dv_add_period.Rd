@@ -11,13 +11,17 @@ dv_add_period(year, breaks, labels = NULL)
 
 \item{breaks}{Cut points (as in \code{\link[base:cut]{base::cut()}}), e.g. \code{c(2003, 2007, 2020)}.}
 
-\item{labels}{Optional labels; default builds "a-b" style labels.}
+\item{labels}{Optional labels; the default builds "first-last" labels from
+the years each period contains.}
 }
 \value{
-A factor of periods.
+A factor of periods. Years outside the breaks become \code{NA}.
 }
 \description{
-Derive a period covariate from year
+Cuts whole years into periods. The first period includes its lower break;
+every later period starts the year after the previous break, so with
+\code{breaks = c(2003, 2007, 2020)} the periods are 2003-2007 and 2008-2020, and
+each label names the years the period actually contains.
 }
 \examples{
 dv_add_period(c(2004, 2006, 2010, 2018), breaks = c(2003, 2007, 2020))

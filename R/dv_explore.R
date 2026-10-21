@@ -1,3 +1,15 @@
+# Internal: the taxon label used to count richness or build categories. With
+# `rank = NULL`, the finest resolved (deepest non-NA) label of each record;
+# otherwise the label at that rank, records unidentified there giving NA.
+.dv_taxon_label <- function(data, ranks, rank = NULL) {
+  if (is.null(rank)) return(.dv_leaf_label(data, ranks))
+  if (length(rank) != 1L || !rank %in% ranks)
+    stop("`rank` must be one of: ", paste(ranks, collapse = ", "), call. = FALSE)
+  v <- as.character(data[[rank]])
+  v[v == "" | v == "NA"] <- NA
+  v
+}
+
 # Internal: the finest resolved (deepest non-NA) rank label for each record.
 .dv_leaf_label <- function(data, ranks) {
   lab <- rep(NA_character_, nrow(data))
@@ -16,15 +28,23 @@
 #' taxa were seen, and the mean number of prey records per stomach. Optionally
 #' broken down by a covariate.
 #'
+#' By default (`rank = NULL`) a taxon is the finest resolved label of each
+#' record, which mixes ranks: a stomach with *Themisto libellula* and
+#' "Amphipoda" counts two taxa although *Themisto* is an amphipod, so `n_taxa`
+#' overstates richness, more so as digestion advances. Give `rank` to count
+#' taxa at one stated rank instead, unidentified records excluded.
+#'
 #' Note that a long prey-record table represents only non-empty stomachs, so
 #' this function cannot report a vacuity (percent-empty) index; that must be
 #' computed upstream from the full sampling frame.
 #'
 #' @param prep A `dietview_prep` from [dv_prepare()].
 #' @param by Optional covariate column to break the summary down by.
+#' @param rank Optional rank (one of `prep$ranks`, e.g. `"family"`) at which
+#'   `n_taxa` is counted. `NULL` (default) uses the finest resolved label.
 #' @return A data.frame with one row per predator (and per `by` level), with
-#'   `n_stomachs`, `n_records`, `n_taxa`, `prey_per_stomach`, and, when a weight
-#'   column is declared, `total_weight`.
+#'   `n_stomachs`, `n_records`, `n_taxa`, `records_per_stomach`, and, when a
+#'   weight column is declared, `total_weight`.
 #' @examples
 #' csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
 #' lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
@@ -38,8 +58,9 @@
 #'                    verbose = FALSE)
 #' dv_summary(prep)
 #' dv_summary(prep, by = "region")
+#' dv_summary(prep, rank = "class")
 #' @export
-dv_summary <- function(prep, by = NULL) {
+dv_summary <- function(prep, by = NULL, rank = NULL) {
   stopifnot(inherits(prep, "dietview_prep"))
   d <- prep$data
   pred <- prep$spec$predator
@@ -48,7 +69,7 @@ dv_summary <- function(prep, by = NULL) {
   if (!is.null(by) && !by %in% names(d))
     stop("`by` column not found: ", by, call. = FALSE)
 
-  leaf <- .dv_leaf_label(d, prep$ranks)
+  leaf <- .dv_taxon_label(d, prep$ranks, rank)
   gcols <- c(pred, if (!is.null(by)) by)
   gkey <- do.call(paste, c(d[gcols], sep = "\r"))
 
@@ -59,7 +80,7 @@ dv_summary <- function(prep, by = NULL) {
     out$n_stomachs <- length(unique(as.character(d[[stom]])[ix]))
     out$n_records  <- length(ix)
     out$n_taxa     <- length(unique(stats::na.omit(leaf[ix])))
-    out$prey_per_stomach <- round(out$n_records / out$n_stomachs, 2)
+    out$records_per_stomach <- round(out$n_records / out$n_stomachs, 2)
     if (!is.null(wcol) && wcol %in% names(d))
       out$total_weight <- sum(suppressWarnings(as.numeric(d[[wcol]][ix])), na.rm = TRUE)
     out
@@ -78,11 +99,20 @@ dv_summary <- function(prep, by = NULL) {
 #' reveal more prey (Ferry and Cailliet, 1996). This is a descriptive
 #' sufficiency diagnostic, not a statistical test.
 #'
+#' By default (`rank = NULL`) a taxon is the finest resolved label of each
+#' record. Labels at different ranks can name nested taxa ("Amphipoda" and
+#' *Themisto libellula*), which inflates richness, and the inflation grows with
+#' digestion. Give `rank` to count taxa at one stated rank, unidentified
+#' records excluded.
+#'
 #' @param prep A `dietview_prep` from [dv_prepare()].
 #' @param by Optional column giving one curve per group (e.g. the predator).
 #'   `NULL` pools all records into a single curve.
+#' @param rank Optional rank (one of `prep$ranks`) at which taxa are counted.
+#'   `NULL` (default) uses the finest resolved label.
 #' @param permutations Number of random stomach orderings to average over.
-#' @param seed Optional integer for reproducibility.
+#' @param seed Optional integer for reproducibility. The seed is used for this
+#'   call only: the global random stream is restored on exit.
 #' @return A data.frame with (optional) group column, `n_stomachs`,
 #'   `mean_richness` and `sd_richness`.
 #' @examples
@@ -97,17 +127,27 @@ dv_summary <- function(prep, by = NULL) {
 #'                    verbose = FALSE)
 #' acc <- dv_prey_accumulation(prep, permutations = 20, seed = 1)
 #' head(acc)
+#' acc_fam <- dv_prey_accumulation(prep, rank = "family", permutations = 20, seed = 1)
 #' # plot(acc$n_stomachs, acc$mean_richness, type = "b")
 #' @export
-dv_prey_accumulation <- function(prep, by = NULL, permutations = 100,
-                                 seed = NULL) {
+dv_prey_accumulation <- function(prep, by = NULL, rank = NULL,
+                                 permutations = 100, seed = NULL) {
   stopifnot(inherits(prep, "dietview_prep"))
-  if (!is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) {
+    # use the seed for this call only: restore the user's random stream on exit
+    if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+      old <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+      on.exit(assign(".Random.seed", old, envir = globalenv()), add = TRUE)
+    } else {
+      on.exit(rm(".Random.seed", envir = globalenv()), add = TRUE)
+    }
+    set.seed(seed)
+  }
   d <- prep$data
   stom <- prep$spec$stomach
   if (!is.null(by) && !by %in% names(d))
     stop("`by` column not found: ", by, call. = FALSE)
-  leaf <- .dv_leaf_label(d, prep$ranks)
+  leaf <- .dv_taxon_label(d, prep$ranks, rank)
 
   grp <- if (is.null(by)) rep("all", nrow(d)) else as.character(d[[by]])
   sid <- as.character(d[[stom]])
@@ -144,19 +184,21 @@ dv_prey_accumulation <- function(prep, by = NULL, permutations = 100,
 
 #' Frequency of occurrence per rank (the Buckland Table B1 layout)
 #'
-#' The classical frequency of occurrence (percent-F): the proportion of
+#' The classical frequency of occurrence (%FO): the proportion of
 #' non-empty stomachs that contain each taxon, computed INDEPENDENTLY at each
 #' taxonomic rank. Because a stomach can contain several categories, and because
-#' a parent's percent-F is recomputed from stomach presence rather than summed
+#' a parent's %FO is recomputed from stomach presence rather than summed
 #' from its children, these values are non-additive across ranks - which is
 #' exactly why they are reported as a nested hierarchy of levels
-#' (Buckland et al., 2017). This is distinct from the within-rank record share
+#' (Buckland et al., 2017). This is distinct from the share of prey records
 #' in [dv_build_tree()] (`pct_occ`), which is additive so that it can be drawn
-#' as a sunburst.
+#' as a sunburst: the two agree only where each stomach holds at most one record
+#' of the taxon, which rarely holds at coarse ranks. Stomach identifiers must be
+#' unique across predators (see [dv_validate()]).
 #'
 #' @param prep A `dietview_prep` from [dv_prepare()].
 #' @param rank A single rank (e.g. `"genus"`) or `NULL` for every rank stacked.
-#' @param by Optional covariate to compute percent-F within each level of.
+#' @param by Optional covariate to compute %FO within each level of.
 #' @param include_na Keep the explicit unidentified category at each rank.
 #' @return A data.frame with (optional) `by`, `rank`, `taxon`, `n_stomachs`
 #'   (stomachs containing the taxon), `n_total` (stomachs in the group), and
@@ -225,8 +267,11 @@ dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE) {
 #' @param prep A `dietview_prep` from [dv_prepare()].
 #' @param category Column giving the prey category. Defaults to `prey_category`
 #'   (from [dv_aggregate_threshold()]) if present, otherwise the finest resolved
-#'   rank label.
+#'   rank label. Ignored when `rank` is given.
 #' @param unit Column giving the sampling unit. Defaults to the spec's stomach.
+#' @param rank Optional rank (one of `prep$ranks`, e.g. `"class"`): columns are
+#'   then the taxa at that rank, plus the unidentified column (`"NA"`) when
+#'   `include_na = TRUE`.
 #' @param currency `"weight"` (summed mass), `"occurrence"` (record counts), or
 #'   `"fo"` (presence/absence, one per unit).
 #' @param include_na Keep an explicit unidentified column.
@@ -243,9 +288,10 @@ dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE) {
 #'                    verbose = FALSE)
 #' m <- dv_matrix(prep, currency = "occurrence")
 #' dim(m)
+#' dv_matrix(prep, rank = "class", currency = "weight")
 #' # vegan::decostand(m, "total"); vegan::vegdist(m, "bray")
 #' @export
-dv_matrix <- function(prep, category = NULL, unit = NULL,
+dv_matrix <- function(prep, category = NULL, unit = NULL, rank = NULL,
                       currency = c("weight", "occurrence", "fo"),
                       include_na = TRUE) {
   stopifnot(inherits(prep, "dietview_prep"))
@@ -254,11 +300,15 @@ dv_matrix <- function(prep, category = NULL, unit = NULL,
   if (is.null(unit)) unit <- prep$spec$stomach
   if (!unit %in% names(d)) stop("`unit` column not found: ", unit, call. = FALSE)
 
-  if (is.null(category)) {
-    category <- if ("prey_category" %in% names(d)) "prey_category" else NULL
+  if (!is.null(rank)) {
+    cat_vec <- .dv_taxon_label(d, prep$ranks, rank)
+  } else {
+    if (is.null(category)) {
+      category <- if ("prey_category" %in% names(d)) "prey_category" else NULL
+    }
+    cat_vec <- if (is.null(category)) .dv_leaf_label(d, prep$ranks)
+               else as.character(d[[category]])
   }
-  cat_vec <- if (is.null(category)) .dv_leaf_label(d, prep$ranks)
-             else as.character(d[[category]])
   if (include_na) cat_vec[is.na(cat_vec) | cat_vec == ""] <- "NA"
 
   u <- as.character(d[[unit]])

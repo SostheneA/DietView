@@ -11,7 +11,7 @@ dv_fo_table(prep, rank = NULL, by = NULL, include_na = TRUE)
 
 \item{rank}{A single rank (e.g. \code{"genus"}) or \code{NULL} for every rank stacked.}
 
-\item{by}{Optional covariate to compute percent-F within each level of.}
+\item{by}{Optional covariate to compute \%FO within each level of.}
 
 \item{include_na}{Keep the explicit unidentified category at each rank.}
 }
@@ -21,15 +21,17 @@ A data.frame with (optional) \code{by}, \code{rank}, \code{taxon}, \code{n_stoma
 \code{pct_fo}.
 }
 \description{
-The classical frequency of occurrence (percent-F): the proportion of
+The classical frequency of occurrence (\%FO): the proportion of
 non-empty stomachs that contain each taxon, computed INDEPENDENTLY at each
 taxonomic rank. Because a stomach can contain several categories, and because
-a parent's percent-F is recomputed from stomach presence rather than summed
+a parent's \%FO is recomputed from stomach presence rather than summed
 from its children, these values are non-additive across ranks - which is
 exactly why they are reported as a nested hierarchy of levels
-(Buckland et al., 2017). This is distinct from the within-rank record share
+(Buckland et al., 2017). This is distinct from the share of prey records
 in \code{\link[=dv_build_tree]{dv_build_tree()}} (\code{pct_occ}), which is additive so that it can be drawn
-as a sunburst.
+as a sunburst: the two agree only where each stomach holds at most one record
+of the taxon, which rarely holds at coarse ranks. Stomach identifiers must be
+unique across predators (see \code{\link[=dv_validate]{dv_validate()}}).
 }
 \examples{
 csv <- system.file("extdata", "dietview_example.csv", package = "DietView")

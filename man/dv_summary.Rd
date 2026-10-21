@@ -4,17 +4,20 @@
 \alias{dv_summary}
 \title{Describe the sampled diet dataset}
 \usage{
-dv_summary(prep, by = NULL)
+dv_summary(prep, by = NULL, rank = NULL)
 }
 \arguments{
 \item{prep}{A \code{dietview_prep} from \code{\link[=dv_prepare]{dv_prepare()}}.}
 
 \item{by}{Optional covariate column to break the summary down by.}
+
+\item{rank}{Optional rank (one of \code{prep$ranks}, e.g. \code{"family"}) at which
+\code{n_taxa} is counted. \code{NULL} (default) uses the finest resolved label.}
 }
 \value{
 A data.frame with one row per predator (and per \code{by} level), with
-\code{n_stomachs}, \code{n_records}, \code{n_taxa}, \code{prey_per_stomach}, and, when a weight
-column is declared, \code{total_weight}.
+\code{n_stomachs}, \code{n_records}, \code{n_taxa}, \code{records_per_stomach}, and, when a
+weight column is declared, \code{total_weight}.
 }
 \description{
 A quick overview of sample structure, computed before any figure: how many
@@ -23,6 +26,12 @@ taxa were seen, and the mean number of prey records per stomach. Optionally
 broken down by a covariate.
 }
 \details{
+By default (\code{rank = NULL}) a taxon is the finest resolved label of each
+record, which mixes ranks: a stomach with \emph{Themisto libellula} and
+"Amphipoda" counts two taxa although \emph{Themisto} is an amphipod, so \code{n_taxa}
+overstates richness, more so as digestion advances. Give \code{rank} to count
+taxa at one stated rank instead, unidentified records excluded.
+
 Note that a long prey-record table represents only non-empty stomachs, so
 this function cannot report a vacuity (percent-empty) index; that must be
 computed upstream from the full sampling frame.
@@ -40,4 +49,5 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
                    verbose = FALSE)
 dv_summary(prep)
 dv_summary(prep, by = "region")
+dv_summary(prep, rank = "class")
 }

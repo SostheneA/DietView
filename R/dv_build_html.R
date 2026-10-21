@@ -3,20 +3,39 @@
 #' Reproduces the sGSL-style dashboard from any prepared dataset: a searchable,
 #' sortable landing grid of predator cards (stomach counts, length range, ID
 #' photo, description) plus one tab per predator. Each tab shows the diet in up
-#' to three bands (occurrence items, occurrence %, weight %); each band repeats
-#' the same structure: an aggregated sunburst, one row of sunbursts per declared
-#' covariate, and optionally crossed rows (e.g. length bins split by period).
+#' to three bands of sunbursts (distinct prey items, prey records as % of all
+#' records, weight as % of total weight); each band repeats the same structure:
+#' an aggregated sunburst, one row of sunbursts per declared covariate, and
+#' optionally crossed rows (e.g. length bins split by period). Covariate levels
+#' that are `NA` are omitted from the rows.
+#'
+#' By default the record band counts prey records, even when the spec declares
+#' a `count` column; set `currency = "numbers"` to count individuals (%N)
+#' instead. The default call touches neither the network nor the working
+#' directory: photos are fetched only with `photo_source = "inaturalist"` or
+#' `"wikipedia"`, and downloads go to a folder in [tempdir()] unless
+#' `image_dir` says otherwise. Each card shows the photo's author and license,
+#' linked to the photo's page; see [dv_species_card_assets()].
 #'
 #' @param prep A `dietview_prep` from [dv_prepare()].
-#' @param output Output HTML path.
+#' @param output Output HTML path (required).
 #' @param strata Covariates to stratify each band by (default: all declared).
 #' @param cross List of `c(inner, outer)` covariate pairs to also show crossed
 #'   (for each level of `outer`, a row of `inner` levels). E.g.
 #'   `list(c("size_bin", "period"))`.
-#' @param bands Which bands to draw and in which order.
+#' @param bands Which bands to draw and in which order: `"count"` (distinct
+#'   prey items), `"occurrence"` (prey records, or individuals with
+#'   `currency = "numbers"`) and `"weight"`.
+#' @param currency `"records"` (default: each record counts once) or
+#'   `"numbers"` (each record counts its `count` column; needs `count` in the
+#'   spec). See [dv_tree()].
 #' @param length_col Optional numeric length column, to show length ranges on cards.
-#' @param species_info Optional named list of `list(desc=, photo=)` per predator.
-#' @param image_dir,use_wiki Passed to [dv_species_card_assets()].
+#' @param species_info Optional named list, one element per predator, of
+#'   `list(desc =, photo =, credit =, author =, license =, url =)`.
+#' @param image_dir,photo_source,licenses Passed to [dv_species_card_assets()].
+#'   Defaults: a folder in [tempdir()], no network access, and only openly
+#'   licensed iNaturalist photos (CC0, CC BY, CC BY-SA).
+#' @param use_wiki Deprecated; use `photo_source`.
 #' @param title Dashboard title.
 #' @param self_contained If TRUE render a single embedded file (needs rmarkdown).
 #' @return The output path, invisibly.
@@ -38,24 +57,39 @@
 #'               strata = c("period", "size_class"))
 #' }
 #' @export
-dv_build_html <- function(prep, output = "dietview.html",
+dv_build_html <- function(prep, output,
                           strata = prep$spec$covariates,
                           cross = list(),
                           bands = c("count", "occurrence", "weight"),
+                          currency = c("records", "numbers"),
                           length_col = NULL,
                           species_info = list(),
-                          image_dir = "images", use_wiki = TRUE,
+                          image_dir = file.path(tempdir(), "dietview-images"),
+                          photo_source = "none",
+                          licenses = c("cc0", "cc-by", "cc-by-sa"),
+                          use_wiki = NULL,
                           title = "DietView", self_contained = TRUE) {
   stopifnot(inherits(prep, "dietview_prep"))
+  if (missing(output)) stop("Name the output file: `output = \"my_dashboard.html\"`.",
+                            call. = FALSE)
+  currency <- match.arg(currency)
+  if (!is.null(use_wiki) && missing(photo_source)) {
+    message("`use_wiki` is deprecated; use `photo_source = \"",
+            if (isTRUE(use_wiki)) "wikipedia" else "none", "\"` instead.")
+    photo_source <- if (isTRUE(use_wiki)) "wikipedia" else "none"
+  }
+  photo_source <- match.arg(photo_source, c("none", "inaturalist", "wikipedia"),
+                            several.ok = TRUE)
   spec <- prep$spec; d <- prep$data; ranks <- prep$ranks
   pcol <- spec$predator; scol <- spec$stomach
-  wcol <- spec$weight;  ccol <- spec$count
+  wcol <- spec$weight;  ccol <- .dv_count_col(spec, d, currency)
 
   colors <- dv_palette(unlist(lapply(ranks, function(r) .dv_fill_na(d[[r]]))))
   band_meta <- list(
-    count = list(title = "Band 1 - Distinct diet counts", color = "#2c3e50"),
-    occurrence = list(title = "Band 2 - Occurrence share within rank", color = "#1f77b4"),
-    weight = list(title = "Band 3 - Weight share within rank", color = "#d62728")
+    count = list(title = "Distinct prey items", color = "#2c3e50"),
+    occurrence = list(title = if (currency == "numbers") "Individuals (% of all individuals)"
+                              else "Prey records (% of all records)", color = "#1f77b4"),
+    weight = list(title = "Weight (% of total weight)", color = "#d62728")
   )
 
   sb <- function(recs, mode, ttl = "", sub = "")
@@ -144,7 +178,8 @@ dv_build_html <- function(prep, output = "dietview.html",
     p <- preds[i]; recs <- d[which(as.character(d[[pcol]]) == p), ]
     pid <- gsub("[^A-Za-z0-9]", "_", p)
     latin <- if (!is.null(spec$predator_latin)) as.character(recs[[spec$predator_latin]])[1] else NA
-    a <- dv_species_card_assets(p, latin, species_info[[p]], image_dir, use_wiki)
+    a <- dv_species_card_assets(p, latin, species_info[[p]], image_dir = image_dir,
+                                photo_source = photo_source, licenses = licenses)
     len_line <- if (!is.null(length_col) && length_col %in% names(recs))
       htmltools::tags$p(class = "card-stat", htmltools::tags$b("Length: "), rng(recs[[length_col]])) else NULL
 
@@ -152,7 +187,9 @@ dv_build_html <- function(prep, output = "dietview.html",
       class = "species-card", `data-order` = as.character(i),
       onclick = sprintf("showTab('view_%s')", pid),
       htmltools::tags$h3(class = "card-title", p),
-      if (!is.null(a$desc)) htmltools::tags$p(class = "species-desc", a$desc),
+      if (!is.null(a$desc)) htmltools::tags$p(class = "species-desc", a$desc,
+                                              if (!is.null(a$desc_credit))
+                                                htmltools::tags$span(class = "desc-credit", a$desc_credit)),
       htmltools::tags$div(class = "card-body",
                           htmltools::tags$div(class = "card-stats",
                                               htmltools::tags$p(class = "card-stat", htmltools::tags$b("Total stomachs: "), nstom(recs)),
@@ -161,7 +198,11 @@ dv_build_html <- function(prep, output = "dietview.html",
                             htmltools::tags$div(class = "photo-box",
                                                 htmltools::tags$img(class = "species-photo", src = a$uri, alt = paste("ID:", p)),
                                                 if (!is.null(a$credit))
-                                                  htmltools::tags$span(class = "photo-credit", a$credit))))
+                                                  htmltools::tags$span(class = "photo-credit",
+                                                                       if (!is.null(a$url))
+                                                                         htmltools::tags$a(href = a$url, target = "_blank",
+                                                                                           rel = "noopener", a$credit)
+                                                                       else a$credit))))
 
     tabs[[p]] <- htmltools::tags$div(
       id = paste0("view_", pid), class = "dashboard-view",
@@ -171,7 +212,7 @@ dv_build_html <- function(prep, output = "dietview.html",
       lapply(bands, function(m) build_band(recs, m)))
   }
 
-  page <- htmltools::tagList(.dv_head_tags(), .dv_home(title, cards), htmltools::tagList(tabs))
+  page <- htmltools::tagList(.dv_head_tags(), .dv_home(title, cards, currency), htmltools::tagList(tabs))
   .dv_render(page, output, title, self_contained)
   invisible(output)
 }
@@ -228,6 +269,10 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir = ".", ...) {
       .card-body{display:flex;gap:15px;align-items:flex-start;justify-content:space-between}
       .card-stats{flex:1 1 auto;min-width:0}
       .species-photo{width:130px;max-height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd;flex:0 0 auto}
+      .photo-box{display:flex;flex-direction:column;align-items:flex-end;flex:0 0 130px}
+      .photo-credit{display:block;width:130px;font-size:.65rem;color:#777;line-height:1.2;margin-top:3px;text-align:right}
+      .photo-credit a{color:#777}
+      .desc-credit{display:block;font-size:.65rem;font-style:normal;color:#999;margin-top:2px}
       .diet-band{margin-bottom:25px}
       .btn-back{padding:10px 20px;background:#1f77b4;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:bold;margin-bottom:20px}
       .controls{display:flex;gap:15px;align-items:center;flex-wrap:wrap;margin:15px 0}
@@ -251,12 +296,14 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir = ".", ...) {
     ")))
 }
 
-.dv_home <- function(title, cards) {
+.dv_home <- function(title, cards, currency = "records") {
+  rec_txt <- if (currency == "numbers") "individuals (% of all individuals)"
+             else "prey records (% of all records)"
   htmltools::tags$div(
     id = "view_home", class = "dashboard-view active",
     htmltools::tags$h1(title),
     htmltools::tags$p(
-      "Click a card to open a predator's diet. Each predator shows up to three bands: Band 1 shows distinct diet items, Band 2 shows occurrence share within each rank, and Band 3 shows weight share within each rank. White segments are unidentified prey (NA), kept as an explicit category so within-rank percentages sum to 100%."
+      paste0("Click a card to open a predator's diet. Each predator shows up to three bands of sunbursts: distinct prey items, ", rec_txt, " and weight (% of total weight). White wedges are records not identified at that rank. They are kept, so every ring accounts for all the material and its shares sum to 100%.")
     ),
     htmltools::tags$div(
       class = "controls",
@@ -288,7 +335,8 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir = ".", ...) {
 
   if (isTRUE(self_contained) && requireNamespace("rmarkdown", quietly = TRUE)) {
     tmp <- tempfile(fileext = ".Rmd")
-    writeLines(c("---", paste0("title: '", title, "'"),
+    # a JSON string is valid YAML, so quotes and apostrophes in the title are safe
+    writeLines(c("---", paste0("title: ", jsonlite::toJSON(title, auto_unbox = TRUE)),
                  "output:", "  html_document:", "    self_contained: true",
                  "---", "```{r echo=FALSE}", "page", "```"), tmp)
     rmarkdown::render(tmp,

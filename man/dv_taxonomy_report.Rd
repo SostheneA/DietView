@@ -2,7 +2,7 @@
 % Please edit documentation in R/dv_taxonomy.R
 \name{dv_taxonomy_report}
 \alias{dv_taxonomy_report}
-\title{Review fuzzy and unresolved prey matches}
+\title{Review doubtful prey matches}
 \usage{
 dv_taxonomy_report(
   prep,
@@ -13,20 +13,26 @@ dv_taxonomy_report(
 \arguments{
 \item{prep}{A \code{dietview_prep} produced with \code{taxonomy = "worms"}.}
 
-\item{which}{Which rows to return: "review" (fuzzy + unresolved, the default),
-"fuzzy", "unresolved", or "all".}
+\item{which}{Which rows to return: "review" (every doubtful row listed above,
+the default), "fuzzy", "unresolved", or "all".}
 
 \item{file}{Optional CSV path to write the report to.}
 }
 \value{
-A data.frame with the prey name, what WoRMS matched, the match type,
-the AphiaID used, the number of records affected, and the resolved ranks.
+A data.frame with the prey name, the names seen under that key, what
+WoRMS matched, the match type and checks, the AphiaID used, the number of
+records affected, and the resolved ranks, sorted by number of records.
 }
 \description{
 Returns the prey whose taxonomy needs a human eye: fuzzy matches (WoRMS
-proposed a close-but-not-identical name) and unresolved prey (no match). Use
-it to audit the enrichment, then correct anything wrong by supplying a lineage
-table (\code{dv_prepare(taxonomy = "table")}) or fixing the source names.
+TAXAMATCH proposed a close-but-not-identical name), unresolved prey (no
+match), AphiaIDs that WoRMS treats as unaccepted (\code{"id_synonym"}, followed
+to the accepted one) or whose record could not be read (\code{"id_unchecked"}),
+AphiaIDs whose stored name differs from the WoRMS name (\code{name_check = "differs"}), names with several accepted WoRMS records (\code{homonym}), and
+matches for which WoRMS returned no classification (\code{lineage_ok = FALSE},
+usually a network or server error; run again to retry). Use it to audit the
+enrichment, then correct anything wrong by supplying a lineage table
+(\code{dv_prepare(taxonomy = "table")}) or fixing the source names.
 }
 \examples{
 \dontrun{

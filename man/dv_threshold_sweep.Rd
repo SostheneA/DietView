@@ -19,7 +19,10 @@ dv_threshold_sweep(
 \item{scope, min_predators}{Passed to \code{\link[=dv_aggregate_threshold]{dv_aggregate_threshold()}}.}
 }
 \value{
-A data.frame with \code{threshold}, \code{n_categories} and \code{n_records}.
+A data.frame with \code{threshold}, \code{n_categories} (number of prey
+categories) and \code{pct_coarser} (percentage of all records whose category is
+coarser than the finest rank, the unidentified and \code{other} records
+included).
 }
 \description{
 Runs \code{\link[=dv_aggregate_threshold]{dv_aggregate_threshold()}} over a vector of thresholds and reports how

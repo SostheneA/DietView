@@ -1,22 +1,36 @@
 #' Render a diet sunburst
 #'
 #' Draws the multi-rank sunburst for one set of records (or a prebuilt tree).
-#' Orientation is fixed (`sort = FALSE`, fixed `rotation`) so reading order and
-#' start angle stay consistent across covariate cells, which makes side-by-side
-#' comparison meaningful. The explicit "NA" category is white.
+#' Orientation is fixed (`sort = FALSE`, fixed `rotation`), so the start angle
+#' and the reading order stay the same across covariate cells. Angular
+#' positions are not fixed: a taxon absent from one cell shifts every wedge
+#' after it, so compare cells by color, not by angle. Records not identified at
+#' a rank form a white wedge with a thin gray outline, shown as "Not identified
+#' at this rank" in the hover text.
+#'
+#' Wedges are sized from the raw values of the leaves (`branchvalues =
+#' "remainder"`), and plotly sums them upward, so a parent always equals the sum
+#' of its children. Because every rank has the same denominator, the angles are
+#' the within-rank shares shown in the hover text.
 #'
 #' Three modes:
 #' \itemize{
-#' \item `count`: sized by distinct diet items.
-#' \item `occurrence`: sized by within-rank occurrence share; hover shows raw occurrence and % within rank.
-#' \item `weight`: sized by within-rank weight share; hover shows raw weight and % within rank.
+#' \item `count`: sized by the number of distinct prey items.
+#' \item `occurrence`: sized by prey records (or by individuals, if the tree
+#'   was built with a count column); hover shows the number and the share of all
+#'   records at that rank. The value `"occurrence"` is kept for backward
+#'   compatibility.
+#' \item `weight`: sized by weight; hover shows the weight and the weight share
+#'   at that rank.
 #' }
 #'
 #' @param x A `dietview_tree`, or a data.frame of records (then supply `ranks`
 #'   and `weight_col`/`count_col`).
 #' @param mode One of "count", "occurrence", "weight".
 #' @param ranks,weight_col,count_col Passed to [dv_build_tree()] if `x` is raw.
-#' @param colors Optional named colour vector; default from [dv_palette()].
+#' @param colors Optional named color vector, keyed by node `id` (as from
+#'   [dv_palette_tree()]) or by taxon label (as from [dv_palette()]); ids are
+#'   looked up first. Default from [dv_palette()].
 #' @param rotation Start angle in degrees (default 90 = top).
 #' @param title,subtitle Figure titles.
 #' @return A plotly sunburst.
@@ -64,13 +78,13 @@ dv_sunburst <- function(x,
       parents = ~parent,
       values = pp$size,
       type = "sunburst",
-      branchvalues = "total",
+      branchvalues = "remainder",
       sort = FALSE,
       rotation = rotation,
       textinfo = "label",
       text = ~hovertext,
       hovertemplate = "%{text}<extra></extra>",
-      marker = list(colors = ~color)
+      marker = list(colors = ~color, line = list(color = "#8C8C8C", width = 0.5))
     ),
     title = list(
       text = paste0(
@@ -83,32 +97,38 @@ dv_sunburst <- function(x,
   )
 }
 
-# ---- internal: colour, size, and hover fields for one tree ----------------
+# ---- internal: color, size, and hover fields for one tree ----------------
 .dv_sb_prep <- function(tree, mode, colors = NULL) {
   if (is.null(colors)) colors <- dv_palette(tree$label)
-  tree$color <- unname(colors[tree$label])
-  tree$color[is.na(tree$color)] <- "#CCCCCC"
-  size_vals <- switch(
-    mode,
-    count = tree$value_item,
-    occurrence = tree$pct_occ,
-    weight = tree$pct_w
-  )
+  # colors keyed by node id (dv_palette_tree()) win over colors keyed by label
+  col <- unname(colors[tree$id]); miss <- is.na(col)
+  col[miss] <- unname(colors[tree$label[miss]]); col[is.na(col)] <- "#CCCCCC"
+  tree$color <- col
+
+  # leaves carry the raw values; plotly sums them upward ("remainder")
+  is_leaf <- !(tree$id %in% tree$parent)
+  raw <- switch(mode, count = tree$value_item,
+                occurrence = tree$value_occ, weight = tree$value_w)
+  size_vals <- ifelse(is_leaf, raw, 0)
+
+  taxon <- ifelse(tree$label == "NA", "Not identified at this rank", tree$label)
+  head  <- paste0("<b>Rank:</b> ", tree$rank, "<br><b>Taxon:</b> ", taxon)
   tree$hovertext <- switch(
     mode,
-    count = paste0(
-      "<b>Rank:</b> ", tree$rank, "<br><b>Taxon:</b> ", tree$label,
-      "<br><b>Distinct items:</b> ", tree$value_item
-    ),
-    occurrence = paste0(
-      "<b>Rank:</b> ", tree$rank, "<br><b>Taxon:</b> ", tree$label,
-      "<br><b>Occurrences:</b> ", tree$value_occ,
-      "<br><b>Occurrence share within rank:</b> ", .dv_pct_fmt(tree$pct_occ)
+    count = paste0(head, "<br><b>Distinct prey items:</b> ", tree$value_item),
+    occurrence = if (identical(attr(tree, "currency"), "numbers")) paste0(
+      head,
+      "<br><b>Individuals:</b> ", tree$value_occ,
+      "<br><b>Numerical share at this rank (%N):</b> ", .dv_pct_fmt(tree$pct_occ)
+    ) else paste0(
+      head,
+      "<br><b>Prey records:</b> ", tree$value_occ,
+      "<br><b>Share of all records at this rank:</b> ", .dv_pct_fmt(tree$pct_occ)
     ),
     weight = paste0(
-      "<b>Rank:</b> ", tree$rank, "<br><b>Taxon:</b> ", tree$label,
+      head,
       "<br><b>Weight:</b> ", formatC(tree$value_w, format = "f", digits = 1),
-      "<br><b>Weight share within rank:</b> ", .dv_pct_fmt(tree$pct_w)
+      "<br><b>Weight share at this rank:</b> ", .dv_pct_fmt(tree$pct_w)
     )
   )
   list(tree = tree, size = size_vals)
@@ -158,10 +178,11 @@ dv_sunburst <- function(x,
       fig <- plotly::add_trace(
         fig,
         ids = pp$tree$id, labels = pp$tree$label, parents = pp$tree$parent,
-        values = pp$size, type = "sunburst", branchvalues = "total",
+        values = pp$size, type = "sunburst", branchvalues = "remainder",
         sort = FALSE, rotation = rotation, textinfo = "label",
         text = pp$tree$hovertext, hovertemplate = "%{text}<extra></extra>",
-        marker = list(colors = pp$tree$color),
+        marker = list(colors = pp$tree$color,
+                      line = list(color = "#8C8C8C", width = 0.5)),
         domain = list(row = ce$row, column = ce$col)
       )
     }

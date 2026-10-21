@@ -11,6 +11,8 @@ dv_prepare(
   lineage = NULL,
   fuzzy = TRUE,
   cache_dir = tools::R_user_dir("DietView", "cache"),
+  cache_max_age = 180,
+  strict_covariates = TRUE,
   verbose = TRUE
 )
 }
@@ -24,29 +26,49 @@ dv_prepare(
 \item{lineage}{For \code{taxonomy = "table"}: a data.frame with a key column
 (\code{prey_id} or \code{prey_name}, matching your spec) plus one column per rank.}
 
-\item{fuzzy}{For \code{taxonomy = "worms"}: allow fuzzy name matching as a fallback
-when the exact name fails (default \code{TRUE}). Fuzzy hits are flagged, never
+\item{fuzzy}{For \code{taxonomy = "worms"}: when the exact name fails, try WoRMS
+TAXAMATCH fuzzy matching (default \code{TRUE}). Fuzzy hits are flagged, never
 silent - review them with \code{\link[=dv_taxonomy_report]{dv_taxonomy_report()}}.}
 
-\item{cache_dir}{Cache directory for the WoRMS path.}
+\item{cache_dir}{Cache directory for the WoRMS path. \code{NULL} disables caching.}
 
-\item{verbose}{Print progress.}
+\item{cache_max_age}{For the WoRMS path: cached lookups older than this many
+days are fetched again (default 180). See \code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}}.}
+
+\item{strict_covariates}{Passed to \code{\link[=dv_validate]{dv_validate()}}: if \code{TRUE} (default) a
+declared covariate missing from \code{data} is an error; if \code{FALSE} it is dropped
+from the returned spec with a warning.}
+
+\item{verbose}{Print progress and the validation summary.}
 }
 \value{
-An object of class \code{dietview_prep}. When \code{taxonomy = "worms"}, it also
-carries \verb{$taxonomy_log}, the per-prey provenance table.
+An object of class \code{dietview_prep}: a list with \code{data}, \code{spec} (minus
+any dropped covariates), \code{ranks}, \code{taxonomy_source} (the taxonomy path
+actually used) and \code{taxonomy_log}. When \code{taxonomy = "worms"},
+\code{taxonomy_log} is the per-prey provenance table, with the attributes
+\code{retrieved} (time of the run) and \code{worrms_version}; otherwise it is \code{NULL}.
 }
 \description{
-Validates the long table and attaches the taxonomic lineage for the declared
-ranks. The taxonomy can come from:
+Validates the long table with \code{\link[=dv_validate]{dv_validate()}} and attaches the taxonomic
+lineage for the declared ranks. The taxonomy can come from:
 \itemize{
 \item \code{"columns"} - the rank columns are already in \code{data};
 \item \code{"worms"}   - fetch the lineage from WoRMS by AphiaID/name;
-\item \code{"table"}   - join a lineage lookup you supply via \code{lineage};
+\item \code{"table"}   - join a lineage table you supply via \code{lineage};
 \item \code{"auto"}    - use columns if present, else \code{lineage} if given, else WoRMS.
 }
-Ranks that cannot be resolved are kept as \code{NA} and later shown as the explicit
-"NA" category -- never dropped.
+Ranks that cannot be resolved are kept as \code{NA} and later shown as an explicit
+unidentified category below the deepest identified rank -- never dropped.
+}
+\details{
+With \code{taxonomy = "worms"}, each record is keyed by its AphiaID when it has
+one and by its own prey name otherwise, so records without an AphiaID never
+share a lineage by accident. Records with neither key stay fully
+unidentified, with a warning.
+
+With \code{taxonomy = "table"}, the lineage table must hold each key once (a
+duplicated key is an error), and prey keys absent from the table are reported
+with a warning before their records are treated as fully unidentified.
 }
 \examples{
 csv <- system.file("extdata", "dietview_example.csv", package = "DietView")

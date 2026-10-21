@@ -9,37 +9,29 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+log_file <- system.file("extdata", "dietview_example_worms_log.csv", package = "DietView")
+has_log  <- nzchar(log_file)
 ```
 
-DietView can attach a full taxonomic lineage to your prey by querying the
+DietView can attach a taxonomic lineage to every prey by querying the
 [World Register of Marine Species (WoRMS)](https://www.marinespecies.org/). This
-article explains how the matching works, what provenance it records, and how to
-review and correct it. All chunks here are shown but not run (they need the
-`worrms` package and internet).
+vignette shows how to run the lookup, how to read the log of how each prey was
+matched, and how to freeze the result so that later runs need no network. The
+lookup chunks are shown but not run, because they need the `worrms` package and
+an internet connection.
 
-## Why a lineage, and why NA matters
+## Why a lineage, and why unidentified records stay
 
-DietView renders diet across the seven flagship Linnaean ranks
-(kingdom … species). Your records rarely carry all seven, and identification
-often stops at a coarse rank (e.g. `Decapoda`, `Teleostei`). DietView never
-invents the missing ranks: where identification stops, the deeper ranks stay
-`NA` and are shown as an explicit "NA" category so within-rank percentages still
-sum to 100 %.
+DietView shows the diet at seven ranks, kingdom to species, by default. Your
+records rarely carry all seven: identification often stops at a coarse rank
+(`Decapoda`, `Teleostei`). DietView never fills in the missing ranks. Below the
+last rank reached, the record is shown as unidentified at that rank, so every
+ring of the sunburst still holds all the records and adds up to 100%.
 
-## The matching strategy
+## Running the lookup
 
-`dv_prepare(taxonomy = "worms")` calls `dv_taxonomy_worms()` on the unique prey.
-Matching proceeds in a strict order and every prey carries a provenance record:
-
-1. **id** - the `prey_id` (AphiaID) is already known and used directly;
-2. **exact** - the `prey_name` matches a WoRMS latin name exactly;
-3. **fuzzy** - if `fuzzy = TRUE`, the closest WoRMS name is proposed (and
-   flagged);
-4. **unresolved** - nothing matched; all ranks stay `NA`.
-
-Unaccepted names are followed to their **accepted (valid) AphiaID** before the
-lineage is fetched, and results are cached to disk so re-runs and other surveys
-do not requery.
+`dv_prepare(taxonomy = "worms")` calls `dv_taxonomy_worms()` once for each
+distinct prey key, not once per record.
 
 ```{r prepare}
 library(DietView)
@@ -56,36 +48,91 @@ spec <- dv_spec(
   weight    = "prey_weight"
 )
 
-prep <- dv_prepare(dat, spec, taxonomy = "worms")   # id / exact / fuzzy / unresolved
+prep <- dv_prepare(dat, spec, taxonomy = "worms")
 prep
 ```
 
-## Reviewing fuzzy and unresolved matches
+## How each prey is matched
 
-Nothing is guessed silently. `dv_taxonomy_report()` returns exactly the prey that
-need a human eye, sorted by how many records they affect.
+Each distinct prey gets one row in the log, with a `match_type`:
+
+| `match_type` | Meaning | What to do |
+|---|---|---|
+| `id` | The AphiaID is accepted in WoRMS | Nothing, unless `name_check` is `"differs"` |
+| `id_synonym` | The AphiaID is unaccepted; its accepted ID was used | Check that the accepted name is the taxon you meant |
+| `id_unchecked` | WoRMS could not be reached to check the ID | Run again later |
+| `exact` | No ID; the name matched exactly | Nothing |
+| `fuzzy` | No ID; the name was matched by TAXAMATCH, which tolerates misspellings | Check every one: a near match can be a different taxon |
+| `unresolved` | No match | Correct the name, or accept that the prey stays unidentified |
+
+Two more columns flag problems. `name_check` is `"differs"` when the name in
+your table is not the name WoRMS holds for that AphiaID, which usually means
+that one of the two was mistyped. `lineage_ok` is `FALSE` when the prey was
+matched but WoRMS returned no classification, for example because the
+connection failed. Those prey count as unidentified at every rank until you run
+the lookup again. Failed lookups are not stored in the cache, so the next run
+asks WoRMS again.
+
+Successful lookups are cached on disk (in `tools::R_user_dir("DietView", "cache")`),
+so a rerun only queries what changed. The log also records when the taxonomy
+was retrieved and which `worrms` version was used, in its `retrieved` and
+`worrms_version` attributes.
+
+## Reading the report
+
+`dv_taxonomy_report()` returns the prey that need a look, largest number of
+records first:
 
 ```{r report}
-review <- dv_taxonomy_report(prep, which = "review")   # fuzzy + unresolved
+review <- dv_taxonomy_report(prep, which = "review")
 review
 
-# write it out for a co-author to check
-dv_taxonomy_report(prep, which = "all", file = "taxonomy_log.csv")
+# the whole log, to archive or to send to a co-author
+dv_taxonomy_report(prep, which = "all", file = file.path(tempdir(), "taxonomy_log.csv"))
 ```
 
-## Correcting what is wrong
+```{r frozen-intro, eval = TRUE, echo = FALSE, results = "asis"}
+if (has_log) {
+  cat("The package ships the full log of one such run on the example table,",
+      "so you can see what a report looks like without a connection:\n")
+} else {
+  cat("A frozen copy of this log (`dietview_example_worms_log.csv`) is not",
+      "included in this build of the package, so the chunk below is not run.\n")
+}
+```
 
-Once you have reviewed the report, fix the source names, or freeze a curated
-lineage table and switch to the offline, reproducible path:
+```{r frozen, eval = has_log}
+wlog <- read.csv(log_file, na.strings = c("NA", ""))
+wlog[, intersect(c("prey_name", "prey_id", "match_type", "name_check",
+                   "matched_name", "n_records", "lineage_ok"), names(wlog))]
+```
+
+On this table, "unidentified material" has neither an AphiaID nor a
+taxonomic name, so it is `unresolved`, and its records are unidentified at
+every rank. That is expected. Unresolved prey you did not expect are the ones
+to chase.
+
+## Correcting and freezing
+
+Fix the names or IDs the report lists in your source table and run the lookup
+again. When the log is clean, save the lineage and switch to the offline path
+for every later run:
 
 ```{r fix}
-lineage <- read.csv("my_curated_lineage.csv", na.strings = c("NA", ""))
+lineage <- unique(prep$data[, c(spec$prey_name, prep$ranks)])
+write.csv(lineage, "lineage_2026-10-20.csv", row.names = FALSE)
+
+lineage <- read.csv("lineage_2026-10-20.csv", na.strings = c("NA", ""))
 prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage)
 ```
 
-## Exact-only, conservative matching
+The lineage table fixes the taxonomic snapshot your figures were made from.
+Archive it with your data, and note the retrieval date and the `worrms`
+version, because WoRMS changes.
 
-To disable fuzzy matching entirely (exact names and known AphiaIDs only):
+## Exact matching only
+
+To turn off TAXAMATCH matching and keep only known AphiaIDs and exact names:
 
 ```{r conservative}
 prep <- dv_prepare(dat, spec, taxonomy = "worms", fuzzy = FALSE)

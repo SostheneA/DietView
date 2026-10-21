@@ -11,10 +11,10 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
-DietView is built on a single, deliberately simple contract: **one row is one
-prey record in one stomach**. Everything else — taxonomy, metrics, figures,
-dashboards — is derived from that. This article explains the contract, the role
-system, and how to map *any* survey onto it.
+This vignette shows how to describe your own table to DietView. DietView needs
+one thing from your data: one row per prey record, that is, one prey taxon
+found in one stomach. Taxonomy, tables, figures and dashboards are all built
+from that table and from a specification that says which column is which.
 
 ```{r setup}
 library(DietView)
@@ -22,8 +22,9 @@ library(DietView)
 
 ## One row per prey record
 
-Column names are free. You never rename your data; instead you declare, once,
-which column plays which **role**. Here is the bundled base table:
+Column names are free. You do not rename your data; you declare once which
+column plays which role. Here is the example table that ships with the
+package. It is invented: 24 prey records from 11 stomachs of three predators.
 
 ```{r data}
 dat <- read.csv(
@@ -33,8 +34,8 @@ dat <- read.csv(
 str(dat)
 ```
 
-Note what is *not* here: there are no `kingdom .. species` columns. DietView adds
-those itself (see the taxonomy article).
+The table has no `kingdom` to `species` columns. DietView adds them when you
+attach a taxonomy (see the vignette on WoRMS).
 
 ## Declaring roles with `dv_spec()`
 
@@ -43,33 +44,35 @@ spec <- dv_spec(
   predator       = "predator_species_common_name",
   predator_latin = "predator_species_latin_name",
   stomach        = "stomach_id",
-  prey_id        = "aphia_id",       # WoRMS AphiaID (preferred key)
-  prey_name      = "verified_name",  # fallback key
+  prey_id        = "aphia_id",       # WoRMS AphiaID, used first when present
+  prey_name      = "verified_name",  # scientific name, used when there is no ID
   weight         = "prey_weight",
   digestion      = "digestion_level_id",
   covariates     = c("period", "size_class", "size_bin", "region")
 )
 ```
 
-The roles and their meaning:
+The roles and what they do:
 
 | Role | Required | Purpose |
 |---|---|---|
-| `predator` | yes | one predator per row |
-| `stomach` | yes | unit of occurrence; drives stomach counts |
-| `prey_id` / `prey_name` | one of them | prey key(s) for taxonomy |
-| `weight` | no | the weight currency (`%W`) |
-| `count` | no | per-record count for `%N` |
+| `predator` | yes | the predator of each record; a grouping and display label |
+| `stomach` | yes | the stomach each record came from; must be unique across the whole table, because stomach counts count distinct identifiers |
+| `prey_id` / `prey_name` | at least one | prey keys used to attach the taxonomy |
+| `weight` | no | the weight share (%W) |
+| `count` | no | number of individuals per record, for the numerical share (%N). Records without a count contribute nothing to %N, so unidentified material usually disappears from that view |
 | `digestion` | no | enables the digestion diagnostic |
-| `covariates` | no | any stratifiers |
-| `predator_latin` | no | auto-fetch ID photos |
+| `covariates` | no | columns you want to compare diets across |
+| `predator_latin` | no | used to look up identification photos |
 
-## Validating a table against a spec
+## Checking a table against a specification
 
-`dv_validate()` fails fast on hard errors (a missing required column, no prey
-key, an absent covariate) and only warns on soft gaps (no weight → `%W` empty; no
-digestion → diagnostic disabled). It returns the data invisibly, so it composes
-in a pipeline.
+`dv_validate()` stops if a declared column is missing, if there is no prey key
+column, or if a weight is negative. It warns about records with no prey key,
+weights that are not numbers and stomach IDs shared between predators, and it
+ends with a one-line description of the sample. It reports problems and never
+changes your data. It returns the data invisibly, so you can use it in a
+pipeline.
 
 ```{r validate}
 invisible(dv_validate(dat, spec))
@@ -77,9 +80,8 @@ invisible(dv_validate(dat, spec))
 
 ## Mapping your own survey
 
-Because nothing is hard-coded, adapting DietView to a new dataset is entirely a
-matter of writing a different `dv_spec()`. If your columns were, say,
-`sp`, `stom`, `aphia`, `wt_g`, and `yr`, you would simply write:
+To use DietView on another table, write a different `dv_spec()`. If your
+columns were `sp`, `stom`, `aphia`, `wt_g` and `yr`, you would write:
 
 ```{r own, eval = FALSE}
 spec <- dv_spec(
@@ -88,5 +90,7 @@ spec <- dv_spec(
 )
 ```
 
-Everything downstream — `dv_prepare()`, `dv_build_tree()`, `dv_sunburst()`,
-`dv_build_html()` — reads the spec, never the literal names.
+The later steps (`dv_prepare()`, `dv_build_tree()`, `dv_sunburst()`,
+`dv_build_html()`) read the column names from the specification, never from
+your code. The article "Adapting DietView to your own survey" goes through
+the other choices you make with a new table.

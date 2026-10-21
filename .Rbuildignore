@@ -14,7 +14,6 @@
 ^\.Rprofile$
 ^LICENSE\.md$
 ^cran-comments\.md$
-^CRAN_SUBMISSION\.md$
-^DEPLOYMENT\.md$
 ^doc$
 ^Meta$
+^data-raw$

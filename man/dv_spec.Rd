@@ -20,7 +20,8 @@ dv_spec(
 \arguments{
 \item{predator}{Column with the predator name/species.}
 
-\item{stomach}{Column with the stomach identifier (unit of occurrence).}
+\item{stomach}{Column with the stomach identifier (unit of occurrence).
+It must be unique across the whole table, not only within a predator.}
 
 \item{prey_name}{Column with the prey latin name (used if \code{prey_id} is missing).}
 
@@ -28,8 +29,10 @@ dv_spec(
 
 \item{weight}{Column with prey weight (for the weight currency). Optional.}
 
-\item{count}{Column with the number of prey individuals. Optional; if
-absent, one occurrence = one record.}
+\item{count}{Column with the number of prey individuals. Optional. It is
+used only when an output is asked for the numbers currency
+(\code{currency = "numbers"} in \code{\link[=dv_tree]{dv_tree()}}, \code{\link[=dv_build_html]{dv_build_html()}} and
+\code{\link[=run_dietview]{run_dietview()}}); otherwise each record counts once.}
 
 \item{digestion}{Column with the digestion level (enables digestion
 diagnostics). Optional.}

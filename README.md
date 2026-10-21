@@ -1,25 +1,17 @@
 # DietView <img src="man/figures/logo.png" align="right" height="130" alt="DietView logo" />
 
-> Taxonomically complete, covariate-aware visualization of predator diet
+> Interactive, hierarchical visualization of predator stomach-content data
 
-<!-- badges: start -->
-[![r-universe status](https://sosthenea.r-universe.dev/badges/DietView)](https://sosthenea.r-universe.dev/DietView)
-[![R-CMD-check](https://github.com/SostheneA/DietView/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SostheneA/DietView/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/SostheneA/DietView/actions/workflows/pkgdown.yaml/badge.svg)](https://sosthenea.github.io/DietView/)
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
-<!-- badges: end -->
-
-**DietView** turns a plain long table of stomach-content records — predator,
-stomach, prey, weight, covariates, *without any taxonomy* — into interactive,
-taxonomically complete **sunburst** views of predator diet. It **adds the taxa
-itself** (from [WoRMS](https://www.marinespecies.org/) by AphiaID/name, or from a
-lineage table you supply), computes per-taxon relative importance in
-**occurrence** and **weight** as the share *within each taxonomic rank*, keeps
-unidentified prey as an explicit **NA** category, lets any covariate stratify the
-views, quantifies the **digestion** identification bias, and **deploys** a
-self-contained HTML dashboard. See the [documentation
-site](https://sosthenea.github.io/DietView/).
+Stomach contents are identified to uneven depth: one prey is named to species,
+the next only to "Teleostei", and some material cannot be placed at all.
+DietView keeps all of it. From a long table with one row per prey record, it
+attaches a taxonomic lineage (from WoRMS, or from a lineage table you supply),
+keeps every record that stopped at a coarse rank as an explicit *unidentified*
+category below that rank, and shows the whole diet at every rank in one
+sunburst, by prey records or by weight. It also reports the classical frequency
+of occurrence, how identification depth changes with digestion, and can write
+the result to a single HTML file that opens in any browser. See the
+[documentation site](https://sosthenea.github.io/DietView/).
 
 ## Table of contents
 
@@ -36,25 +28,26 @@ site](https://sosthenea.github.io/DietView/).
 
 ## Overview
 
-DietView is built around a single input contract — *one row per prey record in a
-stomach* — and one reusable specification object. From there it offers:
+DietView is built around a single input contract (*one row per prey record in a
+stomach*) and one reusable specification object. From there it offers:
 
 - **taxonomy on demand**: resolve prey against WoRMS by AphiaID (preferred) or
-  name, following unaccepted names to their valid AphiaID, with an exact-then-
-  fuzzy strategy and a full provenance log; or join a lineage table for a fully
-  offline, reproducible run;
-- **within-rank importance** in two currencies (occurrence and weight), where
+  name, following unaccepted names to their valid AphiaID, with exact matching
+  first, then WoRMS TAXAMATCH for misspellings, and a provenance log to review;
+  or join a lineage table for a fully offline, reproducible run;
+- **within-rank importance** in two currencies (prey records and weight), where
   every taxonomic rank sums to 100 % and unidentified prey is an explicit **NA**
-  category rather than a silently dropped row;
+  category rather than a dropped row;
 - **covariate stratification** by any user-declared columns (period, year, size
   class, length bins, region, …), plus helpers to derive periods and length bins;
 - a **digestion identification-bias diagnostic** that shows how the finest
   resolved rank shifts toward coarse ranks as digestion advances;
-- **interactive sunbursts** (plotly) with a fixed orientation so covariate cells
-  are directly comparable, and a stable colour dictionary across ranks;
+- **interactive sunbursts** (plotly), with one color per taxon kept the same in
+  every panel, so strata can be compared at a glance;
 - three **outputs**: a [Shiny](https://shiny.posit.co/) explorer, a
-  self-contained HTML dashboard (searchable/sortable predator cards with
-  auto-fetched ID photos), or plain plotly figures.
+  self-contained HTML dashboard (searchable, sortable predator cards, with
+  optional ID photos from iNaturalist or Wikimedia Commons, each credited with
+  its author and license), or plain plotly figures;
 - **exploration & reproducible aggregation**: sample summaries,
   prey-accumulation curves for sampling sufficiency, classical per-rank
   frequency of occurrence, threshold-based aggregation that collapses rare prey
@@ -71,7 +64,7 @@ sunbursts you see there are real output.
 
 | | Article | What it covers |
 |---|---|---|
-| 1 | [Getting started](https://sosthenea.github.io/DietView/articles/dietview.html) | the whole pipeline, end to end, offline |
+| 1 | [Getting started](https://sosthenea.github.io/DietView/articles/getting-started.html) | the whole pipeline, end to end, offline |
 | 2 | [Data model & input contract](https://sosthenea.github.io/DietView/articles/data-model.html) | one row per prey record; mapping your columns |
 
 **Core concepts**
@@ -83,17 +76,18 @@ sunbursts you see there are real output.
 | 5 | [Digestion identification bias](https://sosthenea.github.io/DietView/articles/digestion.html) | how identification degrades with digestion |
 | 6 | [WoRMS taxonomy](https://sosthenea.github.io/DietView/articles/taxonomy-worms.html) | matching, provenance, and reviewing fuzzy hits |
 | 7 | [Exploring & aggregating diet data](https://sosthenea.github.io/DietView/articles/exploration.html) | sample summary, prey-accumulation, true %FO, threshold aggregation, set x category matrix |
+| 8 | [A known diet](https://sosthenea.github.io/DietView/articles/known-diet.html) | a simulated survey: what keeping or dropping unidentified prey does |
 
 **Outputs & extension**
 
 | | Article | What it covers |
 |---|---|---|
-| 8 | [Self-contained dashboard](https://sosthenea.github.io/DietView/articles/dashboard.html) | bands, strata, crossed rows, one file to ship |
-| 9 | [Species identification cards](https://sosthenea.github.io/DietView/articles/species-cards.html) | photos, descriptions, offline mode |
-| 10 | [Interactive Shiny explorer](https://sosthenea.github.io/DietView/articles/shiny-app.html) | pooled or per-predator, faceted and crossed |
-| 11 | [Adapting DietView to your survey](https://sosthenea.github.io/DietView/articles/extending.html) | custom ranks, colours, offline taxonomy |
+| 9 | [Self-contained dashboard](https://sosthenea.github.io/DietView/articles/dashboard.html) | bands, strata, crossed rows, one file to ship |
+| 10 | [Species identification cards](https://sosthenea.github.io/DietView/articles/species-cards.html) | photos from iNaturalist, licenses and credits, offline mode |
+| 11 | [Interactive Shiny explorer](https://sosthenea.github.io/DietView/articles/shiny-app.html) | pooled or per-predator, faceted and crossed |
+| 12 | [Adapting DietView to your survey](https://sosthenea.github.io/DietView/articles/extending.html) | custom ranks, colors, offline taxonomy |
 
-> ### 📘 Technical reference — the package companion
+> ### 📘 Technical reference: the package companion
 > The full narrative of **what DietView contains and why**: design principles,
 > architecture, data structures, and every function with its internal logic.
 > Distinct from the journal article (which argues *why* the package matters) and
@@ -162,7 +156,7 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin)
 # prep <- dv_prepare(dat, spec, taxonomy = "worms")
 
 # 4. metrics: within-rank importance (NA included; each rank sums to 100 %)
-tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
+tree <- dv_tree(prep)
 dv_rank_table(tree, "Class")
 
 # 5. figures + digestion diagnostic
@@ -174,10 +168,10 @@ dv_summary(prep)                                  # stomachs, records, taxa per 
 dv_prey_accumulation(prep, permutations = 50)     # cumulative prey curve
 dv_fo_table(prep, rank = "class")                 # classical per-rank %FO
 
-agg  <- dv_aggregate_threshold(prep, threshold = 100)   # collapse rare prey upward
+agg  <- dv_aggregate_threshold(prep, threshold = 3)     # prey in < 3 stomachs move up a rank
 m    <- dv_matrix(agg, currency = "occurrence")         # set x category matrix (-> vegan)
 
-# 7. deploy a standalone HTML dashboard (like the sGSL one)
+# 7. write a standalone HTML dashboard (one file, opens in any browser)
 dv_deploy(prep, file = "dietview_dashboard.html", dir = "outputs",
           strata = c("period", "size_class", "size_bin"),
           cross  = list(c("size_bin", "period")),
@@ -188,12 +182,12 @@ run_dietview(prep)
 ```
 
 See [Getting started with
-DietView](https://sosthenea.github.io/DietView/articles/dietview.html) for the
+DietView](https://sosthenea.github.io/DietView/articles/getting-started.html) for the
 rendered walk-through.
 
 ## The explicit-NA philosophy
 
-Where identification stops — or WoRMS has no finer rank — DietView keeps the
+Where identification stops, or WoRMS has no finer rank, DietView keeps the
 deeper rank columns as `NA` and shows them as an explicit **"NA"** category
 (white in the sunburst). Two consequences follow:
 
@@ -202,9 +196,9 @@ deeper rank columns as `NA` and shows them as an explicit **"NA"** category
 - identification gaps stay **visible** instead of being hidden inside a
   functional grouping.
 
-The digestion diagnostic makes this concrete: as digestion advances, mass shifts
-from Species toward the coarse ranks and "Unresolved", which is exactly the bias
-you want to see rather than smooth over.
+The digestion diagnostic makes this concrete. On real surveys, records identified
+to species become rarer as digestion advances, and more of them stop at a coarse
+rank or stay unresolved; the diagnostic shows by how much, instead of hiding it.
 
 ## Function reference
 
@@ -213,8 +207,8 @@ you want to see rather than smooth over.
 | declare & validate | [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.html), [`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.html) |
 | attach taxonomy | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.html), [`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.html), [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.html) |
 | covariates | [`dv_add_period()`](https://sosthenea.github.io/DietView/reference/dv_add_period.html), [`dv_size_bins()`](https://sosthenea.github.io/DietView/reference/dv_size_bins.html) |
-| metrics | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.html), [`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.html) |
-| figures | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.html), [`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.html) |
+| metrics | [`dv_tree()`](https://sosthenea.github.io/DietView/reference/dv_tree.html), [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.html), [`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.html) |
+| figures | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.html), [`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.html), [`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.html) |
 | digestion bias | [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.html) |
 | species cards | [`dv_species_card_assets()`](https://sosthenea.github.io/DietView/reference/dv_species_card_assets.html) |
 | dashboards & app | [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.html), [`dv_deploy()`](https://sosthenea.github.io/DietView/reference/dv_deploy.html), [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.html) |
@@ -243,8 +237,8 @@ citation("DietView")
 
 DietView is a visualization and reporting layer; it does not model diet
 composition or fit selectivity. It complements diet-analysis workflows built on
-`vegan` (multivariate community statistics) — to which `dv_matrix()` is the
-direct bridge — the WoRMS toolchain (`worrms`), and interactive graphics via
+`vegan` (multivariate community statistics), to which `dv_matrix()` is the
+direct bridge, the WoRMS toolchain (`worrms`), and interactive graphics via
 `plotly` and `htmlwidgets`. The sunburst and dashboard
 design follow the southern Gulf of St. Lawrence (sGSL) diet dashboard it
 generalizes.

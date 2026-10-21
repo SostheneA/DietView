@@ -8,54 +8,101 @@ dv_species_card_assets(
   predator,
   latin = NA,
   info = NULL,
-  image_dir = "images",
-  use_wiki = TRUE
+  image_dir = file.path(tempdir(), "dietview-images"),
+  photo_source = "none",
+  licenses = c("cc0", "cc-by", "cc-by-sa"),
+  use_wiki = NULL
 )
 }
 \arguments{
-\item{predator}{Common name (used for the local file slug and alt text).}
+\item{predator}{Common name (used for the local file name and alt text).}
 
-\item{latin}{Latin name (used for the Wikipedia lookup).}
+\item{latin}{Latin name (used for the online lookups).}
 
-\item{info}{Optional list with \code{photo}, \code{desc}, \code{commons_file}, and/or \code{credit}
-for this predator.}
+\item{info}{Optional list for this predator, with any of \code{photo}, \code{desc},
+\code{credit}, \code{author}, \code{license}, \code{url} and \code{commons_file}.}
 
-\item{image_dir}{Folder holding/caching images.}
+\item{image_dir}{Folder holding/caching images. Defaults to a folder in
+\code{\link[=tempdir]{tempdir()}}; give a permanent folder to keep downloads between sessions.}
 
-\item{use_wiki}{Whether to auto-fetch from Wikipedia / Wikimedia Commons when
-no local file is found.}
+\item{photo_source}{Where to look online when no local file is found:
+\code{"none"} (default: no network access), or one or more of \code{"inaturalist"}
+and \code{"wikipedia"} (Wikipedia and Wikimedia Commons), tried in that order,
+e.g. \code{c("inaturalist", "wikipedia")}. Each request times out after
+\code{getOption("DietView.timeout", 15)} seconds.}
+
+\item{licenses}{iNaturalist license codes accepted for a photo. The default
+keeps the licenses that allow redistribution with attribution: \code{"cc0"},
+\code{"cc-by"} and \code{"cc-by-sa"}. Add \code{"cc-by-nc"} (and \code{"cc-by-nc-sa"},
+\code{"cc-by-nd"}, \code{"cc-by-nc-nd"}) only if the dashboard will be shared for
+non-commercial use and the license terms suit you.}
+
+\item{use_wiki}{Deprecated. \code{TRUE} means \code{photo_source = "wikipedia"},
+\code{FALSE} means \code{photo_source = "none"}.}
 }
 \value{
-A list with \code{uri} (data URI or NULL), \code{desc} (string or NULL), and
-\code{credit} (string or NULL).
+A list with \code{uri} (data URI or NULL), \code{path} (the image file, or
+NULL), \code{desc}, \code{desc_credit} (credit
+for the description text), \code{credit} (photo credit line, e.g.
+\code{"Photo: Jane Doe, CC BY, via iNaturalist"}), \code{author}, \code{license},
+\code{source} (\code{"local"}, \code{"inaturalist"} or \code{"wikimedia"}) and \code{url} (the
+photo page); each element is NULL when unknown.
 }
 \description{
-Looks for a photo in this priority order:
+Builds the photo, description and credit line of one predator card in the
+dashboard (\code{\link[=dv_build_html]{dv_build_html()}}). It handles one predator at a time, and the
+card carries no taxonomic lineage. Looks for a photo in this priority order:
 \enumerate{
 \item an explicit local path in \code{info$photo}
 \item a local file in \code{image_dir} named after the predator
 \item a local file in \code{image_dir} named after the Latin name
-\item a Wikimedia Commons file declared in \code{info$commons_file}
-\item a Wikipedia thumbnail fetched by Latin name (or predator name) and cached
+\item the online sources named in \code{photo_source}, tried in the order given
+until one returns a photo:
+\itemize{
+\item \code{"inaturalist"}: a photo of the taxon on iNaturalist (the taxon's
+default photo, else the first of its other photos) whose license is in
+\code{licenses}
+\item \code{"wikipedia"}: a Wikimedia Commons file declared in \code{info$commons_file},
+else the Wikipedia thumbnail for the Latin name (or predator name), used
+only when it is a Wikimedia Commons file
+}
 }
 }
 \details{
+Every photo fetched online carries its author and license. An iNaturalist
+photo whose license is not in \code{licenses} (including "all rights reserved")
+is never used. A Commons image is kept only when Commons reports its
+license, and Wikipedia thumbnails hosted outside Commons, which may be
+non-free files, are never used.
+
+Downloads are cached in \code{image_dir}, each with a small \code{.json} file holding
+its source, author, license and page URL, so a cached photo keeps its credit
+line in later sessions. A local photo can carry the same fields: put them in
+\code{info} (\code{credit}, \code{author}, \code{license}, \code{url}) or in a \code{.json} file of the same
+name next to the image. Delete the image and its \code{.json} file to fetch it
+again.
+
 Description priority:
 \enumerate{
 \item \code{info$desc}
-\item Wikipedia summary extract by Latin name (or predator name)
-\item Wikimedia Commons image description fallback
+\item the Wikipedia summary, as returned by iNaturalist or by Wikipedia (text
+under CC BY-SA, credited in \code{desc_credit})
+\item the Wikimedia Commons image description (with \code{photo_source = "wikipedia"})
 }
+
+With \code{photo_source = "none"} (the default) nothing is fetched: with no local
+file, the result has no image and only the description given in \code{info}.
 
 Returns a base64 data URI so the dashboard stays self-contained.
 }
 \examples{
 # offline: no photo resolved, returns a text-only card structure
-dv_species_card_assets("Atlantic cod", use_wiki = FALSE,
-                       image_dir = tempdir())
+dv_species_card_assets("Atlantic cod", image_dir = tempdir())
 \dontrun{
-# online: fetch a Wikipedia thumbnail by Latin name
-dv_species_card_assets("Atlantic cod", latin = "Gadus morhua",
-                       use_wiki = TRUE, image_dir = tempdir())
+# online: an openly licensed iNaturalist photo, with author and license
+a <- dv_species_card_assets("Atlantic cod", latin = "Gadus morhua",
+                            photo_source = "inaturalist",
+                            image_dir = tempdir())
+a$credit
 }
 }

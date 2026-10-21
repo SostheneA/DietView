@@ -4,7 +4,13 @@
 \alias{dv_prey_accumulation}
 \title{Prey accumulation (cumulative prey) curve for sample sufficiency}
 \usage{
-dv_prey_accumulation(prep, by = NULL, permutations = 100, seed = NULL)
+dv_prey_accumulation(
+  prep,
+  by = NULL,
+  rank = NULL,
+  permutations = 100,
+  seed = NULL
+)
 }
 \arguments{
 \item{prep}{A \code{dietview_prep} from \code{\link[=dv_prepare]{dv_prepare()}}.}
@@ -12,9 +18,13 @@ dv_prey_accumulation(prep, by = NULL, permutations = 100, seed = NULL)
 \item{by}{Optional column giving one curve per group (e.g. the predator).
 \code{NULL} pools all records into a single curve.}
 
+\item{rank}{Optional rank (one of \code{prep$ranks}) at which taxa are counted.
+\code{NULL} (default) uses the finest resolved label.}
+
 \item{permutations}{Number of random stomach orderings to average over.}
 
-\item{seed}{Optional integer for reproducibility.}
+\item{seed}{Optional integer for reproducibility. The seed is used for this
+call only: the global random stream is restored on exit.}
 }
 \value{
 A data.frame with (optional) group column, \code{n_stomachs},
@@ -26,6 +36,13 @@ random stomach orderings. When the curve approaches an asymptote the diet has
 been adequately sampled; a still-rising curve warns that more stomachs would
 reveal more prey (Ferry and Cailliet, 1996). This is a descriptive
 sufficiency diagnostic, not a statistical test.
+}
+\details{
+By default (\code{rank = NULL}) a taxon is the finest resolved label of each
+record. Labels at different ranks can name nested taxa ("Amphipoda" and
+\emph{Themisto libellula}), which inflates richness, and the inflation grows with
+digestion. Give \code{rank} to count taxa at one stated rank, unidentified
+records excluded.
 }
 \examples{
 csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
@@ -39,5 +56,6 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
                    verbose = FALSE)
 acc <- dv_prey_accumulation(prep, permutations = 20, seed = 1)
 head(acc)
+acc_fam <- dv_prey_accumulation(prep, rank = "family", permutations = 20, seed = 1)
 # plot(acc$n_stomachs, acc$mean_richness, type = "b")
 }

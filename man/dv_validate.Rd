@@ -2,22 +2,34 @@
 % Please edit documentation in R/dv_spec.R
 \name{dv_validate}
 \alias{dv_validate}
-\title{Validate a long table against a spec}
+\title{Check a long diet table against a spec before any work is done}
 \usage{
-dv_validate(data, spec, strict_covariates = TRUE)
+dv_validate(data, spec, strict_covariates = TRUE, quiet = FALSE)
 }
 \arguments{
-\item{data}{A data.frame (the long diet table).}
+\item{data}{A data.frame, one row per prey record.}
 
 \item{spec}{A \code{dietview_spec} from \code{\link[=dv_spec]{dv_spec()}}.}
 
-\item{strict_covariates}{If TRUE (default), missing covariates are hard
-errors. If FALSE, they are dropped from \code{spec$covariates} with a warning.}
+\item{strict_covariates}{If \code{TRUE} (default) a declared covariate missing from
+\code{data} is an error; if \code{FALSE} it is dropped from the spec with a warning.}
+
+\item{quiet}{Suppress the summary and the informational messages (warnings
+and errors are never suppressed).}
 }
 \value{
-\code{data} invisibly (stops on hard errors, warns on soft gaps).
+\code{data}, invisibly, with two attributes: \code{dv_spec} (the spec, minus any
+dropped covariates) and \code{dv_report} (a list of counts).
 }
 \description{
-Checks that every declared column exists and reports missing weight/digestion
-so you know which currencies and diagnostics will be available.
+Stops on problems DietView cannot work around (a declared column is missing,
+there is no prey key, a weight is negative) and warns about the ones that
+change what the figures mean (prey keys that are not AphiaIDs, records with no
+prey key, weights that are not numbers, stomach IDs shared between predators).
+It then prints a one-line description of the sample. It reports; it does not
+repair.
+}
+\details{
+A missing weight or digestion column is not an error: it only disables the
+weight views or the digestion diagnostic, and is reported as a message.
 }

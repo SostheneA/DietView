@@ -10,13 +10,12 @@ template:
     code_font: {google: "Source Code Pro"}
 
 home:
-  title: DietView • taxonomically complete, covariate-aware diet visualization
+  title: DietView • interactive, hierarchical visualization of predator stomach-content data
   description: >
-    Turn a long table of stomach-content records into interactive,
-    taxonomically complete sunburst views of predator diet, with an explicit
-    "NA" category for unidentified prey, occurrence and weight currencies,
-    covariate stratification, a digestion identification-bias diagnostic, and a
-    self-contained HTML dashboard.
+    Turn a long table of stomach-content records into interactive, hierarchical
+    views of predator diet, with prey identified only to coarse ranks kept as an
+    explicit unidentified category, record and weight currencies, covariate
+    stratification and a digestion diagnostic.
   sidebar:
     structure: [links, license, community, citation, authors, dev]
 
@@ -30,7 +29,7 @@ navbar:
       menu:
       - text: "Get started"
       - text: Getting started with DietView
-        href: articles/dietview.html
+        href: articles/getting-started.html
       - text: "A guided tour: every flagship function, what it does, and why"
         href: articles/tour.html
       - text: The DietView data model and input contract
@@ -43,6 +42,8 @@ navbar:
         href: articles/covariates.html
       - text: The digestion identification bias
         href: articles/digestion.html
+      - text: "A known diet: what keeping or dropping unidentified prey does"
+        href: articles/known-diet.html
       - text: Resolving prey taxonomy with WoRMS
         href: articles/taxonomy-worms.html
       - text: Exploring and aggregating diet data
@@ -77,8 +78,9 @@ reference:
 
 - title: 2 · Attach taxonomy
   desc: >
-    Resolve prey to the WoRMS classification (or join your own lineage), keeping
-    unresolved prey as an explicit NA category and logging every match for review.
+    Resolve prey to the WoRMS classification (or join your own lineage table),
+    keeping unresolved prey as an explicit unidentified category and logging
+    every match for review.
   contents:
   - dv_prepare
   - dv_taxonomy_worms
@@ -93,16 +95,18 @@ reference:
 - title: 4 · Compute within-rank importance
   desc: >
     Aggregate records into a multi-rank tree where each rank sums to 100 percent,
-    NA included, in both occurrence and weight currencies.
+    unidentified records included, by prey records (or numbers) and by weight.
   contents:
+  - dv_tree
   - dv_build_tree
   - dv_rank_table
 
 - title: 5 · Draw figures
-  desc: Render the multi-rank sunburst and the stable colour dictionary.
+  desc: Render the multi-rank sunburst and its color dictionaries.
   contents:
   - dv_sunburst
   - dv_palette
+  - dv_palette_tree
 
 - title: 6 · Quantify the digestion identification bias
   contents:

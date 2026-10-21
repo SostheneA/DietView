@@ -8,6 +8,7 @@ dv_matrix(
   prep,
   category = NULL,
   unit = NULL,
+  rank = NULL,
   currency = c("weight", "occurrence", "fo"),
   include_na = TRUE
 )
@@ -17,9 +18,13 @@ dv_matrix(
 
 \item{category}{Column giving the prey category. Defaults to \code{prey_category}
 (from \code{\link[=dv_aggregate_threshold]{dv_aggregate_threshold()}}) if present, otherwise the finest resolved
-rank label.}
+rank label. Ignored when \code{rank} is given.}
 
 \item{unit}{Column giving the sampling unit. Defaults to the spec's stomach.}
+
+\item{rank}{Optional rank (one of \code{prep$ranks}, e.g. \code{"class"}): columns are
+then the taxa at that rank, plus the unidentified column (\code{"NA"}) when
+\code{include_na = TRUE}.}
 
 \item{currency}{\code{"weight"} (summed mass), \code{"occurrence"} (record counts), or
 \code{"fo"} (presence/absence, one per unit).}
@@ -49,5 +54,6 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
                    verbose = FALSE)
 m <- dv_matrix(prep, currency = "occurrence")
 dim(m)
+dv_matrix(prep, rank = "class", currency = "weight")
 # vegan::decostand(m, "total"); vegan::vegdist(m, "bray")
 }

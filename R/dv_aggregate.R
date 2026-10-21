@@ -2,12 +2,20 @@
 #'
 #' Collapses prey that occur in fewer than `threshold` stomachs into their
 #' parent taxon, walking up the taxonomic hierarchy until every retained
-#' category meets the threshold. This is the threshold-based, resolution-robust
-#' aggregation used when a diet description must be stable to the choice of
-#' reporting rank (Buckland et al., 2017; Pombo et al., 2013; Bevilacqua et
-#' al., 2012): each record settles at the deepest ancestor whose subtree is
-#' sampled widely enough, and finer, rarely seen taxa are merged upward rather
-#' than dropped.
+#' category meets the threshold. This is a threshold-based aggregation in the
+#' spirit of taxonomic sufficiency (Bevilacqua et al., 2012; Pombo et al.,
+#' 2013), for when a diet description must be stable to the choice of
+#' reporting rank: finer, rarely seen taxa are merged upward rather than
+#' dropped.
+#'
+#' Each record first settles at the deepest ancestor whose whole subtree is
+#' found in at least `threshold` stomachs. The category reported for a node is
+#' its residual, the records that settled there and not deeper, so a residual
+#' that itself falls below the threshold is moved up one more rank, and so on
+#' until every reported category reaches `threshold` stomachs (and
+#' `min_predators` predators). A residual whose node also has retained
+#' descendants is labelled `"<taxon> (other)"` in `prey_category`, for example
+#' `"Malacostraca (other)"` for malacostracans other than the retained orders.
 #'
 #' Three architectures are expressed through two arguments:
 #' \itemize{
@@ -23,20 +31,21 @@
 #' The taxonomy columns of the returned object are pruned: for every record,
 #' ranks finer than the settled rank are set to `NA`, so the explicit-NA
 #' machinery of [dv_build_tree()] shows the merge, and the sunburst has no
-#' leaf rarer than `threshold` stomachs. A convenience column `prey_category`
+#' leaf rarer than `threshold` stomachs (apart from the records that were
+#' unidentified at every rank to begin with, and the `other_label` group). A convenience column `prey_category`
 #' (the settled label) and `prey_rank` (the rank it settled at) are added, so
 #' the result can also feed a flat set x category matrix.
 #'
 #' @param prep A `dietview_prep` object from [dv_prepare()].
 #' @param threshold Minimum number of stomachs a category must occur in to be
-#'   retained at a given rank (the paper's `x`).
+#'   retained at a given rank.
 #' @param scope `"pooled"` (counts across the dataset) or `"per_predator"`
 #'   (counts within each predator).
 #' @param min_predators Minimum number of distinct predators a category's
 #'   subtree must span to be retained. Ignored (forced to 1) when
 #'   `scope = "per_predator"`. Set to 2 for the cross-predator variant.
 #' @param other_label Label for records that do not reach the threshold even at
-#'   the coarsest rank; defaults to `paste0("other ", <coarsest rank>)`.
+#'   the coarsest rank; defaults to `"other (below threshold)"`.
 #' @return A `dietview_prep` with pruned taxonomy columns and the added
 #'   `prey_category` / `prey_rank` columns. Feed it to [dv_build_tree()] exactly
 #'   as you would the output of [dv_prepare()].
@@ -79,7 +88,7 @@ dv_aggregate_threshold <- function(prep, threshold,
     stop("The spec's stomach column is required for threshold aggregation.",
          call. = FALSE)
 
-  if (is.null(other_label)) other_label <- paste0("other ", ranks[1])
+  if (is.null(other_label)) other_label <- "other (below threshold)"
   mp <- if (scope == "per_predator") 1L else as.integer(min_predators)
 
   sv <- as.character(d[[stom]])
@@ -115,6 +124,24 @@ dv_aggregate_threshold <- function(prep, threshold,
     settled[hit] <- j            # deepest wins (j increases)
   }
 
+  # the reported category is the residual at the settled node; it must itself
+  # reach the threshold, otherwise its records move up one rank (repeat)
+  repeat {
+    rows <- which(!is.na(settled))
+    if (!length(rows)) break
+    node <- key[cbind(rows, settled[rows])]
+    gk   <- if (scope == "per_predator") paste(pv[rows], node, sep = "@@") else node
+    s_cnt <- tapply(sv[rows], gk, function(z) length(unique(z)))
+    p_cnt <- tapply(pv[rows], gk, function(z) length(unique(z)))
+    bad   <- names(s_cnt)[s_cnt < threshold | p_cnt < mp]
+    hit   <- rows[gk %in% bad]
+    if (!length(hit)) break
+    up <- hit[settled[hit] > 1L]
+    settled[up] <- settled[up] - 1L
+    settled[setdiff(hit, up)] <- NA_integer_     # failed at the coarsest rank -> "other"
+    if (!length(up)) break
+  }
+
   # records that never meet the threshold -> coarsest rank, flagged "other"
   need_other <- is.na(settled) & depth >= 1L
   settled[need_other] <- 1L
@@ -133,10 +160,16 @@ dv_aggregate_threshold <- function(prep, threshold,
   }
 
   # settled label + rank for a flat set x category matrix
+  # a residual whose node also has retained (deeper) descendants is "(other)"
   lab_settled <- rep(NA_character_, n)
   for (j in seq_len(K)) {
     sel <- !is.na(settled) & settled == j
-    lab_settled[sel] <- as.character(d[[ranks[j]]])[sel]
+    if (!any(sel)) next
+    lab <- as.character(d[[ranks[j]]])[sel]
+    deeper <- !is.na(settled) & settled > j
+    has_desc <- key[sel, j] %in% key[deeper, j]
+    lab[has_desc] <- paste0(lab[has_desc], " (other)")
+    lab_settled[sel] <- lab
   }
   lab_settled[need_other] <- other_label
   out$prey_category <- lab_settled
@@ -165,7 +198,10 @@ dv_aggregate_threshold <- function(prep, threshold,
 #' @param prep A `dietview_prep` from [dv_prepare()].
 #' @param thresholds A numeric vector of thresholds, e.g. `seq(10, 1000, 10)`.
 #' @param scope,min_predators Passed to [dv_aggregate_threshold()].
-#' @return A data.frame with `threshold`, `n_categories` and `n_records`.
+#' @return A data.frame with `threshold`, `n_categories` (number of prey
+#'   categories) and `pct_coarser` (percentage of all records whose category is
+#'   coarser than the finest rank, the unidentified and `other` records
+#'   included).
 #' @examples
 #' csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
 #' lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
@@ -182,11 +218,13 @@ dv_threshold_sweep <- function(prep, thresholds,
                                scope = c("pooled", "per_predator"),
                                min_predators = 1L) {
   scope <- match.arg(scope)
+  ranks <- prep$ranks
   rows <- lapply(thresholds, function(x) {
     a <- dv_aggregate_threshold(prep, x, scope = scope, min_predators = min_predators)
+    pr <- a$data$prey_rank
     data.frame(threshold = x,
                n_categories = attr(a, "aggregation")$n_categories,
-               n_records = nrow(a$data))
+               pct_coarser = round(100 * mean(is.na(pr) | pr != ranks[length(ranks)]), 2))
   })
   do.call(rbind, rows)
 }

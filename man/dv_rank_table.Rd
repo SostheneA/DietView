@@ -16,7 +16,8 @@ A data.frame: \verb{label, value_item, value_occ, pct_occ, value_w, pct_w}.
 }
 \description{
 Convenience wrapper returning the within-rank importance for a single rank
-(e.g. "Class"), sorted by occurrence share, the NA row included.
+(e.g. "Class"), sorted by share of prey records, the unidentified (\code{"NA"})
+row included.
 }
 \examples{
 csv <- system.file("extdata", "dietview_example.csv", package = "DietView")

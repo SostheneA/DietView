@@ -1,16 +1,21 @@
 ---
 title: "The interactive Shiny explorer"
-output: html_document
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The interactive Shiny explorer}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-`run_dietview()` launches an interactive [Shiny](https://shiny.posit.co/) app over
-a prepared dataset. It is the fastest way to explore a diet before committing to a
-static dashboard. (Chunks here are shown but not run — the app needs `shiny` and,
-for the table, `DT`.)
+`run_dietview()` opens an interactive [Shiny](https://shiny.posit.co/) app on a
+prepared dataset. Use it to explore a diet on your own machine before you fix
+the figures you will report. The chunks here are shown but not run, because the
+app needs an interactive R session, the `shiny` package and, for the table,
+`DT`.
 
 ```{r install}
 install.packages(c("shiny", "DT"))
@@ -34,17 +39,21 @@ run_dietview(prep)
 
 ## What the app offers
 
-- a **predator** selector;
-- a **mode** switch (count / occurrence / weight);
-- an optional **facet** covariate to compare levels side by side;
-- a **rank** selector for the importance table.
+- a predator selector, with "(all predators)" to pool every predator;
+- a choice of what sizes the wedges: prey records (% of all records), weight
+  (% of total weight) or the number of distinct prey items;
+- a covariate to facet by, which draws one sunburst per level;
+- a second covariate to cross with the first, which draws one sunburst per
+  combination of levels;
+- a rank selector for the table under the figure.
 
-The server subsets the records for the chosen predator, builds the tree
-reactively with `dv_build_tree()`, renders the sunburst with the shared palette,
-and shows the within-rank importance table for the chosen rank.
+For each selection the app takes the records of the chosen predator, builds
+the tree with `dv_build_tree()`, draws the sunburst with one palette built from
+all the records, and shows the table for the chosen rank: one row per taxon
+at that rank, with its records, weight and shares.
 
-## When to use the app vs. the dashboard
+## The app or the dashboard?
 
-Use the **app** for live exploration on your own machine. Use
-`dv_build_html()` / `dv_deploy()` to produce a **self-contained HTML** file you
-can archive, email, or serve — no R session required by the reader.
+Use the app to explore on your own machine. Use `dv_build_html()` or
+`dv_deploy()` to write a single HTML file that you can archive, email or put on
+a web server, and that the reader opens without R.

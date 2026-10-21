@@ -24,7 +24,9 @@ and \code{weight_col}/\code{count_col}).}
 
 \item{ranks, weight_col, count_col}{Passed to \code{\link[=dv_build_tree]{dv_build_tree()}} if \code{x} is raw.}
 
-\item{colors}{Optional named colour vector; default from \code{\link[=dv_palette]{dv_palette()}}.}
+\item{colors}{Optional named color vector, keyed by node \code{id} (as from
+\code{\link[=dv_palette_tree]{dv_palette_tree()}}) or by taxon label (as from \code{\link[=dv_palette]{dv_palette()}}); ids are
+looked up first. Default from \code{\link[=dv_palette]{dv_palette()}}.}
 
 \item{rotation}{Start angle in degrees (default 90 = top).}
 
@@ -35,16 +37,27 @@ A plotly sunburst.
 }
 \description{
 Draws the multi-rank sunburst for one set of records (or a prebuilt tree).
-Orientation is fixed (\code{sort = FALSE}, fixed \code{rotation}) so reading order and
-start angle stay consistent across covariate cells, which makes side-by-side
-comparison meaningful. The explicit "NA" category is white.
+Orientation is fixed (\code{sort = FALSE}, fixed \code{rotation}), so the start angle
+and the reading order stay the same across covariate cells. Angular
+positions are not fixed: a taxon absent from one cell shifts every wedge
+after it, so compare cells by color, not by angle. Records not identified at
+a rank form a white wedge with a thin gray outline, shown as "Not identified
+at this rank" in the hover text.
 }
 \details{
+Wedges are sized from the raw values of the leaves (\code{branchvalues = "remainder"}), and plotly sums them upward, so a parent always equals the sum
+of its children. Because every rank has the same denominator, the angles are
+the within-rank shares shown in the hover text.
+
 Three modes:
 \itemize{
-\item \code{count}: sized by distinct diet items.
-\item \code{occurrence}: sized by within-rank occurrence share; hover shows raw occurrence and \% within rank.
-\item \code{weight}: sized by within-rank weight share; hover shows raw weight and \% within rank.
+\item \code{count}: sized by the number of distinct prey items.
+\item \code{occurrence}: sized by prey records (or by individuals, if the tree
+was built with a count column); hover shows the number and the share of all
+records at that rank. The value \code{"occurrence"} is kept for backward
+compatibility.
+\item \code{weight}: sized by weight; hover shows the weight and the weight share
+at that rank.
 }
 }
 \examples{

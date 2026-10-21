@@ -1,18 +1,20 @@
-#' DietView: taxonomically complete visualization of diet data
+#' DietView: interactive, hierarchical visualization of predator stomach-content data
 #'
 #' DietView takes a long table of stomach-content records (one row per prey
-#' record), resolves prey to the WoRMS classification, and renders the whole
-#' diet as an interactive multi-rank sunburst. Relative importance is computed
-#' in two currencies (occurrence and weight) as the share of each taxon within
-#' its own taxonomic rank, keeping unidentified prey as an explicit "NA"
-#' category so the identification gaps are visible rather than hidden. Any
-#' number of covariates (period, year, size class, length bins, region, ...)
-#' can stratify the views, and the identification bias linked to digestion
-#' level is quantified explicitly.
+#' record), attaches a taxonomic lineage (from WoRMS, or from a lineage table
+#' you supply), and shows the whole diet as an interactive multi-rank sunburst.
+#' Every record reaches every rank: a record identified only to a coarse rank is
+#' kept as an explicit unidentified category below that rank, so each ring
+#' accounts for all the material examined and a parent equals the sum of its
+#' children. Diet is summarized as shares of prey records (or numbers) and of
+#' weight at every rank, alongside the classical frequency of occurrence. Any
+#' declared covariate (period, year, size class, length bins, region, ...) can
+#' stratify the views, and [dv_digestion_diagnostic()] describes how
+#' identification depth changes with digestion state.
 #'
-#' Main entry points: [dv_spec()], [dv_prepare()], [dv_build_tree()],
-#' [dv_sunburst()], [dv_digestion_diagnostic()], [dv_build_html()],
-#' [run_dietview()].
+#' Main entry points: [dv_spec()], [dv_prepare()], [dv_tree()],
+#' [dv_build_tree()], [dv_sunburst()], [dv_digestion_diagnostic()],
+#' [dv_build_html()], [run_dietview()].
 #'
 #' @keywords internal
 "_PACKAGE"
@@ -26,7 +28,3 @@
             "#d62728", "#ff9896", "#9467bd", "#c5b0d5", "#8c564b", "#c49c94",
             "#e377c2", "#f7b6d2", "#7f7f7f", "#c7c7c7", "#bcbd22", "#dbdb8d",
             "#17becf", "#9edae5")
-
-# Silence R CMD check "no visible binding" NOTEs for column names used inside
-# dplyr data-masking verbs (dv_build_tree(), dv_digestion_diagnostic()).
-utils::globalVariables(c("value_item", "occ", "w", "n_records", "weight"))

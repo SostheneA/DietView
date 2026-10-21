@@ -19,12 +19,13 @@ dv_build_tree(
 
 \item{weight_col}{Name of the weight column (or \code{NULL} -> zero weight).}
 
-\item{count_col}{Name of a count column (or \code{NULL} -> one occurrence per record).}
+\item{count_col}{Name of a count column (or \code{NULL}: each record counts once).}
 
 \item{rank_labels}{Optional display labels for the ranks.}
 }
 \value{
-A \code{dietview_tree} data.frame: \verb{id, label, parent, rank, value_item, value_occ, value_w, pct_occ, pct_w}.
+A \code{dietview_tree} data.frame: \verb{id, label, parent, rank, value_item, value_occ, value_w, pct_occ, pct_w}, with the attribute \code{currency}
+(\code{"records"}, or \code{"numbers"} when \code{count_col} is given).
 }
 \description{
 Aggregates a set of records into a node table spanning all ranks.
@@ -32,17 +33,25 @@ Aggregates a set of records into a node table spanning all ranks.
 \details{
 Three quantities are carried through the tree:
 \itemize{
-\item \code{value_item}: number of distinct terminal diet items (taxonomic leaves).
-\item \code{value_occ}: occurrence count, i.e. one appearance per record (or a
-summed count column).
+\item \code{value_item}: number of distinct prey items (terminal lineages) under
+the node.
+\item \code{value_occ}: number of prey records assigned to the node, or, when
+\code{count_col} is given, the summed number of individuals (records with an
+empty count then contribute 0).
 \item \code{value_w}: summed weight.
 }
 
 Aggregation is done at the finest rank and rolled up, so a parent's value
-equals the sum of its children (required for a coherent sunburst with
-\code{branchvalues = "total"}). The importance columns \code{pct_occ} / \code{pct_w} are the
-share of each node \strong{within its own rank} (the explicit "NA" node included),
-so every rank sums to 100\%.
+equals the sum of its children. Every record reaches every rank, under a
+taxon or under the unidentified (\code{"NA"}) node, so the denominator is the same
+at every rank: all records (or individuals) and all weight. The columns
+\code{pct_occ} (share of prey records, or numerical share \%N with \code{count_col}) and
+\code{pct_w} (weight share \%W) therefore sum to 100\% within each rank, the
+unidentified node included. Within each parent, unidentified nodes are placed
+last.
+
+To build the tree from a prepared dataset with the columns of its spec, use
+\code{\link[=dv_tree]{dv_tree()}}.
 }
 \examples{
 csv <- system.file("extdata", "dietview_example.csv", package = "DietView")

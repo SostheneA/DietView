@@ -1,43 +1,46 @@
-# DietView input format — data dictionary
+# DietView example data: data dictionary
 
-One row = **one prey record in one stomach**. Column names are free; you map them
-to DietView roles once via `dv_spec()`. The example file
-(`dietview_example.csv`) uses the names below.
+The two example files are **invented** for documentation and testing. They have
+the structure of the southern Gulf of St. Lawrence diet data but none of its
+values: 24 prey records from 11 stomachs of three predators. Use them to learn
+the functions, not to learn about these fish.
 
-| Column | Role in `dv_spec()` | Required | Type | Notes |
+One row is **one prey taxon found in one stomach**. Column names are free; you
+map them to DietView roles once with `dv_spec()`.
+
+| Column | Role in `dv_spec()` | Required | Type | Meaning in the example |
 |---|---|---|---|---|
-| `predator_species_common_name` | `predator` | yes | chr | One predator per row. |
-| `predator_species_latin_name` | `predator_latin` | no | chr | Used to auto-fetch an ID photo. |
-| `stomach_id` | `stomach` | yes | chr | Unit of occurrence; used for stomach counts. |
-| `aphia_id` | `prey_id` | one of id/name | int | WoRMS AphiaID of the prey (preferred key). |
-| `verified_name` | `prey_name` | one of id/name | chr | Prey name; fallback key if no AphiaID. |
-| `prey_weight` | `weight` | no* | num | Weight currency (declare its meaning: wet, reconstructed, …). Empty → 0. |
-| `number_of_prey` | `count` | no | int | Optional. If used as `count`, occurrence = summed individuals (%N); otherwise occurrence = one appearance per row. |
-| `digestion_level_id` | `digestion` | no | int/chr | Enables the digestion-bias diagnostic. |
-| `period` | covariate | no | chr | Any stratifier. |
-| `year` | covariate | no | int | Can derive `period` via `dv_add_period()`. |
-| `somatic_length_cm` | (source) | no | num | Predator length; source for size class / bins. |
-| `size_class` | covariate | no | chr | e.g. juvenile / adult. |
-| `size_bin` | covariate | no | chr | e.g. `[40-50[`; build with `dv_size_bins()`. |
-| `region` | covariate | no | chr | Any spatial stratum. |
-| `kingdom`,`phylum`,`class`,`order`,`family`,`genus`,`species` | `ranks` | see note | chr | Prey lineage. Present → use `taxonomy = "columns"`. Absent → `taxonomy = "worms"` fills them from `aphia_id`/`verified_name`. |
-
-\* No weight column just means weight-based views (%W) are empty; occurrence
-views still work.
+| `predator_species_common_name` | `predator` | yes | chr | Predator species. |
+| `predator_species_latin_name` | `predator_latin` | no | chr | Used for identification photos. |
+| `stomach_id` | `stomach` | yes | chr | Stomach identifier. **Must be unique across the whole table**, not only within a predator. |
+| `aphia_id` | `prey_id` | one of id/name | int | WoRMS AphiaID of the prey; empty when none applies. |
+| `verified_name` | `prey_name` | one of id/name | chr | Scientific name at the rank reached by identification. |
+| `prey_weight` | `weight` | no | num | Wet weight of that prey in that stomach, in grams. |
+| `number_of_prey` | `count` | no | int | Number of individuals; empty when they cannot be counted (e.g. unidentified material). |
+| `digestion_level_id` | `digestion` | no | int | 1 = fresh, 2 = slightly digested, 3 = partly digested, 4 = well digested, 5 = unrecognizable. |
+| `period`, `year`, `size_class`, `size_bin`, `region` | covariates | no | chr/int | Strata. Size bins are per predator. |
+| `somatic_length_cm` | none | no | num | Predator total length (cm), source of the size strata. |
 
 ## Rules
 
-- **Taxonomic NAs are information, not errors.** Where identification stops (or
-  WoRMS has no finer rank), leave the deeper rank columns as `NA`. DietView keeps
-  them as an explicit "NA" category so the percentages still sum to 100% and the
-  identification gaps stay visible. The example has three deliberate cases:
-  class-only prey (`Bivalvia`, `Copepoda`, `Teleostei`), family/order-only prey
-  (`Gammaridae`, `Amphipoda`, `Decapoda`, `Mysida`), and fully unidentified
-  material (all ranks `NA`).
-- **One consistent lineage per prey.** A given `verified_name`/`aphia_id` should
-  carry the same lineage in every row.
-- **Covariates are opt-in.** Declare only the ones you want to stratify by; add
-  or drop columns freely — nothing is hard-coded.
+- **An empty rank is a record of where identification stopped, not an error.**
+  Leave it empty. DietView shows those records as an unidentified category
+  below the last rank reached, so every ring still accounts for all the
+  material. The example contains prey identified only to class (`Bivalvia`,
+  `Copepoda`), to order or family (`Amphipoda`, `Decapoda`, `Mysida`,
+  `Gammaridae`), and material that could not be placed at all.
+- **One lineage per prey key.** A given AphiaID or name must carry the same
+  lineage in every row.
+- **Covariates are opt-in.** Declare only those you want to stratify by.
+
+## The lineage table
+
+`dietview_example_lineage.csv` holds one row per prey name (`verified_name`)
+with the columns `kingdom`, `phylum`, `class`, `order`, `family`, `genus` and
+`species`. Join it with `dv_prepare(taxonomy = "table", lineage = ...)` for a
+fully offline run. Empty (or `NA`) cells mark where identification stopped. Each name
+must appear once; a name in the diet table that is absent from the lineage
+table is reported and treated as fully unidentified.
 
 ## Minimal `dv_spec()` for this file
 
@@ -49,7 +52,7 @@ spec <- dv_spec(
   prey_id        = "aphia_id",
   prey_name      = "verified_name",
   weight         = "prey_weight",
-  count          = NULL,                 # occurrence = one appearance per record
+  count          = NULL,                 # each record counts once (prey records)
   digestion      = "digestion_level_id",
   covariates     = c("period", "size_class", "size_bin", "region")
 )

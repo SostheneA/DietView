@@ -6,14 +6,17 @@
 \usage{
 dv_build_html(
   prep,
-  output = "dietview.html",
+  output,
   strata = prep$spec$covariates,
   cross = list(),
   bands = c("count", "occurrence", "weight"),
+  currency = c("records", "numbers"),
   length_col = NULL,
   species_info = list(),
-  image_dir = "images",
-  use_wiki = TRUE,
+  image_dir = file.path(tempdir(), "dietview-images"),
+  photo_source = "none",
+  licenses = c("cc0", "cc-by", "cc-by-sa"),
+  use_wiki = NULL,
   title = "DietView",
   self_contained = TRUE
 )
@@ -21,7 +24,7 @@ dv_build_html(
 \arguments{
 \item{prep}{A \code{dietview_prep} from \code{\link[=dv_prepare]{dv_prepare()}}.}
 
-\item{output}{Output HTML path.}
+\item{output}{Output HTML path (required).}
 
 \item{strata}{Covariates to stratify each band by (default: all declared).}
 
@@ -29,13 +32,24 @@ dv_build_html(
 (for each level of \code{outer}, a row of \code{inner} levels). E.g.
 \code{list(c("size_bin", "period"))}.}
 
-\item{bands}{Which bands to draw and in which order.}
+\item{bands}{Which bands to draw and in which order: \code{"count"} (distinct
+prey items), \code{"occurrence"} (prey records, or individuals with
+\code{currency = "numbers"}) and \code{"weight"}.}
+
+\item{currency}{\code{"records"} (default: each record counts once) or
+\code{"numbers"} (each record counts its \code{count} column; needs \code{count} in the
+spec). See \code{\link[=dv_tree]{dv_tree()}}.}
 
 \item{length_col}{Optional numeric length column, to show length ranges on cards.}
 
-\item{species_info}{Optional named list of \code{list(desc=, photo=)} per predator.}
+\item{species_info}{Optional named list, one element per predator, of
+\code{list(desc =, photo =, credit =, author =, license =, url =)}.}
 
-\item{image_dir, use_wiki}{Passed to \code{\link[=dv_species_card_assets]{dv_species_card_assets()}}.}
+\item{image_dir, photo_source, licenses}{Passed to \code{\link[=dv_species_card_assets]{dv_species_card_assets()}}.
+Defaults: a folder in \code{\link[=tempdir]{tempdir()}}, no network access, and only openly
+licensed iNaturalist photos (CC0, CC BY, CC BY-SA).}
+
+\item{use_wiki}{Deprecated; use \code{photo_source}.}
 
 \item{title}{Dashboard title.}
 
@@ -48,9 +62,20 @@ The output path, invisibly.
 Reproduces the sGSL-style dashboard from any prepared dataset: a searchable,
 sortable landing grid of predator cards (stomach counts, length range, ID
 photo, description) plus one tab per predator. Each tab shows the diet in up
-to three bands (occurrence items, occurrence \%, weight \%); each band repeats
-the same structure: an aggregated sunburst, one row of sunbursts per declared
-covariate, and optionally crossed rows (e.g. length bins split by period).
+to three bands of sunbursts (distinct prey items, prey records as \% of all
+records, weight as \% of total weight); each band repeats the same structure:
+an aggregated sunburst, one row of sunbursts per declared covariate, and
+optionally crossed rows (e.g. length bins split by period). Covariate levels
+that are \code{NA} are omitted from the rows.
+}
+\details{
+By default the record band counts prey records, even when the spec declares
+a \code{count} column; set \code{currency = "numbers"} to count individuals (\%N)
+instead. The default call touches neither the network nor the working
+directory: photos are fetched only with \code{photo_source = "inaturalist"} or
+\code{"wikipedia"}, and downloads go to a folder in \code{\link[=tempdir]{tempdir()}} unless
+\code{image_dir} says otherwise. Each card shows the photo's author and license,
+linked to the photo's page; see \code{\link[=dv_species_card_assets]{dv_species_card_assets()}}.
 }
 \examples{
 csv <- system.file("extdata", "dietview_example.csv", package = "DietView")

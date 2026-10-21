@@ -2,21 +2,25 @@
 % Please edit documentation in R/dv_utils.R
 \name{dv_palette}
 \alias{dv_palette}
-\title{Build a colour dictionary for taxon labels}
+\title{Build a color dictionary for taxon labels}
 \usage{
 dv_palette(labels, palette = .DV_D3)
 }
 \arguments{
 \item{labels}{Character vector of taxon labels (any rank).}
 
-\item{palette}{Colours to cycle through. Defaults to a d3 category-20 set.}
+\item{palette}{Colors to cycle through. Defaults to a d3 category-20 set.}
 }
 \value{
-A named character vector mapping label -> hex colour.
+A named character vector mapping label -> hex color.
 }
 \description{
-Every distinct taxon label gets a stable colour; the explicit "NA" category
-is always white so identification gaps read as blanks in the sunburst.
+Every distinct taxon label gets a color, and the same label gets the same
+color in every panel built from one dictionary. The palette cycles after 20
+colors, so in a large survey several taxa share a color; see
+\code{\link[=dv_palette_tree]{dv_palette_tree()}} for colors that follow the hierarchy. The unidentified
+(\code{"NA"}) category is always white; the sunburst draws a gray outline around
+every wedge so white wedges stay visible.
 }
 \examples{
 dv_palette(c("Teleostei", "Malacostraca", "Polychaeta", "NA"))

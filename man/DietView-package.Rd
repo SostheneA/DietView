@@ -4,22 +4,24 @@
 \name{DietView-package}
 \alias{DietView}
 \alias{DietView-package}
-\title{DietView: taxonomically complete visualization of diet data}
+\title{DietView: interactive, hierarchical visualization of predator stomach-content data}
 \description{
 DietView takes a long table of stomach-content records (one row per prey
-record), resolves prey to the WoRMS classification, and renders the whole
-diet as an interactive multi-rank sunburst. Relative importance is computed
-in two currencies (occurrence and weight) as the share of each taxon within
-its own taxonomic rank, keeping unidentified prey as an explicit "NA"
-category so the identification gaps are visible rather than hidden. Any
-number of covariates (period, year, size class, length bins, region, ...)
-can stratify the views, and the identification bias linked to digestion
-level is quantified explicitly.
+record), attaches a taxonomic lineage (from WoRMS, or from a lineage table
+you supply), and shows the whole diet as an interactive multi-rank sunburst.
+Every record reaches every rank: a record identified only to a coarse rank is
+kept as an explicit unidentified category below that rank, so each ring
+accounts for all the material examined and a parent equals the sum of its
+children. Diet is summarized as shares of prey records (or numbers) and of
+weight at every rank, alongside the classical frequency of occurrence. Any
+declared covariate (period, year, size class, length bins, region, ...) can
+stratify the views, and \code{\link[=dv_digestion_diagnostic]{dv_digestion_diagnostic()}} describes how
+identification depth changes with digestion state.
 }
 \details{
-Main entry points: \code{\link[=dv_spec]{dv_spec()}}, \code{\link[=dv_prepare]{dv_prepare()}}, \code{\link[=dv_build_tree]{dv_build_tree()}},
-\code{\link[=dv_sunburst]{dv_sunburst()}}, \code{\link[=dv_digestion_diagnostic]{dv_digestion_diagnostic()}}, \code{\link[=dv_build_html]{dv_build_html()}},
-\code{\link[=run_dietview]{run_dietview()}}.
+Main entry points: \code{\link[=dv_spec]{dv_spec()}}, \code{\link[=dv_prepare]{dv_prepare()}}, \code{\link[=dv_tree]{dv_tree()}},
+\code{\link[=dv_build_tree]{dv_build_tree()}}, \code{\link[=dv_sunburst]{dv_sunburst()}}, \code{\link[=dv_digestion_diagnostic]{dv_digestion_diagnostic()}},
+\code{\link[=dv_build_html]{dv_build_html()}}, \code{\link[=run_dietview]{run_dietview()}}.
 }
 \seealso{
 Useful links:
@@ -31,12 +33,16 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Sosthene A. V. Akia \email{akiasosthene@gmail.com}
+\strong{Maintainer}: Sosthène A. V. Akia \email{akiasosthene@gmail.com}
 
 Authors:
 \itemize{
-  \item Sosthene A. V. Akia \email{akiasosthene@gmail.com}
-  \item CADI Gulf Center [copyright holder]
+  \item Sosthène A. V. Akia \email{akiasosthene@gmail.com}
+}
+
+Other contributors:
+\itemize{
+  \item CADI Gulf Center [funder]
 }
 
 }

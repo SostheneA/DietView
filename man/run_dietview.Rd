@@ -4,10 +4,14 @@
 \alias{run_dietview}
 \title{Launch the interactive DietView app}
 \usage{
-run_dietview(prep, ...)
+run_dietview(prep, currency = c("records", "numbers"), ...)
 }
 \arguments{
 \item{prep}{A \code{dietview_prep} from \code{\link[=dv_prepare]{dv_prepare()}}.}
+
+\item{currency}{\code{"records"} (default: each record counts once) or
+\code{"numbers"} (each record counts its \code{count} column, \%N; needs \code{count} in
+the spec). See \code{\link[=dv_tree]{dv_tree()}}.}
 
 \item{...}{Passed to \code{\link[shiny:runApp]{shiny::runApp()}}.}
 }
@@ -16,11 +20,13 @@ Runs the app (does not return).
 }
 \description{
 A Shiny explorer over a prepared dataset: pick a predator (or
-"(all predators)" to pool every predator together), a mode (occurrence
-counts / occurrence \% / weight \%), and optionally one covariate to facet by
-plus a second one to cross it with (e.g. length bins by period). Shows the
-sunburst -- one panel per covariate cell when faceting -- plus the
-within-rank importance table for the current selection.
+"(all predators)" to pool every predator together), what sizes the wedges
+(prey records as \% of all records, weight as \% of total weight, or the number
+of distinct prey items), and optionally one covariate to facet by plus a
+second one to cross it with (e.g. length bins by period). Shows the
+sunburst -- one panel per covariate cell when faceting, covariate \code{NA}
+values getting their own "NA" panel -- plus the within-rank importance table
+for the current selection.
 }
 \examples{
 csv <- system.file("extdata", "dietview_example.csv", package = "DietView")

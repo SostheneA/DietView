@@ -1,13 +1,18 @@
 #' Launch the interactive DietView app
 #'
 #' A Shiny explorer over a prepared dataset: pick a predator (or
-#' "(all predators)" to pool every predator together), a mode (occurrence
-#' counts / occurrence % / weight %), and optionally one covariate to facet by
-#' plus a second one to cross it with (e.g. length bins by period). Shows the
-#' sunburst -- one panel per covariate cell when faceting -- plus the
-#' within-rank importance table for the current selection.
+#' "(all predators)" to pool every predator together), what sizes the wedges
+#' (prey records as % of all records, weight as % of total weight, or the number
+#' of distinct prey items), and optionally one covariate to facet by plus a
+#' second one to cross it with (e.g. length bins by period). Shows the
+#' sunburst -- one panel per covariate cell when faceting, covariate `NA`
+#' values getting their own "NA" panel -- plus the within-rank importance table
+#' for the current selection.
 #'
 #' @param prep A `dietview_prep` from [dv_prepare()].
+#' @param currency `"records"` (default: each record counts once) or
+#'   `"numbers"` (each record counts its `count` column, %N; needs `count` in
+#'   the spec). See [dv_tree()].
 #' @param ... Passed to [shiny::runApp()].
 #' @return Runs the app (does not return).
 #' @examples
@@ -26,12 +31,16 @@
 #'   run_dietview(prep)
 #' }
 #' @export
-run_dietview <- function(prep, ...) {
+run_dietview <- function(prep, currency = c("records", "numbers"), ...) {
   if (!requireNamespace("shiny", quietly = TRUE)) {
     stop("Install 'shiny' to run the app.", call. = FALSE)
   }
   stopifnot(inherits(prep, "dietview_prep"))
+  currency <- match.arg(currency)
   spec <- prep$spec; d <- prep$data; ranks <- prep$ranks
+  ccol <- .dv_count_col(spec, d, currency)
+  rec_lab <- if (currency == "numbers") "Individuals (% of all individuals)"
+             else "Prey records (% of all records)"
   colors <- dv_palette(unlist(lapply(ranks, function(r) .dv_fill_na(d[[r]]))))
   ALL_PRED <- "(all predators)"
   preds <- c(ALL_PRED, sort(unique(as.character(d[[spec$predator]]))))
@@ -42,15 +51,17 @@ run_dietview <- function(prep, ...) {
     shiny::sidebarLayout(
       shiny::sidebarPanel(
         shiny::selectInput("predator", "Predator", choices = preds),
-        shiny::radioButtons("mode", "Mode",
-                            c("Occurrence counts" = "count",
-                              "Occurrence %" = "occurrence",
-                              "Weight %" = "weight")),
+        shiny::radioButtons("mode", "Size wedges by",
+                            stats::setNames(c("occurrence", "weight", "count"),
+                                            c(rec_lab,
+                                              "Weight (% of total weight)",
+                                              "Number of distinct prey items"))),
         shiny::selectInput("facet", "Facet by covariate", choices = covs),
         shiny::selectInput("cross", "Cross with (second covariate)",
                            choices = covs),
         shiny::selectInput("rank", "Importance table rank",
-                           choices = .dv_titlecase(ranks), selected = "Class")
+                           choices = .dv_titlecase(ranks),
+                           selected = .dv_titlecase(ranks)[min(3, length(ranks))])
       ),
       shiny::mainPanel(
         plotly::plotlyOutput("sunburst", height = "600px"),
@@ -66,7 +77,7 @@ run_dietview <- function(prep, ...) {
       else d[which(as.character(d[[spec$predator]]) == input$predator), ]
     })
     tree <- shiny::reactive(
-      dv_build_tree(recs(), ranks = ranks, weight_col = spec$weight, count_col = spec$count)
+      dv_build_tree(recs(), ranks = ranks, weight_col = spec$weight, count_col = ccol)
     )
     output$sunburst <- plotly::renderPlotly({
       if (identical(input$facet, "(none)")) {
@@ -80,7 +91,7 @@ run_dietview <- function(prep, ...) {
         }
         .dv_sunburst_facets(
           recs(), ranks = ranks,
-          weight_col = spec$weight, count_col = spec$count,
+          weight_col = spec$weight, count_col = ccol,
           facet_col = fc, mode = input$mode, colors = colors,
           title = paste0(input$predator, " - ",
                          if (length(fc) == 2L)

@@ -1,22 +1,26 @@
 Package: DietView
-Title: Interactive, Taxonomically Complete Visualization of Predator
-    Diet from Stomach-Content Data
+Title: Interactive, Hierarchical Visualization of Stomach-Content Data
 Version: 0.1.0
 Authors@R: c(
-    person("Sosthene", "A. V. Akia", email = "akiasosthene@gmail.com",
-           role = c("aut", "cre")),
-    person("CADI Gulf Center", role = c("aut", "cph")))
-Description: Turns a long table of stomach-content records into interactive,
-    taxonomically complete sunburst views of predator diet. Prey are resolved
-    to the World Register of Marine Species ('WoRMS') classification, or joined
-    from a user-supplied lineage table. Per-taxon relative importance is
-    computed in occurrence and weight within each taxonomic rank, keeping
-    unidentified prey as an explicit 'NA' category, and the identification bias
-    associated with digestion level is quantified. Diet is rendered across any
-    user-declared covariates (period, year, size class, length bins, region) as
-    a 'shiny' application, a self-contained HTML dashboard, or 'plotly' figures,
-    so that any survey formatted to a common input specification is
-    reproducible.
+    person(given = c("Sosthène", "A. V."), family = "Akia",
+           email = "akiasosthene@gmail.com",
+                      role = c("aut", "cre")),
+    person("CADI Gulf Center", role = "fnd"))
+Description: Builds interactive, hierarchical views of predator diet from a
+    long table of stomach-content records, one row per prey record. Prey are
+    placed in a taxonomic hierarchy either by querying the World Register of
+    Marine Species ('WoRMS'; WoRMS Editorial Board <doi:10.14284/170>)
+    through 'worrms', with a per-prey log of how each name was matched, or by
+    joining a lineage table supplied by the user. Records identified only to a
+    coarse rank are kept and shown as an explicit unidentified category below
+    that rank, so every ring of the resulting sunburst accounts for all the
+    material examined. Diet is summarized as shares of prey records, numbers
+    and weight at every rank, alongside the classical frequency of occurrence.
+    Further functions describe how identification depth changes with
+    digestion state, draw prey accumulation curves, aggregate rare prey to a
+    stated stomach-frequency threshold and export sample-by-prey matrices for
+    multivariate analysis. Results can be explored in a 'shiny' application,
+    drawn as 'plotly' figures or written to a single self-contained HTML file.
 License: MIT + file LICENSE
 URL: https://github.com/SostheneA/DietView,
     https://sosthenea.github.io/DietView/
@@ -25,6 +29,7 @@ Depends:
     R (>= 4.1)
 Imports:
     dplyr,
+    grDevices,
     htmltools,
     jsonlite,
     knitr,
@@ -37,11 +42,8 @@ Suggests:
     rmarkdown,
     shiny,
     testthat (>= 3.0.0),
-    worrms,
-    pagedown,
-    servr,
-    pkgdown,
-    devtools
+    withr,
+    worrms
 VignetteBuilder:
     knitr
 Config/testthat/edition: 3

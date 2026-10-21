@@ -15,11 +15,12 @@ knitr::opts_chunk$set(
 )
 ```
 
-Before a diet is displayed it is explored, and before it is explored the
-reporting resolution has to be chosen. This article covers the functions that
-serve those two steps: a small set of descriptive explorers, and a
-resolution-robust aggregator. Everything here runs offline on the bundled
-example data.
+This article covers the functions you use before drawing a diet: a few
+descriptive summaries, a prey accumulation curve, the classical frequency of
+occurrence, aggregation of rare prey to a stated threshold, and export of a
+stomach-by-prey matrix. Everything runs offline on the invented example table
+that ships with the package (24 prey records from 11 stomachs), so the numbers
+show what each function returns, not what these fish eat.
 
 ```{r setup}
 library(DietView)
@@ -35,7 +36,6 @@ spec <- dv_spec(
   prey_id    = "aphia_id",
   prey_name  = "verified_name",
   weight     = "prey_weight",
-  count      = "number_of_prey",
   digestion  = "digestion_level_id",
   covariates = c("period", "size_class", "region")
 )
@@ -45,26 +45,29 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
 
 ## 1. Describe the sample first
 
-`dv_summary()` answers the questions you ask before anything else: how many
-stomachs and records each predator contributed, how many distinct prey taxa
-were seen, and the mean prey records per stomach. Pass `by` to break it down by
-a covariate.
+`dv_summary()` gives, for each predator, the number of stomachs and prey
+records, the number of distinct prey taxa and the mean number of records per
+stomach. Pass `by` to break it down by a covariate.
 
 ```{r summary}
 dv_summary(prep)
 dv_summary(prep, by = "region")
 ```
 
-A long prey-record table holds only non-empty stomachs, so there is no
-vacuity (percent-empty) column -- that has to come from the full sampling frame
-upstream.
+Taxa are the finest names reached, so "Amphipoda" and *Themisto libellula*
+count as two even though the second is an amphipod. Read the taxa count as the
+number of distinct prey names, not as species richness.
+
+A table of prey records holds only stomachs that contained something, so it
+cannot give the share of empty stomachs. That has to come from the full list of
+stomachs examined.
 
 ## 2. Is the diet adequately sampled?
 
-`dv_prey_accumulation()` builds the cumulative prey curve: prey richness against
-the number of stomachs, averaged over random stomach orderings. A curve that
-flattens means more stomachs would reveal little new; a still-rising curve is a
-warning.
+`dv_prey_accumulation()` builds the cumulative prey curve: the number of prey
+taxa found against the number of stomachs examined, averaged over random orders
+of the stomachs. A curve that levels off means more stomachs would add few new
+taxa; a curve still rising means the sample is not yet enough.
 
 ```{r accumulation}
 acc <- dv_prey_accumulation(prep, permutations = 50, seed = 1)
@@ -72,76 +75,85 @@ acc
 
 plot(acc$n_stomachs, acc$mean_richness, type = "b",
      xlab = "Stomachs examined", ylab = "Cumulative prey taxa",
-     main = "Prey accumulation (pooled)")
+     main = "Prey accumulation (all predators)")
 ```
 
-Pass `by = spec$predator` for one curve per predator. Keep `permutations`
-modest while exploring; raise it for a figure.
+As in `dv_summary()`, taxa are the finest names reached, which inflates the
+curve when identification depth varies. Use `rank = "family"` for a curve at
+one stated rank. Pass `by = spec$predator`
+for one curve per predator. Keep `permutations` low while exploring and raise
+it for a figure.
 
-## 3. Frequency of occurrence, the classical way
+## 3. Frequency of occurrence (%FO)
 
-`dv_build_tree()` gives `pct_occ`, a share of prey *records* that is additive so
-it can be drawn as a sunburst. That is **not** the classical frequency of
-occurrence. `dv_fo_table()` computes the real percent-F -- the share of
-non-empty stomachs containing each taxon -- independently at each rank, which is
-the nested-hierarchy layout recommended for cross-study comparison
-(Buckland et al., 2017).
+`dv_build_tree()` gives `pct_occ`, the share of prey records. Shares of records
+add up across the ranks, which is what lets them be drawn as a sunburst, but
+they are not the frequency of occurrence of the diet literature.
+`dv_fo_table()` computes %FO: the share of non-empty stomachs that contain each
+taxon, computed separately at each rank, as recommended for comparison between
+studies (Buckland et al., 2017).
 
 ```{r fo}
 dv_fo_table(prep, rank = "class")
 ```
 
-These values are non-additive across ranks on purpose: a parent's percent-F is
-recomputed from stomach presence, not summed from its children. Leave `rank =
-NULL` to stack every rank, and pass `by` for a covariate breakdown.
+%FO does not add up across ranks: a parent's %FO is computed from the stomachs
+that contain it, not summed from its children. Leave `rank = NULL` to stack
+every rank, and pass `by` for a breakdown by covariate.
 
-## 4. Resolution-robust aggregation
+## 4. Aggregating rare prey to a stated threshold
 
-Keeping the finest rank with explicit NA is the default, but a diet is only
-comparable across studies if the reporting resolution is a stated, reproducible
-choice rather than an analyst's habit. `dv_aggregate_threshold()` collapses prey
-seen in fewer than `threshold` stomachs into their parent, walking up the
-hierarchy until every retained category clears the threshold.
+By default DietView keeps each record at the deepest rank it reached. To make
+the reporting resolution a stated choice, `dv_aggregate_threshold()` moves prey
+found in fewer than `threshold` stomachs up to their parent, and repeats up the
+hierarchy until every category it reports occurs in at least `threshold`
+stomachs.
 
 ```{r aggregate}
 agg <- dv_aggregate_threshold(prep, threshold = 3)
+table(agg$data$prey_category, useNA = "ifany")
 table(agg$data$prey_rank, useNA = "ifany")
 ```
 
-The returned object is a pruned `dietview_prep`: ranks finer than the settled
-rank are set to NA, so it drops straight back into the normal pipeline, and the
-sunburst then has no leaf rarer than the threshold.
+A category named after a taxon that also has retained descendants holds only
+the records that stayed at that taxon, and its label ends in "(other)". Here
+"Animalia (other)" holds the bivalve, polychaete and mysid records: none of
+those groups reaches 3 stomachs on its own, so they move up until they are
+counted together, at kingdom. The records with no prey placement at all stay
+unidentified (`NA`).
+
+The result is a `dietview_prep` again: ranks finer than the rank each record
+settled at are set to `NA`, so it goes straight back into the usual functions,
+and the sunburst then has no category rarer than the threshold.
 
 ```{r aggregate-tree}
 tree <- dv_build_tree(agg$data, agg$ranks, weight_col = spec$weight)
 dv_rank_table(tree, "Class")
 ```
 
-Three architectures, two arguments:
+Two arguments give three ways of counting:
 
 ```{r architectures, eval = FALSE}
-dv_aggregate_threshold(prep, 100)                      # pooled (primary)
-dv_aggregate_threshold(prep, 100, min_predators = 2)   # pooled cross-predator
+dv_aggregate_threshold(prep, 100)                      # all predators pooled
+dv_aggregate_threshold(prep, 100, min_predators = 2)   # pooled, and in at least 2 predators
 dv_aggregate_threshold(prep, 50, scope = "per_predator")
 ```
 
-To reproduce the "resolutions" bookkeeping -- how category count responds to the
-threshold -- sweep it:
+To see how the number of categories changes with the threshold, sweep it:
 
 ```{r sweep}
 dv_threshold_sweep(prep, thresholds = c(2, 3, 5, 8))
-# the paper's grids: seq(10, 1000, 10) -> 100 resolutions;
-#                    seq(5, 250, 5) per_predator -> 50 resolutions
 ```
 
-Reporting a statistic as a mean across resolutions is done in the analysis that
-consumes these; DietView only produces the aggregation, not the test.
+DietView stops at the aggregation. If you summarize a statistic across several
+thresholds, do it in your own analysis.
 
-## 5. Handoff to multivariate analysis
+## 5. Handing over to multivariate analysis
 
-`dv_matrix()` reshapes records into the sampling-unit by prey-category matrix
-that ordination, PERMANOVA and compositional regression expect. If you
-aggregated first, it uses the `prey_category` column automatically.
+`dv_matrix()` turns the records into the stomach-by-prey matrix that
+ordination, PERMANOVA and compositional regression expect. If you aggregated
+first, it uses the `prey_category` column automatically. Pass `rank` to build
+the matrix at one rank instead.
 
 ```{r matrix}
 m <- dv_matrix(agg, currency = "occurrence")
@@ -149,13 +161,13 @@ dim(m)
 m[1:3, 1:min(5, ncol(m))]
 ```
 
-`currency` is `"weight"` (summed mass), `"occurrence"` (record counts) or
-`"fo"` (presence per unit). Use `unit` to aggregate to something coarser than a
-stomach, such as a trawl set, and `include_na = FALSE` to drop the unidentified
-column for a clean analysis matrix.
+`currency` is `"weight"` (summed weight), `"occurrence"` (number of records) or
+`"fo"` (presence or absence in each unit). Use `unit` to sum over something
+coarser than a stomach, such as a trawl set. Use `include_na = FALSE` to drop
+the unidentified column, and say in your methods that you did.
 
 ```{r downstream, eval = FALSE}
-# DietView stops here; the analysis lives in your own tooling
+# DietView stops here; the analysis uses other packages
 mm <- vegan::decostand(m, "total")
 d  <- vegan::vegdist(mm, "bray")
 # vegan::adonis2(d ~ period, data = set_covariates)
@@ -163,7 +175,12 @@ d  <- vegan::vegdist(mm, "bray")
 
 ## Where this fits
 
-These functions cover the exploration and aggregation layers. Inference --
-diversity tests, PERMANOVA, dispersion, classification of change -- is
-deliberately left to the packages built for it; `dv_matrix()` is the bridge to
-them.
+These functions describe and aggregate. DietView does not test hypotheses:
+diversity tests, PERMANOVA and dispersion analyses belong to packages built for
+them, and `dv_matrix()` is the step that hands your data over.
+
+## Reference
+
+Buckland, A., Baker, R., Loneragan, N., & Sheaves, M. (2017). Standardising fish
+stomach content analysis: the importance of prey condition. *Fisheries Research*,
+196, 126–140.

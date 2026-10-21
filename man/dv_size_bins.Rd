@@ -4,23 +4,35 @@
 \alias{dv_size_bins}
 \title{Build per-group length bins}
 \usage{
-dv_size_bins(length, breaks, right = FALSE)
+dv_size_bins(length, breaks, right = FALSE, labels = NULL)
 }
 \arguments{
 \item{length}{Numeric length vector.}
 
-\item{breaks}{Break edges (ascending). Rows outside the range become \code{NA}.}
+\item{breaks}{Break edges (ascending).}
 
 \item{right}{Passed to \code{\link[base:cut]{base::cut()}}; default \code{FALSE} gives left-closed bins.}
+
+\item{labels}{Optional labels, one per bin; the default builds interval
+labels from \code{breaks}.}
 }
 \value{
 A factor of length bins.
 }
 \description{
 Cuts a length vector into bins. Use different \code{breaks} per predator to merge
-or split bins where the data warrant it (e.g. \code{c(0, 20, 30, 40)}). Labels are
-auto-built as "[a-b[".
+or split bins where the data warrant it (e.g. \code{c(0, 20, 30, 40)}). Labels use
+interval notation that follows \code{right}: \verb{[a, b)} for left-closed bins (the
+default) and \verb{(a, b]} for right-closed bins.
+
+[a, b)\verb{for left-closed bins (the default) and}(a, b]: R:a,\%20b)\%60\%20for\%20left-closed\%20bins\%20(the\%0Adefault)\%20and\%20\%60(a,\%20b
+}
+\details{
+Lengths outside the breaks become \code{NA}. A covariate \code{NA} is not a taxonomic
+\code{NA}: the dashboard (\code{\link[=dv_build_html]{dv_build_html()}}) omits \code{NA} strata, while the Shiny
+app (\code{\link[=run_dietview]{run_dietview()}}) shows them as an "NA" panel.
 }
 \examples{
 dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60))
+dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60), right = TRUE)
 }

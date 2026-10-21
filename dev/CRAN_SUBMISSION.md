@@ -59,7 +59,7 @@ The package is now CRAN-shaped. What was done, and what you still do.
 ## Note on r-universe vs CRAN wording
 
 The CRAN-clean Title/Description also works on r-universe, so the DESCRIPTION now
-serves both. The longer, descriptive phrasing you liked ("... interactive,
-taxonomically complete diet visualization from stomach-content data") is kept as
+serves both. The longer, descriptive phrasing you liked ("DietView: An R package for interactive,
+hierarchical visualization of predator stomach-content data") is kept as
 free text on the site (pkgdown home description and the README heading), where
 CRAN's Title rules do not apply.

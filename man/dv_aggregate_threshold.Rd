@@ -16,7 +16,7 @@ dv_aggregate_threshold(
 \item{prep}{A \code{dietview_prep} object from \code{\link[=dv_prepare]{dv_prepare()}}.}
 
 \item{threshold}{Minimum number of stomachs a category must occur in to be
-retained at a given rank (the paper's \code{x}).}
+retained at a given rank.}
 
 \item{scope}{\code{"pooled"} (counts across the dataset) or \code{"per_predator"}
 (counts within each predator).}
@@ -26,7 +26,7 @@ subtree must span to be retained. Ignored (forced to 1) when
 \code{scope = "per_predator"}. Set to 2 for the cross-predator variant.}
 
 \item{other_label}{Label for records that do not reach the threshold even at
-the coarsest rank; defaults to \verb{paste0("other ", <coarsest rank>)}.}
+the coarsest rank; defaults to \code{"other (below threshold)"}.}
 }
 \value{
 A \code{dietview_prep} with pruned taxonomy columns and the added
@@ -36,14 +36,22 @@ as you would the output of \code{\link[=dv_prepare]{dv_prepare()}}.
 \description{
 Collapses prey that occur in fewer than \code{threshold} stomachs into their
 parent taxon, walking up the taxonomic hierarchy until every retained
-category meets the threshold. This is the threshold-based, resolution-robust
-aggregation used when a diet description must be stable to the choice of
-reporting rank (Buckland et al., 2017; Pombo et al., 2013; Bevilacqua et
-al., 2012): each record settles at the deepest ancestor whose subtree is
-sampled widely enough, and finer, rarely seen taxa are merged upward rather
-than dropped.
+category meets the threshold. This is a threshold-based aggregation in the
+spirit of taxonomic sufficiency (Bevilacqua et al., 2012; Pombo et al.,
+2013), for when a diet description must be stable to the choice of
+reporting rank: finer, rarely seen taxa are merged upward rather than
+dropped.
 }
 \details{
+Each record first settles at the deepest ancestor whose whole subtree is
+found in at least \code{threshold} stomachs. The category reported for a node is
+its residual, the records that settled there and not deeper, so a residual
+that itself falls below the threshold is moved up one more rank, and so on
+until every reported category reaches \code{threshold} stomachs (and
+\code{min_predators} predators). A residual whose node also has retained
+descendants is labelled \code{"<taxon> (other)"} in \code{prey_category}, for example
+\code{"Malacostraca (other)"} for malacostracans other than the retained orders.
+
 Three architectures are expressed through two arguments:
 \itemize{
 \item \strong{Pooled} (default): \code{scope = "pooled"}, \code{min_predators = 1}.
@@ -58,7 +66,8 @@ within each predator separately, so each predator gets its own tree.
 The taxonomy columns of the returned object are pruned: for every record,
 ranks finer than the settled rank are set to \code{NA}, so the explicit-NA
 machinery of \code{\link[=dv_build_tree]{dv_build_tree()}} shows the merge, and the sunburst has no
-leaf rarer than \code{threshold} stomachs. A convenience column \code{prey_category}
+leaf rarer than \code{threshold} stomachs (apart from the records that were
+unidentified at every rank to begin with, and the \code{other_label} group). A convenience column \code{prey_category}
 (the settled label) and \code{prey_rank} (the rank it settled at) are added, so
 the result can also feed a flat set x category matrix.
 }
