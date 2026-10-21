@@ -30,6 +30,7 @@ default) and (a, b] for right-closed bins.
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
@@ -116,6 +117,13 @@ app (<code><a href="run_dietview.html">run_dietview()</a></code>) shows them as 
 <span class="r-in"><span><span class="fu">dv_size_bins</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">18</span>, <span class="fl">26</span>, <span class="fl">34</span>, <span class="fl">52</span><span class="op">)</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">20</span>, <span class="fl">30</span>, <span class="fl">40</span>, <span class="fl">60</span><span class="op">)</span>, right <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] (0, 20]  (20, 30] (30, 40] (40, 60]</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Levels: (0, 20] (20, 30] (30, 40] (40, 60]</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># length classes of the Atlantic cod in the ICES stomach data</span></span></span>
+<span class="r-in"><span><span class="va">cod_len</span> <span class="op">&lt;-</span> <span class="va">ices_stomachs</span><span class="op">$</span><span class="va">length_cm</span><span class="op">[</span><span class="va">ices_stomachs</span><span class="op">$</span><span class="va">predator_common</span> <span class="op">==</span> <span class="st">"Atlantic cod"</span><span class="op">]</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="fu">dv_size_bins</span><span class="op">(</span><span class="va">cod_len</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">20</span>, <span class="fl">30</span>, <span class="fl">40</span>, <span class="fl">60</span>, <span class="fl">150</span><span class="op">)</span><span class="op">)</span>, useNA <span class="op">=</span> <span class="st">"ifany"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [0, 20)  [20, 30)  [30, 40)  [40, 60) [60, 150) </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       456       608       505       378       108 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

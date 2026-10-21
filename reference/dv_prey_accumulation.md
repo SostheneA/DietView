@@ -60,24 +60,34 @@ unidentified records excluded.
 ## Examples
 
 ``` r
-csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-dat <- read.csv(csv, na.strings = c("NA", ""))
-lineage <- read.csv(lin, na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name",
-                stomach = "stomach_id", prey_id = "aphia_id",
-                prey_name = "verified_name", weight = "prey_weight")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
-                   verbose = FALSE)
-acc <- dv_prey_accumulation(prep, permutations = 20, seed = 1)
+# the standard set-up: public ICES data, non-food items and nematodes dropped
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+# Atlantic cod only, for speed
+cod <- dat[dat$predator_common == "Atlantic cod", ]
+prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                       verbose = FALSE)
+acc <- dv_prey_accumulation(prep_cod, permutations = 20, seed = 1)
 head(acc)
 #>   n_stomachs mean_richness sd_richness
-#> 1          1          2.00   0.6488857
-#> 2          2          4.05   0.9445132
-#> 3          3          5.70   1.0809353
-#> 4          4          7.25   1.3327850
-#> 5          5          8.55   1.3562720
-#> 6          6          9.95   1.1909748
-acc_fam <- dv_prey_accumulation(prep, rank = "family", permutations = 20, seed = 1)
+#> 1          1          1.10   0.4472136
+#> 2          2          2.80   1.1050125
+#> 3          3          4.20   1.2396944
+#> 4          4          5.90   1.3337719
+#> 5          5          7.30   1.5927467
+#> 6          6          8.45   1.7614288
+acc_fam <- dv_prey_accumulation(prep_cod, rank = "family", permutations = 20,
+                                seed = 1)
 # plot(acc$n_stomachs, acc$mean_richness, type = "b")
 ```

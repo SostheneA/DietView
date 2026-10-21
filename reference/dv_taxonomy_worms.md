@@ -104,10 +104,17 @@ written even if the run is interrupted.
 if (FALSE) { # \dontrun{
 # needs the 'worrms' package and internet access
 keys <- data.frame(
-  prey_id   = c(NA, NA),
-  prey_name = c("Gadus morhua", "Homarus americanus"),
+  prey_id   = c(126436, NA),
+  prey_name = c("Gadus morhua", "Crangon crangon"),
   stringsAsFactors = FALSE
 )
 dv_taxonomy_worms(keys)
+
+# the prey keys of the ICES cod records
+cod <- ices_diet[ices_diet$predator_common == "Atlantic cod", ]
+keys <- unique(data.frame(prey_id = cod$prey_aphia_id,
+                          prey_name = cod$prey_name))
+lin <- dv_taxonomy_worms(keys)
+table(lin$match_type)
 } # }
 ```

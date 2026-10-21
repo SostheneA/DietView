@@ -84,13 +84,17 @@ An object of class `dietview_spec`.
 ## Examples
 
 ``` r
+# the column roles of the public ICES data (see ?ices_diet)
 spec <- dv_spec(
-  predator = "predator_species_common_name",
-  stomach  = "stomach_id",
-  prey_id  = "aphia_id",
-  prey_name = "verified_name",
-  weight   = "prey_weight",
-  covariates = c("period", "size_class")
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
 )
 spec$ranks
 #> [1] "kingdom" "phylum"  "class"   "order"   "family"  "genus"   "species"

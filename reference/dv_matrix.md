@@ -60,30 +60,34 @@ A numeric matrix with `unit` row names and category column names.
 ## Examples
 
 ``` r
-csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-dat <- read.csv(csv, na.strings = c("NA", ""))
-lineage <- read.csv(lin, na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name",
-                stomach = "stomach_id", prey_id = "aphia_id",
-                prey_name = "verified_name", weight = "prey_weight")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
-                   verbose = FALSE)
-m <- dv_matrix(prep, currency = "occurrence")
+# the standard set-up: public ICES data, non-food items and nematodes dropped
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+# Atlantic cod only, for speed
+cod <- dat[dat$predator_common == "Atlantic cod", ]
+prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                       verbose = FALSE)
+m <- dv_matrix(prep_cod, currency = "occurrence")
 dim(m)
-#> [1] 11 15
-dv_matrix(prep, rank = "class", currency = "weight")
-#>       Bivalvia Copepoda Malacostraca  NA Polychaeta Teleostei
-#> AW001    0.000    3e-03         0.00 0.0      0.000       0.0
-#> AW002    0.000    8e-04         0.00 0.0      0.000       0.0
-#> AW003    0.000    1e-03         0.08 0.0      0.000       0.0
-#> GM001    0.000    0e+00        14.30 0.0      0.000       5.1
-#> GM002    0.000    0e+00         0.80 0.0      0.000       8.0
-#> GM003    0.000    0e+00         9.30 1.5      0.000       0.0
-#> GM004    0.000    0e+00        15.00 0.0      0.000      22.0
-#> WF001    0.009    0e+00         0.00 0.0      0.503       0.0
-#> WF002    0.000    0e+00         0.05 0.0      0.200       0.0
-#> WF003    0.020    0e+00         0.00 0.1      0.000       0.0
-#> WF004    0.000    0e+00         0.23 0.0      0.000       0.0
+#> [1] 991 145
+m_class <- dv_matrix(prep_cod, rank = "class", currency = "weight")
+m_class[1:5, 1:4]
+#>         Bivalvia Cephalopoda Gastropoda Gephyrea
+#> S162741        0           0          0        0
+#> S162742        0           0          0        0
+#> S162743        0           0          0        0
+#> S162744        0           0          0        0
+#> S162745        0           0          0        0
 # vegan::decostand(m, "total"); vegan::vegdist(m, "bray")
 ```

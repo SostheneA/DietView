@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
@@ -186,7 +187,11 @@ removes the bound along with them.</li>
 named at class. In real data the same pattern shows up indirectly,
 through <code><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic()</a></code>. The digestion profile
 and the unidentified share are what a reader needs to judge a fine-rank
-result.</p>
+result. On the ICES extract that ships with the package
+(<code><a href="../reference/ices_diet.html">?ices_diet</a></code>) there is no <code>true_species</code> column
+to compare with: the unidentified share by rank and the digestion
+profile, shown for those data in the getting-started and digestion
+vignettes, are all a real survey gives you.</p>
 </div>
 <div class="section level2">
 <h2 id="what-this-does-and-does-not-show">What this does and does not show<a class="anchor" aria-label="anchor" href="#what-this-does-and-does-not-show"></a>

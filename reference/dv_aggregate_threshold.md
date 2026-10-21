@@ -98,30 +98,40 @@ to run this across many thresholds.
 ## Examples
 
 ``` r
-csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-dat <- read.csv(csv, na.strings = c("NA", ""))
-lineage <- read.csv(lin, na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name",
-                stomach = "stomach_id", prey_id = "aphia_id",
-                prey_name = "verified_name", weight = "prey_weight")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
-                   verbose = FALSE)
+# the standard set-up: public ICES data, non-food items and nematodes dropped
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+# Atlantic cod only, for speed
+cod <- dat[dat$predator_common == "Atlantic cod", ]
+prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                       verbose = FALSE)
 
-# retain only taxa seen in >= 3 stomachs; rarer prey merge upward
-agg <- dv_aggregate_threshold(prep, threshold = 3)
+# keep only taxa seen in >= 10 stomachs; rarer prey merge upward
+agg <- dv_aggregate_threshold(prep_cod, threshold = 10)
 table(agg$data$prey_rank, useNA = "ifany")
 #> 
-#>   class kingdom   order    <NA> 
-#>       7       6       9       2 
+#>   class  family   genus kingdom   order  phylum species    <NA> 
+#>     180     313     158      14     459     222     766     192 
 
 # the pruned prep drops straight into the usual pipeline
 tree <- dv_build_tree(agg$data, agg$ranks, weight_col = spec$weight)
 head(dv_rank_table(tree, "Class"))
-#>           label value_item value_occ   pct_occ value_w        pct_w
-#> 8  Malacostraca          2         9 37.500000 39.5800 51.271555298
-#> 10           NA          1         6 25.000000  0.9120  1.181396120
-#> 7      Copepoda          1         4 16.666667  0.0048  0.006217874
-#> 9     Teleostei          1         3 12.500000 35.1000 45.468205936
-#> 11           NA          1         2  8.333333  1.6000  2.072624772
+#>           label value_item value_occ   pct_occ  value_w      pct_w
+#> 13 Malacostraca         17       999 43.359375 2286.830 22.3616241
+#> 15    Teleostei         16       624 27.083333 7045.949 68.8983695
+#> 22           NA          1       192  8.333333  123.520  1.2078326
+#> 16           NA          1       154  6.684028  249.377  2.4385174
+#> 12   Polychaeta          5       144  6.250000  380.515  3.7208421
+#> 14           NA          1        68  2.951389   55.395  0.5416765
 ```

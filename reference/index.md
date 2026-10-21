@@ -9,6 +9,19 @@ What DietView is and how the pieces fit together.
   : DietView: interactive, hierarchical visualization of predator
   stomach-content data
 
+## Example data
+
+Public stomach-content data from the ICES Stomach Content Database
+(North Sea, Skagerrak-Kattegat and Baltic Sea, 2020-2024), with their
+frozen WoRMS lineage, used throughout the examples and articles.
+
+- [`ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)
+  : Stomach contents of North-East Atlantic fishes (ICES, 2020-2024)
+- [`ices_stomachs`](https://sosthenea.github.io/DietView/reference/ices_stomachs.md)
+  : Sampled stomachs of the ICES example data, empty ones included
+- [`ices_lineage`](https://sosthenea.github.io/DietView/reference/ices_lineage.md)
+  : Frozen WoRMS lineage for the ICES example data
+
 ## 1 · Declare and validate your data
 
 Describe once how your columns map to DietView’s roles. Nothing is

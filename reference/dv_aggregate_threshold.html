@@ -34,6 +34,7 @@ dropped."><meta property="og:image" content="https://sosthenea.github.io/DietVie
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
@@ -155,32 +156,42 @@ the result can also feed a flat set x category matrix.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">csv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">lin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example_lineage.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">csv</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">lineage</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">lin</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_spec.html">dv_spec</a></span><span class="op">(</span>predator <span class="op">=</span> <span class="st">"predator_species_common_name"</span>,</span></span>
-<span class="r-in"><span>                stomach <span class="op">=</span> <span class="st">"stomach_id"</span>, prey_id <span class="op">=</span> <span class="st">"aphia_id"</span>,</span></span>
-<span class="r-in"><span>                prey_name <span class="op">=</span> <span class="st">"verified_name"</span>, weight <span class="op">=</span> <span class="st">"prey_weight"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">lineage</span>,</span></span>
-<span class="r-in"><span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># the standard set-up: public ICES data, non-food items and nematodes dropped</span></span></span>
+<span class="r-in"><span><span class="va">phylum</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">phylum</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">prey_aphia_id</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">ices_diet</span><span class="op">[</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span> <span class="op">!=</span> <span class="st">"non_food"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span>, <span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_spec.html">dv_spec</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  predator       <span class="op">=</span> <span class="st">"predator_common"</span>,</span></span>
+<span class="r-in"><span>  predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span></span>
+<span class="r-in"><span>  stomach        <span class="op">=</span> <span class="st">"stomach_id"</span>,</span></span>
+<span class="r-in"><span>  prey_id        <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,</span></span>
+<span class="r-in"><span>  prey_name      <span class="op">=</span> <span class="st">"prey_name"</span>,</span></span>
+<span class="r-in"><span>  weight         <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span></span>
+<span class="r-in"><span>  count          <span class="op">=</span> <span class="st">"prey_count"</span>,</span></span>
+<span class="r-in"><span>  digestion      <span class="op">=</span> <span class="st">"digestion_label"</span>,</span></span>
+<span class="r-in"><span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Atlantic cod only, for speed</span></span></span>
+<span class="r-in"><span><span class="va">cod</span> <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">predator_common</span> <span class="op">==</span> <span class="st">"Atlantic cod"</span>, <span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">prep_cod</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span></span>
+<span class="r-in"><span>                       verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># retain only taxa seen in &gt;= 3 stomachs; rarer prey merge upward</span></span></span>
-<span class="r-in"><span><span class="va">agg</span> <span class="op">&lt;-</span> <span class="fu">dv_aggregate_threshold</span><span class="op">(</span><span class="va">prep</span>, threshold <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># keep only taxa seen in &gt;= 10 stomachs; rarer prey merge upward</span></span></span>
+<span class="r-in"><span><span class="va">agg</span> <span class="op">&lt;-</span> <span class="fu">dv_aggregate_threshold</span><span class="op">(</span><span class="va">prep_cod</span>, threshold <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">agg</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">prey_rank</span>, useNA <span class="op">=</span> <span class="st">"ifany"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   class kingdom   order    &lt;NA&gt; </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       7       6       9       2 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   class  family   genus kingdom   order  phylum species    &lt;NA&gt; </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     180     313     158      14     459     222     766     192 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># the pruned prep drops straight into the usual pipeline</span></span></span>
 <span class="r-in"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_build_tree.html">dv_build_tree</a></span><span class="op">(</span><span class="va">agg</span><span class="op">$</span><span class="va">data</span>, <span class="va">agg</span><span class="op">$</span><span class="va">ranks</span>, weight_col <span class="op">=</span> <span class="va">spec</span><span class="op">$</span><span class="va">weight</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="dv_rank_table.html">dv_rank_table</a></span><span class="op">(</span><span class="va">tree</span>, <span class="st">"Class"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           label value_item value_occ   pct_occ value_w        pct_w</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8  Malacostraca          2         9 37.500000 39.5800 51.271555298</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10           NA          1         6 25.000000  0.9120  1.181396120</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7      Copepoda          1         4 16.666667  0.0048  0.006217874</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9     Teleostei          1         3 12.500000 35.1000 45.468205936</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11           NA          1         2  8.333333  1.6000  2.072624772</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           label value_item value_occ   pct_occ  value_w      pct_w</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13 Malacostraca         17       999 43.359375 2286.830 22.3616241</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15    Teleostei         16       624 27.083333 7045.949 68.8983695</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22           NA          1       192  8.333333  123.520  1.2078326</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16           NA          1       154  6.684028  249.377  2.4385174</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12   Polychaeta          5       144  6.250000  380.515  3.7208421</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14           NA          1        68  2.951389   55.395  0.5416765</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

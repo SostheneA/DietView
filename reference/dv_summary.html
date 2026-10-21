@@ -28,6 +28,7 @@ broken down by a covariate."><meta property="og:image" content="https://sosthene
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
@@ -110,49 +111,183 @@ computed upstream from the full sampling frame.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">csv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">lin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example_lineage.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">csv</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">lineage</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">lin</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_spec.html">dv_spec</a></span><span class="op">(</span>predator <span class="op">=</span> <span class="st">"predator_species_common_name"</span>,</span></span>
-<span class="r-in"><span>                stomach <span class="op">=</span> <span class="st">"stomach_id"</span>, prey_id <span class="op">=</span> <span class="st">"aphia_id"</span>,</span></span>
-<span class="r-in"><span>                prey_name <span class="op">=</span> <span class="st">"verified_name"</span>, weight <span class="op">=</span> <span class="st">"prey_weight"</span>,</span></span>
-<span class="r-in"><span>                covariates <span class="op">=</span> <span class="st">"region"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">lineage</span>,</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># the standard set-up: public ICES data, non-food items and nematodes dropped</span></span></span>
+<span class="r-in"><span><span class="va">phylum</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">phylum</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">prey_aphia_id</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">ices_diet</span><span class="op">[</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span> <span class="op">!=</span> <span class="st">"non_food"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span>, <span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_spec.html">dv_spec</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  predator       <span class="op">=</span> <span class="st">"predator_common"</span>,</span></span>
+<span class="r-in"><span>  predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span></span>
+<span class="r-in"><span>  stomach        <span class="op">=</span> <span class="st">"stomach_id"</span>,</span></span>
+<span class="r-in"><span>  prey_id        <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,</span></span>
+<span class="r-in"><span>  prey_name      <span class="op">=</span> <span class="st">"prey_name"</span>,</span></span>
+<span class="r-in"><span>  weight         <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span></span>
+<span class="r-in"><span>  count          <span class="op">=</span> <span class="st">"prey_count"</span>,</span></span>
+<span class="r-in"><span>  digestion      <span class="op">=</span> <span class="st">"digestion_label"</span>,</span></span>
+<span class="r-in"><span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span></span>
 <span class="r-in"><span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">dv_summary</span><span class="op">(</span><span class="va">prep</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   predator_species_common_name n_stomachs n_records n_taxa records_per_stomach</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1                 Atlantic cod          4        10      8                 2.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2              Winter flounder          4         8      5                 2.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3                      Alewife          3         6      4                 2.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   total_weight</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      76.0000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2       1.1120</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3       0.0848</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            predator_common n_stomachs n_records n_taxa records_per_stomach</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        Atlantic mackerel       1048      1593     10                1.52</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2             Atlantic cod        991      2304    144                2.32</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                  Whiting        892      1605    101                1.80</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4          European plaice        729      1890     69                2.59</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5  Atlantic horse mackerel        135       245     24                1.81</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6            European hake        106       154     23                1.45</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7              Tub gurnard         90       187     37                2.08</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8             Thorny skate         48       184     27                3.83</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9                   Turbot         47        87     21                1.85</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10                   Brill         26        51     15                1.96</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11                  Angler         20        37     11                1.85</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12            Grey gurnard         20        30      8                1.50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13             Spotted ray         15        51     10                3.40</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14              Cuckoo ray         13        37      8                2.85</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15           Thornback ray         12        28      8                2.33</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16           Spiny dogfish         11        15      7                1.36</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17                 Pollack          9        17      8                1.89</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18                    Ling          4         4      4                1.00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19        Atlantic halibut          2         4      3                2.00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20              Blonde ray          2         3      2                1.50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21           Smooth-hounds          1         1      1                1.00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22     Starry smooth-hound          1         3      2                3.00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    total_weight</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      2064.350</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     10226.583</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      2028.399</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      1020.806</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5       104.532</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6      1863.367</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7       710.629</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8       117.484</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9       766.108</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10      201.074</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11     1699.026</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12       19.890</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13       40.759</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14       32.408</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15      146.465</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16      101.800</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17      366.663</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18      225.600</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19      125.943</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20        1.017</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21       11.793</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22       23.577</span>
 <span class="r-in"><span><span class="fu">dv_summary</span><span class="op">(</span><span class="va">prep</span>, by <span class="op">=</span> <span class="st">"region"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   predator_species_common_name            region n_stomachs n_records n_taxa</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1                      Alewife    Northumberland          2         3      2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2                 Atlantic cod Magdalen Shallows          2         5      4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3                 Atlantic cod    Northumberland          2         5      5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4              Winter flounder Magdalen Shallows          2         4      3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5              Winter flounder    Northumberland          2         4      3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6                      Alewife Magdalen Shallows          1         3      3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   records_per_stomach total_weight</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1                 1.5       0.0038</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2                 2.5      47.8000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3                 2.5      28.2000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4                 2.0       0.3500</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5                 2.0       0.7620</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6                 3.0       0.0810</span>
-<span class="r-in"><span><span class="fu">dv_summary</span><span class="op">(</span><span class="va">prep</span>, rank <span class="op">=</span> <span class="st">"class"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   predator_species_common_name n_stomachs n_records n_taxa records_per_stomach</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1                 Atlantic cod          4        10      2                 2.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2              Winter flounder          4         8      3                 2.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3                      Alewife          3         6      2                 2.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            predator_common             region n_stomachs n_records n_taxa</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        Atlantic mackerel          North Sea        948      1491     10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2             Atlantic cod          North Sea        731      1739    116</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                  Whiting          North Sea        650      1078     55</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4          European plaice          North Sea        429       955     47</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5          European plaice Skagerrak-Kattegat        262       874     43</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6             Atlantic cod         Baltic Sea        198       430     63</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7                  Whiting         Baltic Sea        167       410     62</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8        Atlantic mackerel Skagerrak-Kattegat        100       102      1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  Atlantic horse mackerel         Baltic Sea         91       187     23</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10                 Whiting Skagerrak-Kattegat         75       117     21</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11           European hake Skagerrak-Kattegat         72       116     16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12            Atlantic cod Skagerrak-Kattegat         62       135     32</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13            Thorny skate Skagerrak-Kattegat         42       160     23</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14             Tub gurnard         Baltic Sea         39        75     25</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15 Atlantic horse mackerel          North Sea         38        51      6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16         European plaice         Baltic Sea         38        61     11</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17             Tub gurnard          North Sea         38        77     10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18                  Turbot          North Sea         36        66     16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19           European hake          North Sea         34        38     13</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20            Grey gurnard          North Sea         20        30      8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21                   Brill          North Sea         15        25      9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22             Spotted ray          North Sea         15        51     10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23                  Angler          North Sea         13        22      5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24              Cuckoo ray          North Sea         13        37      8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 25             Tub gurnard Skagerrak-Kattegat         13        35     13</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 26           Thornback ray          North Sea         11        27      7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 27                   Brill Skagerrak-Kattegat          7        20      9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 28           Spiny dogfish Skagerrak-Kattegat          7        10      5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 29                  Angler Skagerrak-Kattegat          6        14      8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 30 Atlantic horse mackerel Skagerrak-Kattegat          6         7      3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 31                  Turbot         Baltic Sea          6         8      5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 32                 Pollack          North Sea          5        11      4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 33            Thorny skate          North Sea          5        19      6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 34                  Turbot Skagerrak-Kattegat          5        13      8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 35                   Brill         Baltic Sea          4         6      5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 36                 Pollack Skagerrak-Kattegat          3         4      3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 37           Spiny dogfish          North Sea          3         4      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 38        Atlantic halibut          North Sea          2         4      3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 39              Blonde ray          North Sea          2         3      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 40                    Ling          North Sea          2         2      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 41                    Ling Skagerrak-Kattegat          2         2      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 42                  Angler         Baltic Sea          1         1      1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 43                 Pollack         Baltic Sea          1         2      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 44           Smooth-hounds          North Sea          1         1      1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 45           Spiny dogfish         Baltic Sea          1         1      1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 46     Starry smooth-hound         Baltic Sea          1         3      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 47           Thornback ray         Baltic Sea          1         1      1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 48            Thorny skate         Baltic Sea          1         5      5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    records_per_stomach total_weight</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1                 1.57    1905.3900</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2                 2.38    6498.5020</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                 1.66    1371.9421</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4                 2.23     361.6340</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5                 3.34     651.6580</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6                 2.17    2817.3808</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7                 2.46     251.8765</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8                 1.02     158.9600</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9                 2.05      81.1310</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10                1.56     404.5800</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11                1.61    1139.4900</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12                2.18     910.7000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13                3.81     111.9400</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14                1.92     388.3990</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15                1.34      19.7910</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16                1.61       7.5140</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17                2.03     178.8400</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18                1.83     670.7960</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19                1.12     723.8770</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20                1.50      19.8900</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21                1.67      98.7000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22                3.40      40.7590</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23                1.69    1096.3830</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24                2.85      32.4080</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 25                2.69     143.3900</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 26                2.45     129.9740</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 27                2.86      77.5800</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 28                1.43       1.8200</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 29                2.33     503.4000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 30                1.17       3.6100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 31                1.33      56.4820</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 32                2.20     310.1100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 33                3.80       4.7220</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 34                2.60      38.8300</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 35                1.50      24.7940</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 36                1.33      12.6700</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 37                1.33      16.5710</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 38                2.00     125.9430</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 39                1.50       1.0170</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 40                1.00     119.0700</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 41                1.00     106.5300</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 42                1.00      99.2430</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 43                2.00      43.8830</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 44                1.00      11.7930</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 45                1.00      83.4090</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 46                3.00      23.5770</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 47                1.00      16.4910</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 48                5.00       0.8220</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">dv_summary</span><span class="op">(</span><span class="va">prep</span>, rank <span class="op">=</span> <span class="st">"class"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           predator_common n_stomachs n_records n_taxa records_per_stomach</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1       Atlantic mackerel       1048      1593      2                1.52</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2            Atlantic cod        991      2304     10                2.32</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                 Whiting        892      1605      9                1.80</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4         European plaice        729      1890     14                2.59</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Atlantic horse mackerel        135       245      6                1.81</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6           European hake        106       154      3                1.45</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   total_weight</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      76.0000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2       1.1120</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3       0.0848</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     2064.350</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    10226.583</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     2028.399</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4     1020.806</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5      104.532</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6     1863.367</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

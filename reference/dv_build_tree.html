@@ -22,6 +22,7 @@
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
@@ -121,33 +122,38 @@ last.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">csv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">lin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example_lineage.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">csv</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">lineage</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">lin</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_spec.html">dv_spec</a></span><span class="op">(</span>predator <span class="op">=</span> <span class="st">"predator_species_common_name"</span>,</span></span>
-<span class="r-in"><span>                stomach <span class="op">=</span> <span class="st">"stomach_id"</span>,</span></span>
-<span class="r-in"><span>                prey_id <span class="op">=</span> <span class="st">"aphia_id"</span>,</span></span>
-<span class="r-in"><span>                prey_name <span class="op">=</span> <span class="st">"verified_name"</span>,</span></span>
-<span class="r-in"><span>                weight <span class="op">=</span> <span class="st">"prey_weight"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">lineage</span>,</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># the standard set-up: public ICES data, non-food items and nematodes dropped</span></span></span>
+<span class="r-in"><span><span class="va">phylum</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">phylum</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">prey_aphia_id</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">ices_diet</span><span class="op">[</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span> <span class="op">!=</span> <span class="st">"non_food"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span>, <span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_spec.html">dv_spec</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  predator       <span class="op">=</span> <span class="st">"predator_common"</span>,</span></span>
+<span class="r-in"><span>  predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span></span>
+<span class="r-in"><span>  stomach        <span class="op">=</span> <span class="st">"stomach_id"</span>,</span></span>
+<span class="r-in"><span>  prey_id        <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,</span></span>
+<span class="r-in"><span>  prey_name      <span class="op">=</span> <span class="st">"prey_name"</span>,</span></span>
+<span class="r-in"><span>  weight         <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span></span>
+<span class="r-in"><span>  count          <span class="op">=</span> <span class="st">"prey_count"</span>,</span></span>
+<span class="r-in"><span>  digestion      <span class="op">=</span> <span class="st">"digestion_label"</span>,</span></span>
+<span class="r-in"><span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span></span>
 <span class="r-in"><span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu">dv_build_tree</span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">data</span>, <span class="va">prep</span><span class="op">$</span><span class="va">ranks</span>, weight_col <span class="op">=</span> <span class="va">spec</span><span class="op">$</span><span class="va">weight</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">tree</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                    id      label   parent    rank value_item value_occ value_w</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1            Animalia   Animalia          Kingdom         14        22 75.5968</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2                  NA         NA          Kingdom          1         2  1.6000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   Animalia|Annelida   Annelida Animalia  Phylum          1         2  0.7030</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Animalia|Arthropoda Arthropoda Animalia  Phylum          9        15 39.7648</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Animalia|Chordata   Chordata Animalia  Phylum          3         3 35.1000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   Animalia|Mollusca   Mollusca Animalia  Phylum          1         2  0.0290</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pct_occ       pct_w</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 91.666667 97.92737523</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  8.333333  2.07262477</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  8.333333  0.91065951</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 62.500000 51.51094346</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 12.500000 45.46820594</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  8.333333  0.03756632</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    id      label   parent    rank value_item value_occ</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1            Animalia   Animalia          Kingdom        237      6975</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2           Chromista  Chromista          Kingdom          1         1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3             Plantae    Plantae          Kingdom          1         1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4                  NA         NA          Kingdom          1      1553</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Animalia|Annelida   Annelida Animalia  Phylum         33       785</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 Animalia|Arthropoda Arthropoda Animalia  Phylum         97      2779</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      value_w     pct_occ        pct_w</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 20782.9124 81.77022274 9.490663e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     0.0000  0.01172333 0.000000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     0.1480  0.01172333 6.758524e-04</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  1115.2120 18.20633060 5.092694e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5   600.6392  9.20281360 2.742861e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6  3450.9192 32.57913247 1.575887e+01</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

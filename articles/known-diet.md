@@ -99,7 +99,13 @@ named at class. In real data the same pattern shows up indirectly,
 through
 [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md).
 The digestion profile and the unidentified share are what a reader needs
-to judge a fine-rank result.
+to judge a fine-rank result. On the ICES extract that ships with the
+package
+([`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md))
+there is no `true_species` column to compare with: the unidentified
+share by rank and the digestion profile, shown for those data in the
+getting-started and digestion vignettes, are all a real survey gives
+you.
 
 ## What this does and does not show
 

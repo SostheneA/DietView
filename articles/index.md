@@ -2,6 +2,8 @@
 
 ### All vignettes
 
+- [Case study: a complete analysis of public ICES stomach
+  data](https://sosthenea.github.io/DietView/articles/case-study-ices.md):
 - [Comparing diets across periods, sizes and
   regions](https://sosthenea.github.io/DietView/articles/covariates.md):
 - [Building a self-contained diet

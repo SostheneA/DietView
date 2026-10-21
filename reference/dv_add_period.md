@@ -37,4 +37,10 @@ A factor of periods. Years outside the breaks become `NA`.
 dv_add_period(c(2004, 2006, 2010, 2018), breaks = c(2003, 2007, 2020))
 #> [1] 2003-2007 2003-2007 2008-2020 2008-2020
 #> Levels: 2003-2007 2008-2020
+
+# periods for the ICES stomachs (sampled 2020-2024)
+table(dv_add_period(ices_stomachs$year, breaks = c(2020, 2022, 2024)))
+#> 
+#> 2020-2022 2023-2024 
+#>      3487      5399 
 ```

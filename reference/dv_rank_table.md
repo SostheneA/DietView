@@ -28,24 +28,54 @@ A data.frame: `label, value_item, value_occ, pct_occ, value_w, pct_w`.
 ## Examples
 
 ``` r
-csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-dat <- read.csv(csv, na.strings = c("NA", ""))
-lineage <- read.csv(lin, na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name",
-                stomach = "stomach_id",
-                prey_id = "aphia_id",
-                prey_name = "verified_name",
-                weight = "prey_weight")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
+# the standard set-up: public ICES data, non-food items and nematodes dropped
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
                    verbose = FALSE)
 tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
 dv_rank_table(tree, "Class")
-#>           label value_item value_occ   pct_occ value_w        pct_w
-#> 10 Malacostraca          7        11 45.833333 39.7600 51.504725584
-#> 9      Copepoda          2         4 16.666667  0.0048  0.006217874
-#> 11    Teleostei          3         3 12.500000 35.1000 45.468205936
-#> 8    Polychaeta          1         2  8.333333  0.7030  0.910659509
-#> 12     Bivalvia          1         2  8.333333  0.0290  0.037566324
-#> 13           NA          1         2  8.333333  1.6000  2.072624772
+#>            label value_item value_occ     pct_occ    value_w        pct_w
+#> 23  Malacostraca         92      2085 24.44314185  2948.8905 1.346632e+01
+#> 29     Teleostei         64      1614 18.92145369 14366.4605 6.560545e+01
+#> 47            NA          1      1553 18.20633060  1115.2120 5.092694e+00
+#> 20    Polychaeta         30       758  8.88628370   584.2752 2.668134e+00
+#> 30            NA          1       713  8.35873388  1328.6695 6.067463e+00
+#> 25            NA          1       662  7.76084408   501.2407 2.288951e+00
+#> 36   Ophiuroidea          4       493  5.77960141   526.9670 2.406432e+00
+#> 38      Bivalvia         12       317  3.71629543   231.8770 1.058883e+00
+#> 40    Gastropoda          3        72  0.84407972    26.4690 1.208725e-01
+#> 37            NA          1        67  0.78546307    26.1870 1.195848e-01
+#> 39   Cephalopoda          7        48  0.56271981    89.2940 4.077673e-01
+#> 35    Echinoidea          2        31  0.36342321    49.9250 2.279860e-01
+#> 22      Copepoda          3        30  0.35169988     0.4480 2.045823e-03
+#> 21            NA          1        23  0.26963658    12.0040 5.481711e-02
+#> 34    Asteroidea          1        11  0.12895662     1.0410 4.753800e-03
+#> 41            NA          1        10  0.11723329    11.1470 5.090356e-02
+#> 43     Trematoda          1        10  0.11723329     0.0110 5.023227e-05
+#> 28        Myxini          1         7  0.08206331    24.6800 1.127030e-01
+#> 45            NA          2         7  0.08206331    39.4100 1.799685e-01
+#> 44            NA          1         4  0.04689332     0.3750 1.712464e-03
+#> 19      Gephyrea          1         3  0.03516999     4.2900 1.959059e-02
+#> 24   Thecostraca          1         2  0.02344666     0.3400 1.552634e-03
+#> 26            NA          1         2  0.02344666     0.5100 2.328951e-03
+#> 18    Clitellata          1         1  0.01172333     0.0700 3.196599e-04
+#> 27   Leptocardii          1         1  0.01172333     0.2970 1.356271e-03
+#> 31  Hexacorallia          1         1  0.01172333     1.5320 6.995986e-03
+#> 32      Hydrozoa          1         1  0.01172333     6.5000 2.968271e-02
+#> 33            NA          1         1  0.01172333     0.0010 4.566570e-06
+#> 42 Hoplonemertea          1         1  0.01172333     0.0010 4.566570e-06
+#> 46  Phaeophyceae          1         1  0.01172333     0.0000 0.000000e+00
+#> 48            NA          1         1  0.01172333     0.1480 6.758524e-04
 ```

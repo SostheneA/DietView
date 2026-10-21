@@ -56,4 +56,11 @@ dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60))
 dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60), right = TRUE)
 #> [1] (0, 20]  (20, 30] (30, 40] (40, 60]
 #> Levels: (0, 20] (20, 30] (30, 40] (40, 60]
+
+# length classes of the Atlantic cod in the ICES stomach data
+cod_len <- ices_stomachs$length_cm[ices_stomachs$predator_common == "Atlantic cod"]
+table(dv_size_bins(cod_len, breaks = c(0, 20, 30, 40, 60, 150)), useNA = "ifany")
+#> 
+#>   [0, 20)  [20, 30)  [30, 40)  [40, 60) [60, 150) 
+#>       456       608       505       378       108 
 ```

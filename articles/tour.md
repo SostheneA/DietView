@@ -4,15 +4,23 @@ This article goes through the package one function at a time. For each
 function it says why you would use it, what it does, what it returns,
 and which arguments change the answer. It ends with three short
 applications that show how much a result moves when you change the
-currency or the rank you report at. Everything runs offline on the
-invented example table that ships with the package: 24 prey records from
-11 stomachs of three predators. The numbers show the mechanics, not the
-diet of these fish.
+currency or the rank you report at.
 
 ``` r
 
 library(DietView)
 ```
+
+Everything runs offline on the public ICES stomach data that ship with
+the package
+([`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)):
+9,639 prey records from 4,231 stomachs of 22 fish predators caught in
+the North Sea, the Skagerrak-Kattegat and the Baltic Sea, 2020-2024.
+Source: ICES Stomach Content Database, ICES, Copenhagen; extract
+distributed with the R package stomachr (Lindmark 2026). The package
+also keeps a 24-record invented table
+(`inst/extdata/dietview_example.csv`) for checking the mechanics on
+something you can read in full.
 
 ## The pipeline
 
@@ -25,7 +33,7 @@ print, inspect and save.
 | Check | [`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.md) | the data, invisibly, with messages about it |
 | Prepare | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md) | `dietview_prep`: data, taxonomy and matching log |
 | Review | [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md) | the matches that need a look |
-| Count | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md) | `dietview_tree`: one row per node, with records, weight and shares |
+| Count | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md), [`dv_tree()`](https://sosthenea.github.io/DietView/reference/dv_tree.md) | `dietview_tree`: one row per node, with records, weight and shares |
 | Read | [`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md) | the rows of one ring |
 | Draw | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md) | a plotly figure |
 | Share | [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md), [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md), [`dv_deploy()`](https://sosthenea.github.io/DietView/reference/dv_deploy.md) | an HTML file, a Shiny app, a deployed file |
@@ -35,43 +43,67 @@ Two helpers
 [`dv_size_bins()`](https://sosthenea.github.io/DietView/reference/dv_size_bins.md))
 build covariates,
 [`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md)
-sets the colors,
+and
+[`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)
+set the colors,
 [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md)
 relates identification depth to digestion, and
 [`dv_species_card_assets()`](https://sosthenea.github.io/DietView/reference/dv_species_card_assets.md)
-finds a photo and a description for a predator.
+finds a photo and a description for a predator. The functions that
+describe and aggregate the sample before any figure
+([`dv_summary()`](https://sosthenea.github.io/DietView/reference/dv_summary.md),
+[`dv_fo_table()`](https://sosthenea.github.io/DietView/reference/dv_fo_table.md),
+[`dv_aggregate_threshold()`](https://sosthenea.github.io/DietView/reference/dv_aggregate_threshold.md),
+…) have their own article, “Exploring and aggregating diet data”.
+
+## The data, and what to keep
 
 ``` r
 
-dat <- read.csv(
-  system.file("extdata", "dietview_example.csv", package = "DietView"),
-  na.strings = c("NA", "")
-)
-lineage <- read.csv(
-  system.file("extdata", "dietview_example_lineage.csv", package = "DietView"),
-  na.strings = c("NA", "")
-)
-
-str(dat, vec.len = 2, give.attr = FALSE)
-#> 'data.frame':    24 obs. of  14 variables:
-#>  $ predator_species_common_name: chr  "Atlantic cod" "Atlantic cod" ...
-#>  $ predator_species_latin_name : chr  "Gadus morhua" "Gadus morhua" ...
-#>  $ stomach_id                  : chr  "GM001" "GM001" ...
-#>  $ aphia_id                    : int  107649 126752 1130 101107 293496 ...
-#>  $ verified_name               : chr  "Pandalus borealis" "Ammodytes dubius" ...
-#>  $ prey_weight                 : num  12.3 5.1 2 0.8 8 ...
-#>  $ number_of_prey              : int  3 2 1 20 1 ...
-#>  $ digestion_level_id          : int  2 3 4 2 4 ...
-#>  $ period                      : chr  "2004-2006" "2004-2006" ...
-#>  $ year                        : int  2005 2005 2005 2005 2005 ...
-#>  $ somatic_length_cm           : int  45 45 45 52 52 ...
-#>  $ size_class                  : chr  "adult" "adult" ...
-#>  $ size_bin                    : chr  "[40, 50)" "[40, 50)" ...
-#>  $ region                      : chr  "Northumberland" "Northumberland" ...
+str(ices_diet[, c("stomach_id", "predator_common", "prey_aphia_id",
+                  "prey_name", "item_type", "prey_count", "prey_weight_g",
+                  "digestion_label", "region", "year", "quarter", "length_cm")],
+    vec.len = 2, give.attr = FALSE)
+#> 'data.frame':    9639 obs. of  12 variables:
+#>  $ stomach_id     : chr  "S167767" "S167777" ...
+#>  $ predator_common: chr  "Whiting" "Whiting" ...
+#>  $ prey_aphia_id  : int  NA NA NA NA NA ...
+#>  $ prey_name      : chr  "Unidentified material" "Unidentified material" ...
+#>  $ item_type      : chr  "unidentified" "unidentified" ...
+#>  $ prey_count     : int  1 1 1 1 1 ...
+#>  $ prey_weight_g  : num  0.03 0.07 0.06 0.01 0.2 ...
+#>  $ digestion_label: chr  "1 affected" "1 affected" ...
+#>  $ region         : chr  "Baltic Sea" "Baltic Sea" ...
+#>  $ year           : int  2020 2020 2020 2020 2020 ...
+#>  $ quarter        : num  4 4 4 4 4 ...
+#>  $ length_cm      : num  19 18 18 18 16 ...
+table(ices_diet$item_type)
+#> 
+#>     non_food         prey unidentified 
+#>           67         8019         1553
 ```
 
-One row is one prey record: one prey taxon found in one stomach. There
-are no `kingdom` to `species` columns; DietView adds them.
+One row is one prey record: one prey taxon found in one stomach, with
+the stomach and haul variables repeated on each row. There are no
+`kingdom` to `species` columns; DietView adds them from the frozen WoRMS
+lineage `ices_lineage`.
+
+Two kinds of rows are not diet. The 67 non-food items (sand, stones,
+plastic, wood) are flagged by `item_type`, and nematodes in fish
+stomachs are mostly parasites rather than prey. The data keep both,
+because deciding is the analyst’s job; here we drop them:
+
+``` r
+
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+nrow(dat)
+#> [1] 8530
+```
+
+That removes 1042 nematode records and leaves 8,530 records. The 1,553
+records of unidentified material stay: they are part of what the
+predators ate.
 
 ## `dv_spec()`: declare your columns once
 
@@ -87,27 +119,29 @@ not touched.
 ``` r
 
 spec <- dv_spec(
-  predator   = "predator_species_common_name",
-  stomach    = "stomach_id",
-  prey_id    = "aphia_id",
-  prey_name  = "verified_name",
-  weight     = "prey_weight",
-  digestion  = "digestion_level_id",
-  covariates = c("period", "size_class", "region")
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
 )
 
 str(spec)
 #> List of 10
-#>  $ predator      : chr "predator_species_common_name"
+#>  $ predator      : chr "predator_common"
 #>  $ stomach       : chr "stomach_id"
-#>  $ prey_name     : chr "verified_name"
-#>  $ prey_id       : chr "aphia_id"
-#>  $ weight        : chr "prey_weight"
-#>  $ count         : NULL
-#>  $ digestion     : chr "digestion_level_id"
-#>  $ covariates    : chr [1:3] "period" "size_class" "region"
+#>  $ prey_name     : chr "prey_name"
+#>  $ prey_id       : chr "prey_aphia_id"
+#>  $ weight        : chr "prey_weight_g"
+#>  $ count         : chr "prey_count"
+#>  $ digestion     : chr "digestion_label"
+#>  $ covariates    : chr [1:3] "region" "year" "quarter"
 #>  $ ranks         : chr [1:7] "kingdom" "phylum" "class" "order" ...
-#>  $ predator_latin: NULL
+#>  $ predator_latin: chr "predator_latin"
 #>  - attr(*, "class")= chr "dietview_spec"
 ```
 
@@ -121,12 +155,14 @@ two agree. When a record has no ID, its name is used.
 which does not know common names. A common name either fails to match
 or, with fuzzy matching, can match a wrong taxon. The predator, by
 contrast, is never looked up: it is only a grouping and display label,
-so a common name is fine.
+so a common name such as “Atlantic cod” is fine. `predator_latin` is
+used for the species cards.
 
-*The name does not have to be a species.* `Decapoda`, `Amphipoda` and
-`Teleostei` are valid values: they record the rank at which
-identification stopped. Do not replace them with a guessed species;
-DietView shows such records as unidentified below the rank they reached.
+*The name does not have to be a species.* In the ICES data, “Crustacea”
+(546 records), “Pisces” (434) and “Polychaeta” (444) are among the most
+frequent prey names: they record the rank at which identification
+stopped. Do not replace them with a guessed species; DietView shows such
+records as unidentified below the rank they reached.
 
 *`ranks` defaults to seven ranks*, kingdom to species. Shorten it if
 your prey are never identified past family; the sunburst then has fewer
@@ -136,10 +172,10 @@ rings.
 a column costs nothing.
 
 *`count`* declares a column of individuals per record, for the numerical
-share (%N). It is left out here. If you declare it, build trees with
-`dv_tree(prep, "numbers")` when you want %N, and note that records
-without a count, usually the unidentified material, then contribute
-nothing.
+share (%N). Build trees with `dv_tree(prep, "numbers")` when you want
+%N, and note that records without a count then contribute nothing (see
+[`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)
+below).
 
 ## `dv_validate()`: check the table before anything else
 
@@ -155,8 +191,13 @@ lack a weight. It never changes your data.
 ``` r
 
 dv_validate(dat, spec)
-#> 24 records from 11 stomachs of 3 predator(s); 1 stomach(s) hold a single record; 0 record(s) lack a weight.
+#> 8530 records from 4222 stomachs of 22 predator(s); 2305 stomach(s) hold a single record; 531 record(s) lack a weight.
 ```
+
+No warning here: every record has a prey key (an AphiaID or, for
+unidentified material, a name), and stomach IDs are unique across
+predators. More than half the stomachs hold a single prey record, which
+matters for every statistic that counts stomachs.
 
 **What you get back.** The data, invisibly, with the counts in the
 `dv_report` attribute. The information is in the messages and warnings.
@@ -182,16 +223,19 @@ the last identified rank empty.
 
 prep <- dv_prepare(
   dat, spec,
-  taxonomy = "table",   # offline: use the lineage table supplied
-  lineage  = lineage,
+  taxonomy = "table",       # offline: use the frozen lineage supplied
+  lineage  = ices_lineage,
   verbose  = FALSE
 )
 
-class(prep)
-#> [1] "dietview_prep"
-names(prep)
-#> [1] "data"            "spec"            "ranks"           "taxonomy_source"
-#> [5] "taxonomy_log"
+prep
+#> <dietview_prep>
+#>   records   : 8530 
+#>   stomachs  : 4222 
+#>   predators : 22 
+#>   ranks     : kingdom > phylum > class > order > family > genus > species 
+#>   covariates: region, year, quarter 
+#>   source    : table
 ```
 
 **What you get back.** A `dietview_prep` list. Its main components are:
@@ -204,20 +248,24 @@ names(prep)
 
 ``` r
 
-prep$ranks
-#> [1] "kingdom" "phylum"  "class"   "order"   "family"  "genus"   "species"
-head(prep$data[, c("verified_name", prep$ranks)], 4)
-#>        verified_name  kingdom     phylum        class       order      family
-#> 1  Pandalus borealis Animalia Arthropoda Malacostraca    Decapoda  Pandalidae
-#> 2   Ammodytes dubius Animalia   Chordata    Teleostei Perciformes Ammodytidae
-#> 3           Decapoda Animalia Arthropoda Malacostraca    Decapoda        <NA>
-#> 4 Themisto libellula Animalia Arthropoda Malacostraca   Amphipoda  Hyperiidae
-#>       genus            species
-#> 1  Pandalus  Pandalus borealis
-#> 2 Ammodytes   Ammodytes dubius
-#> 3      <NA>               <NA>
-#> 4  Themisto Themisto libellula
+ex <- match(c("Crangon crangon", "Ammodytidae", "Pisces", "Unidentified material"),
+            prep$data$prey_name)
+prep$data[ex, c("prey_name", prep$ranks)]
+#>                 prey_name  kingdom     phylum        class       order
+#> 26        Crangon crangon Animalia Arthropoda Malacostraca    Decapoda
+#> 55            Ammodytidae Animalia   Chordata    Teleostei Perciformes
+#> 179                Pisces Animalia   Chordata         <NA>        <NA>
+#> 1   Unidentified material     <NA>       <NA>         <NA>        <NA>
+#>          family   genus         species
+#> 26  Crangonidae Crangon Crangon crangon
+#> 55  Ammodytidae    <NA>            <NA>
+#> 179        <NA>    <NA>            <NA>
+#> 1          <NA>    <NA>            <NA>
 ```
+
+The brown shrimp is resolved to species. Sandeels (Ammodytidae) stop at
+family, “Pisces” (a WoRMS superclass) stops at phylum, and unidentified
+material has no rank at all.
 
 **Arguments that matter.**
 
@@ -233,9 +281,11 @@ head(prep$data[, c("verified_name", prep$ranks)], 4)
 *Resolve once, then freeze.* Run once with `taxonomy = "worms"`, read
 the log, save the resulting lineage table, and use `taxonomy = "table"`
 for every later run. Later runs are then offline and fast, and they use
-one fixed taxonomic snapshot. Different versions of an authority can
-return different lineages, so an archived lineage table plays the same
-role for the taxonomy as a lockfile does for package versions.
+one fixed taxonomic snapshot. `ices_lineage` is such a snapshot: 461
+AphiaIDs with their lineage, joined on `prey_aphia_id`. Different
+versions of an authority can return different lineages, so an archived
+lineage table plays the same role for the taxonomy as a lockfile does
+for package versions.
 
 *`fuzzy = TRUE` has a cost.* It can match a misspelled name, and it can
 also match a different taxon whose name is close. Every such match is
@@ -243,8 +293,8 @@ logged with `match_type = "fuzzy"`, and you need to read the log to
 catch the wrong ones.
 
 *The number of lookups depends on the number of distinct prey, not on
-the number of records.* Two million records with three thousand distinct
-prey need three thousand lookups.
+the number of records.* The 8,530 records here hold 252 distinct
+AphiaIDs, so a WoRMS run needs that many lookups.
 
 ## `dv_taxonomy_report()`: read the log before you plot
 
@@ -265,10 +315,10 @@ dv_taxonomy_report(prep_online, which = "all",      # the whole log, to archive
 
 The log exists only on the WoRMS path. A `prep` built with
 `taxonomy = "table"`, as everywhere else in this article, has no
-matching history, because you did the matching when you built the table,
-and this function stops with a message saying so. The review therefore
-belongs to the one online run in the resolve-once-then-freeze workflow,
-not to every rerun.
+matching history, because the matching was done when the table was
+built, and this function stops with a message saying so. The review
+therefore belongs to the one online run in the resolve-once-then-freeze
+workflow, not to every rerun.
 
 `which = "review"` (the default) returns fuzzy and unresolved matches,
 unaccepted IDs that were replaced by their accepted ID, IDs that could
@@ -277,12 +327,12 @@ ID, and prey whose classification could not be retrieved. `"fuzzy"` and
 `"unresolved"` return one of those groups; `"all"` returns the whole
 log. Pass `file` to write it out.
 
-An unresolved prey is not always an error. In this table “unidentified
-material” has no AphiaID and no taxonomic name, so it should not match
-anything; its records are unidentified at every rank. The unresolved
-prey you did not expect are the ones to chase.
+An unresolved prey is not always an error. In the ICES data
+“Unidentified material” has no AphiaID and no taxonomic name, so it
+should not match anything; its records are unidentified at every rank.
+The unresolved prey you did not expect are the ones to chase.
 
-## `dv_build_tree()`: count the diet at every rank
+## `dv_build_tree()` and `dv_tree()`: count the diet at every rank
 
 **Why.** This is where the shares at every rank are computed.
 
@@ -290,7 +340,8 @@ prey you did not expect are the ones to chase.
 kingdom. Each node carries three values: `value_item` (the number of
 distinct prey items below it), `value_occ` (the number of prey records)
 and `value_w` (the summed weight). Dividing by the total gives `pct_occ`
-and `pct_w`.
+and `pct_w`. `dv_tree(prep)` is the short form that reads the columns
+from the specification.
 
 ``` r
 
@@ -300,21 +351,24 @@ tree <- dv_build_tree(
   weight_col = spec$weight
 )
 
+nrow(tree)
+#> [1] 702
 head(tree, 4)
-#>                    id      label   parent    rank value_item value_occ value_w
-#> 1            Animalia   Animalia          Kingdom         14        22 75.5968
-#> 2                  NA         NA          Kingdom          1         2  1.6000
-#> 3   Animalia|Annelida   Annelida Animalia  Phylum          1         2  0.7030
-#> 4 Animalia|Arthropoda Arthropoda Animalia  Phylum          9        15 39.7648
-#>     pct_occ      pct_w
-#> 1 91.666667 97.9273752
-#> 2  8.333333  2.0726248
-#> 3  8.333333  0.9106595
-#> 4 62.500000 51.5109435
+#>          id     label parent    rank value_item value_occ   value_w     pct_occ
+#> 1  Animalia  Animalia        Kingdom        237      6975 20782.912 81.77022274
+#> 2 Chromista Chromista        Kingdom          1         1     0.000  0.01172333
+#> 3   Plantae   Plantae        Kingdom          1         1     0.148  0.01172333
+#> 4        NA        NA        Kingdom          1      1553  1115.212 18.20633060
+#>          pct_w
+#> 1 9.490663e+01
+#> 2 0.000000e+00
+#> 3 6.758524e-04
+#> 4 5.092694e+00
 ```
 
 **What you get back.** A `dietview_tree` data frame with `id`, `label`,
-`parent`, `rank`, the three values and the two shares.
+`parent`, `rank`, the three values and the two shares; here 702 nodes
+over seven rings.
 
 Every record has one place in every ring: under the taxon it was
 identified to at that rank or, if identification stopped earlier, in an
@@ -337,20 +391,32 @@ max(abs(tree$value_occ[match(parents, tree$id)] - kid_sums[parents]))
 
 The first lets you read any ring on its own. The second is what lets the
 rings nest in a sunburst. Because every ring holds the same records, the
-denominator is the same at every rank: here all 24 records.
+denominator is the same at every rank: here all 8,530 records.
 
 **Arguments that matter.**
 
 *`weight_col = NULL` is allowed* and leaves the weight view empty. The
 share of prey records still works. Use it when weights are too sparse to
-trust.
+trust; here 531 records (6.2%) have no weight.
 
 *`count_col` changes what one record counts for.* Left `NULL`, each
 record counts once and `pct_occ` is the share of prey records. Given a
 column of counts, each record counts its number of individuals and
 `pct_occ` becomes the numerical share (%N). `dv_tree(prep, "numbers")`
-does this from the specification. Say in your methods which one you
-used.
+does this from the specification, and it warns about the records without
+a count:
+
+``` r
+
+tree_n <- dv_tree(prep, "numbers")
+#> Warning: 3468 record(s) have no count and contribute 0 to the numbers currency;
+#> unidentified material usually has no count, so it will not appear in this view.
+```
+
+In the ICES data 3,468 records (41%) have no count, among them 1,516 of
+the 1,553 records of unidentified material, so %N describes a smaller
+and better-identified part of the diet than the share of records does.
+Say in your methods which one you used.
 
 *`value_occ` counts prey records, not stomachs.* This is the quantity
 most likely to be misread. Its share is not the frequency of occurrence
@@ -371,20 +437,49 @@ prey records, with the unidentified rows included.
 
 ``` r
 
-dv_rank_table(tree, "Class")
-#>           label value_item value_occ   pct_occ value_w        pct_w
-#> 10 Malacostraca          7        11 45.833333 39.7600 51.504725584
-#> 9      Copepoda          2         4 16.666667  0.0048  0.006217874
-#> 11    Teleostei          3         3 12.500000 35.1000 45.468205936
-#> 8    Polychaeta          1         2  8.333333  0.7030  0.910659509
-#> 12     Bivalvia          1         2  8.333333  0.0290  0.037566324
-#> 13           NA          1         2  8.333333  1.6000  2.072624772
+cls <- dv_rank_table(tree, "Class")
+head(cls, 10)
+#>           label value_item value_occ    pct_occ    value_w      pct_w
+#> 23 Malacostraca         92      2085 24.4431419  2948.8905 13.4663157
+#> 29    Teleostei         64      1614 18.9214537 14366.4605 65.6054516
+#> 47           NA          1      1553 18.2063306  1115.2120  5.0926940
+#> 20   Polychaeta         30       758  8.8862837   584.2752  2.6681338
+#> 30           NA          1       713  8.3587339  1328.6695  6.0674627
+#> 25           NA          1       662  7.7608441   501.2407  2.2889509
+#> 36  Ophiuroidea          4       493  5.7796014   526.9670  2.4064318
+#> 38     Bivalvia         12       317  3.7162954   231.8770  1.0588826
+#> 40   Gastropoda          3        72  0.8440797    26.4690  0.1208725
+#> 37           NA          1        67  0.7854631    26.1870  0.1195848
 ```
 
 Rank labels are title case (`"Class"`, `"Family"`, `"Genus"`), built
 from the specification’s `ranks`. The rows labeled `NA` are the records
-unidentified at this rank, one row per parent. Keep them: dropping them
-would rescale the remaining shares to the identified records only.
+unidentified at this rank, one row per parent. The tree says which
+parent each one hangs from:
+
+``` r
+
+tree[tree$rank == "Class" & tree$label == "NA", c("parent", "value_occ", "pct_occ")]
+#>                      parent value_occ     pct_occ
+#> 21        Animalia|Annelida        23  0.26963658
+#> 25      Animalia|Arthropoda       662  7.76084408
+#> 26    Animalia|Chaetognatha         2  0.02344666
+#> 30        Animalia|Chordata       713  8.35873388
+#> 33        Animalia|Cnidaria         1  0.01172333
+#> 37   Animalia|Echinodermata        67  0.78546307
+#> 41        Animalia|Mollusca        10  0.11723329
+#> 44 Animalia|Platyhelminthes         4  0.04689332
+#> 45      Animalia|Priapulida         7  0.08206331
+#> 47                    NA|NA      1553 18.20633060
+#> 48      Plantae|Chlorophyta         1  0.01172333
+```
+
+The parent `NA|NA` is the material placed nowhere; `Animalia|Chordata`
+holds the fish not identified to class, such as “Pisces”;
+`Animalia|Arthropoda` holds mostly “Crustacea” and “Arthropoda”. Keep
+these rows: dropping them would rescale the remaining shares to the
+identified records only. At class, 35.7% of all records sit in such
+rows.
 
 ## `dv_sunburst()`: the whole diet in one figure
 
@@ -396,27 +491,42 @@ in white wedges with gray edges.
 
 ``` r
 
-dv_sunburst(tree, mode = "occurrence", title = "All predators",
+dv_sunburst(tree, mode = "occurrence", title = "22 predators pooled",
             subtitle = "share of prey records")
+```
+
+Pooling 22 predators is useful for seeing the whole dataset, not for
+describing a diet. The rest of the article mostly uses one predator,
+Atlantic cod:
+
+``` r
+
+cod      <- dat[dat$predator_common == "Atlantic cod", ]
+prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                       verbose = FALSE)
+tree_cod <- dv_tree(prep_cod)
+
+dv_sunburst(tree_cod, mode = "weight", title = "Atlantic cod",
+            subtitle = "share of prey weight")
 ```
 
 **Arguments that matter.**
 
-*`mode` chooses what sizes the wedges:* `"occurrence"` (prey records),
-`"weight"` or `"count"` (distinct prey items). Records and weight often
-rank prey differently (see Application 1), so look at both.
+*`mode` chooses what sizes the wedges:* `"count"` (the default: distinct
+prey items), `"occurrence"` (prey records) or `"weight"`. Records and
+weight rank prey very differently in cod (see Application 1), so look at
+both.
 
 *`colors` matters as soon as you compare panels.* Left `NULL`, each call
-builds its own palette from its own labels, so a panel with 12 taxa and
-one with 9 can give the same taxon different colors. Build one palette
-from the pooled tree and pass it to every panel:
+builds its own palette from its own labels, so two panels can give the
+same taxon different colors. Build one palette from the pooled tree and
+pass it to every panel:
 
 ``` r
 
 colors <- dv_palette(tree$label)   # from the pooled tree: covers every taxon
-head(colors, 4)
-#>   Animalia   Annelida Arthropoda   Chordata 
-#>  "#1f77b4"  "#aec7e8"  "#ff7f0e"  "#ffbb78"
+length(colors)
+#> [1] 403
 colors["NA"]                       # unidentified is always white
 #>        NA 
 #> "#FFFFFF"
@@ -437,51 +547,81 @@ That does not keep a taxon at the same angle in every panel. If a taxon
 is absent from one stratum, the wedges after it move round to close the
 gap. Use color, not position, to find a taxon across panels.
 
-## `dv_palette()`: colors, and white for unidentified records
+## `dv_palette()` and `dv_palette_tree()`: colors, and white for unidentified records
 
 **Why.** Across panels, a taxon is recognized by its color, and
 unidentified records need to look different from everything else.
 
-**What it does.** It gives each label a color from a 20-color palette
-and makes `"NA"` white. With more than 20 taxa, colors are reused, so
-check the hover labels before you read a color as a taxon.
+**What it does.**
+[`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md)
+gives each label a color from a 20-color palette and makes `"NA"` white.
+The pooled ICES tree has 402 distinct taxon names, so each color is
+shared by about 20 taxa: check the hover labels before you read a color
+as a taxon.
 
-Build it from the pooled tree, not from one stratum: only the pooled
-tree is sure to contain every taxon.
+[`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)
+is the alternative for a survey of this size. It gives one hue to each
+phylum and lighter tints of that hue to its descendants, so a color at
+least tells you the phylum:
+
+``` r
+
+pal_tree <- dv_palette_tree(tree)
+dv_sunburst(tree_cod, mode = "occurrence", colors = pal_tree,
+            title = "Atlantic cod", subtitle = "share of prey records, colors by phylum")
+```
+
+Both palettes should be built from the pooled tree, not from one
+stratum: only the pooled tree is sure to contain every taxon.
+[`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)
+is keyed by node id, so it works for any tree built with the same ranks.
 
 ## `dv_add_period()` and `dv_size_bins()`: covariates in one line
 
 **Why.** Predator size is one of the strongest structuring variables in
 fish diets, partly through gape limitation (Scharf et al. 2000). A diet
 averaged over a predator’s whole size range mixes what small and large
-individuals eat, so it is worth splitting by size.
+individuals eat, so it is worth splitting by size. Years are grouped
+into periods for the same reason: a single year rarely holds enough
+stomachs.
 
 ``` r
 
-dat$period2   <- dv_add_period(dat$year, breaks = c(1990, 2000, 2010, 2025))
-dat$size_bin2 <- dv_size_bins(dat$somatic_length_cm, breaks = c(0, 30, 50, 200))
+table(cod$year)
+#> 
+#> 2021 2022 2023 2024 
+#>   13  586 1161  544
+cod$period   <- dv_add_period(cod$year, breaks = c(2021.5, 2022, 2024),
+                              labels = c("2022", "2023-2024"))
+cod$size_bin <- dv_size_bins(cod$length_cm, breaks = c(0, 20, 35, 50, 110))
 
-table(dat$period2, useNA = "ifany")
+table(cod$period, useNA = "ifany")
 #> 
-#> 1990-2000 2001-2010 2011-2025 
-#>         0        12        12
-table(dat$size_bin2, useNA = "ifany")
+#>      2022 2023-2024      <NA> 
+#>       586      1705        13
+table(cod$size_bin, useNA = "ifany")
 #> 
-#>   [0, 30)  [30, 50) [50, 200) 
-#>        12         8         4
+#>   [0, 20)  [20, 35)  [35, 50) [50, 110) 
+#>       364       964       544       432
 ```
+
+Cod were sampled from 2021 to 2024, but 2021 holds only 13 records. The
+lower break 2021.5 leaves those records without a period (`NA`) rather
+than letting them fall silently into the first level, which the default
+breaks `c(2021, 2022, 2024)` would do.
 
 **Arguments that matter.**
 [`dv_add_period()`](https://sosthenea.github.io/DietView/reference/dv_add_period.md)
-labels each period with the years it contains, such as `"2001-2010"`,
+labels each period with the years it contains, such as `"2023-2024"`,
 unless you pass `labels`; a year equal to an inner break belongs to the
 earlier period.
 [`dv_size_bins()`](https://sosthenea.github.io/DietView/reference/dv_size_bins.md)
 uses `right = FALSE` by default, so bins include their lower edge
-(`"[0, 30)"`) and a fish of exactly 30 cm falls in the second bin. A
+(`"[0, 20)"`) and a fish of exactly 20 cm falls in the second bin. A
 value outside the breaks gets no level. Choose breaks on biology
-(maturity, gape) rather than on quantiles, and state them in your
-methods.
+(maturity, gape, the size at which a predator turns to fish) rather than
+on quantiles, and state them in your methods. The article on covariates
+uses these columns.
 
 ## `dv_digestion_diagnostic()`: identification depth and digestion
 
@@ -495,17 +635,35 @@ deepest rank each record was identified to, in records and in weight.
 ``` r
 
 dg <- dv_digestion_diagnostic(prep)
-head(dg, 8)
-#>   digestion finest_rank n_records  weight p_records    p_weight
-#> 1         1     Species         2  9.0020 100.00000 100.0000000
-#> 2         2       Class         3  0.5128  33.33333   1.4334914
-#> 3         2       Order         2  0.1100  22.22222   0.3074962
-#> 4         2     Species         4 35.1500  44.44444  98.2590124
-#> 5         3       Class         2  0.2010  28.57143   0.9662997
-#> 6         3       Order         2  0.4500  28.57143   2.1633575
-#> 7         3      Family         1  0.0500  14.28571   0.2403731
-#> 8         3     Species         2 20.1000  28.57143  96.6299697
+dg$p_records <- round(dg$p_records, 1)
+dg$p_weight  <- round(dg$p_weight, 1)
+dg[dg$finest_rank %in% c("Species", "Class", "Phylum", "Unresolved"),
+   c("digestion", "finest_rank", "n_records", "p_records", "p_weight")]
+#>             digestion finest_rank n_records p_records p_weight
+#> 1          0 pristine      Phylum        42       7.5      3.2
+#> 2          0 pristine       Class        26       4.6      0.2
+#> 6          0 pristine     Species       219      39.0     82.6
+#> 7          0 pristine  Unresolved        66      11.8      1.6
+#> 8          1 affected      Phylum       313       9.0      4.0
+#> 9          1 affected       Class       525      15.0      3.4
+#> 13         1 affected     Species      1093      31.3     72.3
+#> 14         1 affected  Unresolved        23       0.7      0.1
+#> 15 2 skeletal remains      Phylum       550      24.9     28.5
+#> 16 2 skeletal remains       Class       720      32.6     42.6
+#> 20 2 skeletal remains     Species       126       5.7     12.5
+#> 21 2 skeletal remains  Unresolved       280      12.7      0.4
+#> 22       not recorded      Phylum       584      25.7     27.4
+#> 23       not recorded       Class        92       4.1      1.8
+#> 27       not recorded     Species       128       5.6     17.9
+#> 28       not recorded  Unresolved      1184      52.2     35.0
 ```
+
+The labels of the ICES digestion codes (“0 pristine”, “1 affected”, “2
+skeletal remains”) are inferred from the older ICES format, and 27% of
+the records have no stage at all (“not recorded”). Read with that in
+mind, the profile is steep: 39% of the pristine records reach species,
+against 5.7% of the skeletal remains, most of which stop at class or
+phylum.
 
 **What you get back.** A data frame with `digestion`, `finest_rank`,
 `n_records`, `weight`, and the percentages within each digestion score,
@@ -513,11 +671,11 @@ head(dg, 8)
 
 **Arguments that matter.** Percentages are computed within each
 digestion score, so each score adds up to 100 whatever its sample size;
-always read them next to `n_records`. Pass `by` to split the table by a
-covariate when you suspect the profile differs between strata. A steep
-profile is a reason to be cautious with the weight currency in
-particular. The vignette “Identification depth and digestion” explains
-how to read the table.
+always read them next to `n_records` (here only 561 records are
+pristine). Pass `by` to split the table by a covariate when you suspect
+the profile differs between strata. A steep profile is a reason to be
+cautious with the weight currency in particular. The vignette
+“Identification depth and digestion” explains how to read the table.
 
 ## `dv_taxonomy_worms()`: the WoRMS lookup on its own
 
@@ -531,7 +689,7 @@ name match, then fuzzy match.
 
 ``` r
 
-keys <- unique(dat[, c("aphia_id", "verified_name")])
+keys <- unique(dat[, c("prey_aphia_id", "prey_name")])
 names(keys) <- c("prey_id", "prey_name")
 
 tax <- dv_taxonomy_worms(keys, fuzzy = TRUE)
@@ -556,10 +714,10 @@ fauna, managers.
 ``` r
 
 dv_species_card_assets(
-  predator  = "Atlantic cod",
-  latin     = "Gadus morhua",
+  predator     = "Atlantic cod",
+  latin        = "Gadus morhua",
   photo_source = "inaturalist",
-  image_dir = tempdir()
+  image_dir    = tempdir()
 )
 ```
 
@@ -583,9 +741,10 @@ single HTML file reaches them without a running R session.
 # one HTML file that opens in any browser, without R
 dv_build_html(
   prep,
-  output = file.path(tempdir(), "dietview.html"),
-  strata = c("period", "size_class"),
-  cross  = list(c("size_class", "period"))   # inner, outer
+  output     = file.path(tempdir(), "ices_diet.html"),
+  strata     = c("region", "quarter"),
+  cross      = list(c("quarter", "region")),   # inner, outer
+  length_col = "length_cm"
 )
 
 # interactive exploration
@@ -594,37 +753,40 @@ run_dietview(prep)
 
 **Arguments that matter.** `cross = list(c(inner, outer))` reads “inner
 within outer”: one row per level of `outer`, one sunburst per level of
-`inner`. Crossing multiplies panels: two covariates with four levels
-each give sixteen sunbursts.
+`inner`. Crossing multiplies panels: three regions and four quarters
+give up to twelve sunbursts per predator, several of them empty or
+nearly so.
 
 A dashboard is a snapshot: it holds the data as they were when you built
 it. That is a limit for monitoring and an advantage for archiving.
 
 ## Application 1: records and weight disagree
 
-Same tree, same records, two currencies.
+Same cod tree, same records, two currencies.
 
 ``` r
 
-cls <- dv_rank_table(tree, "Class")
+cc <- dv_rank_table(tree_cod, "Class")
+cc <- cc[cc$pct_occ >= 1 & cc$label != "NA", ]
 
 data.frame(
-  taxon       = cls$label,
-  records_pct = round(cls$pct_occ, 1),
-  weight_pct  = round(cls$pct_w, 1),
-  difference  = round(cls$pct_w - cls$pct_occ, 1)
+  taxon       = cc$label,
+  records_pct = round(cc$pct_occ, 1),
+  weight_pct  = round(cc$pct_w, 1),
+  difference  = round(cc$pct_w - cc$pct_occ, 1)
 )
 #>          taxon records_pct weight_pct difference
-#> 1 Malacostraca        45.8       51.5        5.7
-#> 2     Copepoda        16.7        0.0      -16.7
-#> 3    Teleostei        12.5       45.5       33.0
-#> 4   Polychaeta         8.3        0.9       -7.4
-#> 5     Bivalvia         8.3        0.0       -8.3
-#> 6           NA         8.3        2.1       -6.3
+#> 1 Malacostraca        43.4       22.4      -21.0
+#> 2    Teleostei        27.1       68.9       41.8
+#> 3   Polychaeta         6.2        3.7       -2.5
+#> 4  Ophiuroidea         2.2        0.3       -1.9
+#> 5     Bivalvia         1.3        0.1       -1.2
 ```
 
-Large prey that are eaten rarely rank high by weight and low by records;
-small prey that are eaten often do the reverse. Neither column is the
+Crustaceans (Malacostraca) are 43.4% of the cod’s prey records but 22.4%
+of the prey weight; bony fish (Teleostei) are 27.1% of the records and
+68.9% of the weight. Large prey that are eaten less often rank high by
+weight; small prey eaten often do the reverse. Neither column is the
 right one on its own. If you report only one, say which and why.
 
 ## Application 2: how much does the reporting rank change the picture?
@@ -634,32 +796,53 @@ several ranks in a few lines:
 
 ``` r
 
-for (r in c("Class", "Order", "Family")) {
-  tb <- dv_rank_table(tree, r)
-  cat("\n", r, ": top 3 by share of prey records\n")
-  print(head(tb[, c("label", "pct_occ")], 3), row.names = FALSE)
+for (r in c("Class", "Order", "Family", "Species")) {
+  tb <- tree_cod[tree_cod$rank == r, ]
+  tb <- tb[order(-tb$pct_occ), ]
+  # the deepest named taxon above each node
+  tb$below <- vapply(strsplit(tb$parent, "|", fixed = TRUE), function(p) {
+    p <- p[p != "NA"]; if (length(p)) p[length(p)] else "(nothing)"
+  }, character(1))
+  tb$pct_occ <- round(tb$pct_occ, 1)
+  cat("\n", r, ": top 4 by share of prey records\n")
+  print(head(tb[, c("label", "below", "pct_occ")], 4), row.names = FALSE)
 }
 #> 
-#>  Class : top 3 by share of prey records
-#>         label  pct_occ
-#>  Malacostraca 45.83333
-#>      Copepoda 16.66667
-#>     Teleostei 12.50000
+#>  Class : top 4 by share of prey records
+#>         label      below pct_occ
+#>  Malacostraca Arthropoda    43.4
+#>     Teleostei   Chordata    27.1
+#>            NA  (nothing)     8.3
+#>            NA   Chordata     6.6
 #> 
-#>  Order : top 3 by share of prey records
-#>      label   pct_occ
-#>  Amphipoda 20.833333
-#>   Decapoda 16.666667
-#>         NA  8.333333
+#>  Order : top 4 by share of prey records
+#>        label        below pct_occ
+#>     Decapoda Malacostraca    37.4
+#>  Gobiiformes    Teleostei    10.5
+#>           NA    (nothing)     8.3
+#>   Gadiformes    Teleostei     7.7
 #> 
-#>  Family : top 3 by share of prey records
-#>      label  pct_occ
-#>         NA 8.333333
-#>  Calanidae 8.333333
-#>         NA 8.333333
+#>  Family : top 4 by share of prey records
+#>        label       below pct_occ
+#>           NA    Decapoda    12.4
+#>     Gobiidae Gobiiformes    10.5
+#>  Crangonidae    Decapoda    10.4
+#>           NA   (nothing)     8.3
+#> 
+#>  Species : top 4 by share of prey records
+#>            label     below pct_occ
+#>               NA  Decapoda    12.4
+#>  Crangon crangon   Crangon     9.9
+#>               NA (nothing)     8.3
+#>               NA  Chordata     6.6
 ```
 
-Watch for one pattern on real data: two strata that look alike at class
+At class and order, the cod diet is crustaceans first, decapods above
+all, and fish second. At family and species the largest single node is
+an unidentified one: decapods not identified to family (`NA` below
+Decapoda), because much of the material was named only “Brachyura”,
+“Caridea” or “Decapoda”. The brown shrimp *Crangon crangon* is the only
+named species among the top four. Two strata that look alike at class
 can differ at genus. The change is then happening inside the coarse
 categories, and an analysis made only at class would not see it.
 
@@ -670,26 +853,20 @@ statement at that rank rests on.
 
 ``` r
 
-na_share <- do.call(rbind, lapply(prep$ranks, function(r) {
-  lab <- paste0(toupper(substring(r, 1, 1)), substring(r, 2))
-  tb  <- dv_rank_table(tree, lab)
-  data.frame(rank = lab,
-             unidentified_pct = round(sum(tb$pct_occ[tb$label == "NA"]), 1))
-}))
-na_share
-#>      rank unidentified_pct
-#> 1 Kingdom              8.3
-#> 2  Phylum              8.3
-#> 3   Class              8.3
-#> 4   Order             37.5
-#> 5  Family             58.3
-#> 6   Genus             62.5
-#> 7 Species             62.5
+na_share <- function(tr) {
+  sapply(unique(tr$rank), function(r)
+    round(sum(tr$pct_occ[tr$rank == r & tr$label == "NA"]), 1))
+}
+rbind(pooled = na_share(tree), cod = na_share(tree_cod))
+#>        Kingdom Phylum Class Order Family Genus Species
+#> pooled    18.2   18.2  35.7  52.0   64.2  76.3    81.6
+#> cod        8.3    8.3  18.4  23.3   39.4  52.5    60.9
 ```
 
-If half the records are unidentified at genus, a genus-level statement
-rests on the other half. Digestion does not remove prey at random with
-respect to taxon, so that half is not a random sample. The vignette “A
+In cod, 52.5% of the records are unidentified at genus, so a genus-level
+statement rests on the other 47.5%. Digestion does not remove prey at
+random with respect to taxon (soft-bodied prey lose their identifying
+features first), so that part is not a random sample. The vignette “A
 known diet” shows what this does on a simulated survey.
 
 ## What changes what
@@ -702,7 +879,7 @@ known diet” shows what this does on a simulated survey.
 | `taxonomy` | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md) | where the hierarchy comes from |
 | `fuzzy` | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md) | whether misspelled names can match; the log must then be read |
 | `weight_col` | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md) | whether the weight share exists |
-| `count_col` | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md) | share of prey records becomes the numerical share (%N) |
+| `count_col`, `currency` | [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md), [`dv_tree()`](https://sosthenea.github.io/DietView/reference/dv_tree.md) | share of prey records becomes the numerical share (%N) |
 | `mode` | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md) | what sizes the wedges |
 | `colors` | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md) | whether colors match across panels; pass one palette |
 | `rotation` | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md) | start angle; keep it the same across panels |
@@ -732,6 +909,10 @@ snapshot.
 Buckland, A., Baker, R., Loneragan, N., & Sheaves, M. (2017).
 Standardising fish stomach content analysis: the importance of prey
 condition. *Fisheries Research*, 196, 126–140.
+
+ICES Stomach Content Database. ICES, Copenhagen.
+<https://stomachdata.ices.dk>. Extract distributed with the R package
+stomachr (Lindmark 2026, <https://github.com/maxlindmark/stomachr>).
 
 Scharf, F. S., Juanes, F., & Rountree, R. A. (2000). Predator size–prey
 size relationships of marine fish predators: interspecific variation and

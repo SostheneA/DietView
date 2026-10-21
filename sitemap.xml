@@ -2,6 +2,7 @@
 <url><loc>https://sosthenea.github.io/DietView/404.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/LICENSE-text.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/LICENSE.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/articles/case-study-ices.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/articles/covariates.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/articles/dashboard.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/articles/data-model.html</loc></url>
@@ -44,6 +45,9 @@
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_threshold_sweep.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_tree.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_validate.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/reference/ices_diet.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/reference/ices_lineage.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/reference/ices_stomachs.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/index.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/run_dietview.html</loc></url>
 </urlset>

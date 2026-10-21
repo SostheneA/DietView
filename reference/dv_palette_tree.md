@@ -42,21 +42,28 @@ A named character vector mapping node id -\> hex color.
 ## Examples
 
 ``` r
-csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-dat <- read.csv(csv, na.strings = c("NA", ""))
-lineage <- read.csv(lin, na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name",
-                stomach = "stomach_id", prey_id = "aphia_id",
-                prey_name = "verified_name", weight = "prey_weight")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
+# the standard set-up: public ICES data, non-food items and nematodes dropped
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
                    verbose = FALSE)
 tree <- dv_tree(prep)
 cols <- dv_palette_tree(tree)
 head(cols)
-#>            Animalia                  NA   Animalia|Annelida Animalia|Arthropoda 
-#>           "#BDBDBD"           "#FFFFFF"           "#1F77B4"           "#FF7F0E" 
-#>   Animalia|Chordata   Animalia|Mollusca 
-#>           "#2CA02C"           "#D62728" 
+#>            Animalia           Chromista             Plantae                  NA 
+#>           "#BDBDBD"           "#BDBDBD"           "#BDBDBD"           "#FFFFFF" 
+#>   Animalia|Annelida Animalia|Arthropoda 
+#>           "#1F77B4"           "#FF7F0E" 
 p <- dv_sunburst(tree, mode = "occurrence", colors = cols)
 ```

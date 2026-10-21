@@ -5,8 +5,47 @@ description.
 [`dv_species_card_assets()`](https://sosthenea.github.io/DietView/reference/dv_species_card_assets.md)
 finds those for one predator and returns the photo as a data URI, so the
 dashboard stays a single file. Cards exist for predators only; prey have
-no cards. The chunks here are shown but not run, because they read or
-download image files.
+no cards.
+
+The examples use the predators of the public ICES stomach data that ship
+with the package (ICES Stomach Content Database, ICES, Copenhagen;
+extract distributed with the R package stomachr, Lindmark 2026; see
+[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)).
+The offline chunks run, with stand-in images drawn in a temporary
+folder; the chunks that go online are shown but not run.
+
+``` r
+
+library(DietView)
+
+# drop non-food items and nematodes (mostly parasites, not prey)
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+                   verbose = FALSE)
+
+# the predators that will get a card, with the Latin names used online
+unique(dat[dat$predator_common %in% c("Atlantic cod", "Whiting",
+                                      "European plaice", "Atlantic mackerel"),
+           c("predator_common", "predator_latin")])
+#>        predator_common        predator_latin
+#> 1              Whiting  Merlangius merlangus
+#> 18        Atlantic cod          Gadus morhua
+#> 162  Atlantic mackerel      Scomber scombrus
+#> 6491   European plaice Pleuronectes platessa
+```
 
 ## Where the photo comes from
 
@@ -24,8 +63,10 @@ DietView takes the first photo it finds, in this order:
     name, or the image of the Wikipedia article, if it is hosted on
     Commons.
 
-The default, `photo_source = "none"`, never goes online. You can name
-both online sources, tried in the order given:
+File names are the name in lower case with every run of other characters
+replaced by `_`, and the extension is `.jpg`, `.jpeg`, `.png` or
+`.webp`. The default, `photo_source = "none"`, never goes online. You
+can name both online sources, tried in the order given:
 `photo_source = c("inaturalist", "wikipedia")` uses Wikimedia Commons
 only for predators with no acceptable photo on iNaturalist.
 
@@ -34,6 +75,126 @@ either online source, it is the summary of the taxon’s Wikipedia article
 (iNaturalist returns the same summary). Wikipedia text is under CC
 BY-SA, so the card credits it under the description. If a network lookup
 fails, the card is built without that element.
+
+## Your own photos, offline
+
+With your own photos nothing is fetched. Here four stand-in images play
+the part of your photographs; in a real project they are files you took
+or licensed:
+
+``` r
+
+img_dir <- file.path(tempdir(), "ices-cards")
+dir.create(img_dir, showWarnings = FALSE)
+
+stand_in <- function(file, label) {
+  grDevices::png(file, width = 400, height = 250)
+  op <- graphics::par(mar = c(0, 0, 0, 0))
+  graphics::plot.new()
+  graphics::rect(0, 0, 1, 1, col = "#dfe9f3", border = NA)
+  graphics::text(0.5, 0.5, label, cex = 2)
+  graphics::par(op)
+  grDevices::dev.off()
+}
+stand_in(file.path(img_dir, "atlantic_cod.png"), "Atlantic cod")     # common name
+#> agg_png 
+#>       2
+stand_in(file.path(img_dir, "merlangius_merlangus.png"), "Whiting")  # Latin name
+#> agg_png 
+#>       2
+stand_in(file.path(img_dir, "plaice_photo.png"), "European plaice")  # any name
+#> agg_png 
+#>       2
+list.files(img_dir)
+#> [1] "atlantic_cod.png"         "merlangius_merlangus.png"
+#> [3] "plaice_photo.png"
+```
+
+A photo carries its credit in one of two places. In `species_info`, next
+to the description:
+
+``` r
+
+info <- list(
+  "Atlantic cod" = list(
+    desc    = "Demersal gadid; small cod eat mostly crustaceans, large cod mostly fish.",
+    author  = "Survey photographer",
+    license = "CC BY"
+  ),
+  "European plaice" = list(
+    desc    = "Right-eyed flatfish of sandy bottoms; feeds on polychaetes, bivalves and brittle stars.",
+    photo   = file.path(img_dir, "plaice_photo.png"),
+    credit  = "Photo: survey archive, used with permission"
+  )
+)
+```
+
+Or in a `.json` file with the same name as the image, which travels with
+it:
+
+``` r
+
+writeLines('{"author": "Jane Doe", "license": "CC BY-SA",
+  "url": "https://www.example.org/photos/whiting"}',
+  file.path(img_dir, "merlangius_merlangus.json"))
+```
+
+Now resolve each card, offline:
+
+``` r
+
+cards <- lapply(c("Atlantic cod", "Whiting", "European plaice", "Atlantic mackerel"),
+  function(p) {
+    latin <- dat$predator_latin[match(p, dat$predator_common)]
+    a <- dv_species_card_assets(p, latin, info = info[[p]], image_dir = img_dir)
+    data.frame(predator = p,
+               photo    = if (is.null(a$path)) NA else basename(a$path),
+               source   = if (is.null(a$source)) NA else a$source,
+               credit   = if (is.null(a$credit)) NA else a$credit)
+  })
+do.call(rbind, cards)
+#>            predator                    photo source
+#> 1      Atlantic cod         atlantic_cod.png  local
+#> 2           Whiting merlangius_merlangus.png  local
+#> 3   European plaice         plaice_photo.png  local
+#> 4 Atlantic mackerel                     <NA>   <NA>
+#>                                        credit
+#> 1           Photo: Survey photographer, CC BY
+#> 2                   Photo: Jane Doe, CC BY-SA
+#> 3 Photo: survey archive, used with permission
+#> 4                                        <NA>
+```
+
+Cod is found by its common name and whiting by its Latin name; the
+plaice photo is the file named in `species_info`. The credit line is
+built from `author` and `license` when you do not write it yourself, and
+taken from the `.json` file for whiting. Mackerel has no file and no
+online source, so its card has no photo: the card is still built, with
+the stomach count and the length range.
+
+The same `species_info` and `image_dir` go to the dashboard, which calls
+[`dv_species_card_assets()`](https://sosthenea.github.io/DietView/reference/dv_species_card_assets.md)
+for every predator. Here for the four predators, one band and no strata,
+to keep the file small:
+
+``` r
+
+four <- c("Atlantic cod", "Whiting", "European plaice", "Atlantic mackerel")
+prep4 <- dv_prepare(dat[dat$predator_common %in% four, ], spec,
+                    taxonomy = "table", lineage = ices_lineage, verbose = FALSE)
+out <- dv_build_html(prep4, output = file.path(tempdir(), "ices_cards.html"),
+                     strata = character(0), bands = "occurrence",
+                     species_info = info, image_dir = img_dir,
+                     length_col = "length_cm", self_contained = FALSE)
+html <- paste(readLines(out, warn = FALSE), collapse = "\n")
+c(photos_embedded = lengths(regmatches(html, gregexpr("data:image/png;base64", html))),
+  whiting_credit  = grepl("Photo: Jane Doe, CC BY-SA", html, fixed = TRUE))
+#> photos_embedded  whiting_credit 
+#>               3               1
+```
+
+Three photos are embedded in the file and each card shows its credit
+line, linked to the photo’s page when a `url` is given.
 
 ## Photos from iNaturalist
 
@@ -44,8 +205,6 @@ default photo first, then its other photos, until one has a license you
 accept.
 
 ``` r
-
-library(DietView)
 
 asset <- dv_species_card_assets(
   predator = "Atlantic cod", latin = "Gadus morhua",
@@ -67,7 +226,7 @@ dashboard will be non-commercial:
 
 ``` r
 
-dv_build_html(prep, output = "diet_dashboard.html",
+dv_build_html(prep, output = "ices_dashboard.html",
               photo_source = "inaturalist",
               licenses = c("cc0", "cc-by", "cc-by-sa", "cc-by-nc"),
               image_dir = "images")
@@ -82,46 +241,28 @@ photo’s page on iNaturalist. Each downloaded photo is saved in
 license and page, so a photo reused in a later session keeps its credit.
 To fetch a photo again, delete the image and its `.json` file.
 
-## Your own photos
+## Photos from Wikimedia Commons
 
-With your own photos nothing is fetched. Give the credit fields in
-`species_info`, so the card shows them the same way:
+With `photo_source = "wikipedia"`, DietView takes the image of the
+Wikipedia article for the Latin name, and uses it only if it is a
+Wikimedia Commons file whose license Commons reports; images hosted
+outside Commons, which may be non-free, are never used. To choose the
+file yourself, name it in `species_info`:
 
 ``` r
 
-dat <- read.csv(system.file("extdata", "dietview_example.csv", package = "DietView"),
-                na.strings = c("NA", ""))
-lin <- read.csv(system.file("extdata", "dietview_example_lineage.csv", package = "DietView"),
-                na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name",
-                predator_latin = "predator_species_latin_name",
-                stomach = "stomach_id", prey_id = "aphia_id",
-                prey_name = "verified_name", weight = "prey_weight")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin, verbose = FALSE)
-
-info <- list(
-  "Atlantic cod" = list(
-    desc    = "Demersal gadid; feeds on fish and invertebrates.",
-    photo   = "images/atlantic_cod.jpg",
-    author  = "DFO Gulf Region",
-    license = "CC BY"
-  ),
-  "Winter flounder" = list(
-    desc  = "Right-eyed flounder; feeds on polychaetes, bivalves and small crustaceans.",
-    photo = "images/winter_flounder.jpg"
-  )
+info_online <- list(
+  "European plaice" = list(commons_file = "File:Pleuronectes platessa.jpg")
 )
-dv_build_html(prep, output = file.path(tempdir(), "diet_dashboard.html"),
-              species_info = info, image_dir = "images")
+dv_species_card_assets("European plaice", latin = "Pleuronectes platessa",
+                       info = info_online[["European plaice"]],
+                       photo_source = "wikipedia", image_dir = "images")
 ```
 
-You can also put the credit in a `.json` file next to the image, with
-the same name (`images/winter_flounder.json`):
-
-``` json
-{"author": "Jane Doe", "license": "CC BY",
- "url": "https://www.inaturalist.org/photos/123456"}
-```
+The file name above is an example: check on Commons that the file
+exists, that it shows the species, and that its license suits your use.
+The credit line then names the author and the license reported by
+Commons.
 
 ## Before you share a dashboard
 

@@ -36,6 +36,7 @@ unidentified category below the deepest identified rank – never dropped.'><met
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="../articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="../articles/data-model.html">The DietView data model and input contract</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
@@ -161,28 +162,33 @@ with a warning before their records are treated as fully unidentified.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">csv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">lin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"dietview_example_lineage.csv"</span>, package <span class="op">=</span> <span class="st">"DietView"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">csv</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">lineage</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">lin</span>, na.strings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NA"</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_spec.html">dv_spec</a></span><span class="op">(</span>predator <span class="op">=</span> <span class="st">"predator_species_common_name"</span>,</span></span>
-<span class="r-in"><span>                stomach <span class="op">=</span> <span class="st">"stomach_id"</span>,</span></span>
-<span class="r-in"><span>                prey_id <span class="op">=</span> <span class="st">"aphia_id"</span>,</span></span>
-<span class="r-in"><span>                prey_name <span class="op">=</span> <span class="st">"verified_name"</span>,</span></span>
-<span class="r-in"><span>                weight <span class="op">=</span> <span class="st">"prey_weight"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu">dv_prepare</span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">lineage</span>,</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># the standard set-up: public ICES data, non-food items and nematodes dropped</span></span></span>
+<span class="r-in"><span><span class="va">phylum</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">phylum</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">prey_aphia_id</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">ices_diet</span><span class="op">[</span><span class="va">ices_diet</span><span class="op">$</span><span class="va">item_type</span> <span class="op">!=</span> <span class="st">"non_food"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">phylum</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"Nematoda"</span>, <span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_spec.html">dv_spec</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  predator       <span class="op">=</span> <span class="st">"predator_common"</span>,</span></span>
+<span class="r-in"><span>  predator_latin <span class="op">=</span> <span class="st">"predator_latin"</span>,</span></span>
+<span class="r-in"><span>  stomach        <span class="op">=</span> <span class="st">"stomach_id"</span>,</span></span>
+<span class="r-in"><span>  prey_id        <span class="op">=</span> <span class="st">"prey_aphia_id"</span>,</span></span>
+<span class="r-in"><span>  prey_name      <span class="op">=</span> <span class="st">"prey_name"</span>,</span></span>
+<span class="r-in"><span>  weight         <span class="op">=</span> <span class="st">"prey_weight_g"</span>,</span></span>
+<span class="r-in"><span>  count          <span class="op">=</span> <span class="st">"prey_count"</span>,</span></span>
+<span class="r-in"><span>  digestion      <span class="op">=</span> <span class="st">"digestion_label"</span>,</span></span>
+<span class="r-in"><span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu">dv_prepare</span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span></span>
 <span class="r-in"><span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">prep</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;dietview_prep&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   records   : 24 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   stomachs  : 11 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   predators : 3 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   records   : 8530 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   stomachs  : 4222 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   predators : 22 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ranks     : kingdom &gt; phylum &gt; class &gt; order &gt; family &gt; genus &gt; species </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   covariates:  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   covariates: region, year, quarter </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   source    : table </span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="co"># online: resolve prey against WoRMS (needs 'worrms' + internet)</span></span></span>
-<span class="r-in"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu">dv_prepare</span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"worms"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">prep_worms</span> <span class="op">&lt;-</span> <span class="fu">dv_prepare</span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"worms"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

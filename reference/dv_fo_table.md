@@ -49,21 +49,35 @@ A data.frame with (optional) `by`, `rank`, `taxon`, `n_stomachs`
 ## Examples
 
 ``` r
-csv <- system.file("extdata", "dietview_example.csv", package = "DietView")
-lin <- system.file("extdata", "dietview_example_lineage.csv", package = "DietView")
-dat <- read.csv(csv, na.strings = c("NA", ""))
-lineage <- read.csv(lin, na.strings = c("NA", ""))
-spec <- dv_spec(predator = "predator_species_common_name",
-                stomach = "stomach_id", prey_id = "aphia_id",
-                prey_name = "verified_name", weight = "prey_weight")
-prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lineage,
-                   verbose = FALSE)
-dv_fo_table(prep, rank = "class")
-#>    rank        taxon n_stomachs n_total pct_fo
-#> 1 class Malacostraca          7      11  63.64
-#> 2 class     Copepoda          3      11  27.27
-#> 3 class    Teleostei          3      11  27.27
-#> 4 class     Bivalvia          2      11  18.18
-#> 5 class           NA          2      11  18.18
-#> 6 class   Polychaeta          2      11  18.18
+# the standard set-up: public ICES data, non-food items and nematodes dropped
+phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+dat <- ices_diet[ices_diet$item_type != "non_food" & !phylum %in% "Nematoda", ]
+spec <- dv_spec(
+  predator       = "predator_common",
+  predator_latin = "predator_latin",
+  stomach        = "stomach_id",
+  prey_id        = "prey_aphia_id",
+  prey_name      = "prey_name",
+  weight         = "prey_weight_g",
+  count          = "prey_count",
+  digestion      = "digestion_label",
+  covariates     = c("region", "year", "quarter")
+)
+# Atlantic cod only, for speed
+cod <- dat[dat$predator_common == "Atlantic cod", ]
+prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                       verbose = FALSE)
+dv_fo_table(prep_cod, rank = "class")
+#>     rank        taxon n_stomachs n_total pct_fo
+#> 1  class Malacostraca        618     991  62.36
+#> 2  class    Teleostei        332     991  33.50
+#> 3  class           NA        323     991  32.59
+#> 4  class   Polychaeta        136     991  13.72
+#> 5  class  Ophiuroidea         49     991   4.94
+#> 6  class     Bivalvia         28     991   2.83
+#> 7  class   Gastropoda         18     991   1.82
+#> 8  class  Cephalopoda         10     991   1.01
+#> 9  class     Gephyrea          2     991   0.20
+#> 10 class       Myxini          1     991   0.10
+#> 11 class    Trematoda          1     991   0.10
 ```
