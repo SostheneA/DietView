@@ -93,10 +93,15 @@ Requires the worrms package and internet access. Successful lookups are
 cached to disk, so re-runs and other surveys do not requery. Failed
 lookups (timeout, no network, server error, an AphiaID WoRMS does not
 know) are never cached: they are flagged with `lineage_ok = FALSE` and a
-warning, and are retried on the next run. Cache entries written by
-DietView 0.1.0, which carry no date, are fetched again; the empty
-lineages it cached after failed lookups are discarded. The cache file is
-written even if the run is interrupted.
+warning, and are retried on the next run.
+
+The cache is managed: entries older than `cache_max_age` days are
+removed from the file each time it is read (and fetched again when
+needed), as are malformed (undated) entries. An unreadable cache file is
+ignored with a warning and rebuilt. The file is rewritten only when
+something changed, even if the run is interrupted, and
+[`dv_cache_clear()`](https://sosthenea.github.io/DietView/reference/dv_cache_clear.md)
+deletes it.
 
 ## Examples
 

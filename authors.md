@@ -12,9 +12,8 @@ Source:
 [`inst/CITATION`](https://github.com/SostheneA/DietView/blob/main/inst/CITATION)
 
 Akia SA (2026). *DietView: An R package for interactive, hierarchical
-visualization of predator stomach-content data*.
-[doi:10.5281/zenodo.XXXXXXX](https://doi.org/10.5281/zenodo.XXXXXXX). R
-package version 0.1.0, <https://sosthenea.github.io/DietView/>.
+visualization of predator stomach-content data*. R package version
+0.1.0, <https://sosthenea.github.io/DietView/>.
 
     @Manual{,
       title = {{DietView}: An {R} package for interactive, hierarchical visualization of predator stomach-content data},
@@ -22,5 +21,4 @@ package version 0.1.0, <https://sosthenea.github.io/DietView/>.
       year = {2026},
       note = {R package version 0.1.0},
       url = {https://sosthenea.github.io/DietView/},
-      doi = {10.5281/zenodo.XXXXXXX},
     }

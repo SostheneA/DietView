@@ -368,7 +368,7 @@ with(dat[dat$predator_common %in% m4, ], table(predator_common, length_class))
 #>   European plaice         0      506        0        0      808        0
 #>   Whiting                 0        0        0      691        0        0
 #>                    length_class
-#> predator_common     [28, 34) [28, 50) [30, 60) [34, 50) [40, 110) [5, 20)
+#> predator_common     [28, 34) [28, 50] [30, 60] [34, 50] [40, 110] [5, 20)
 #>   Atlantic cod             0        0        0        0       730       0
 #>   Atlantic mackerel      604        0        0      648         0       0
 #>   European plaice          0        0      576        0         0       0
@@ -745,7 +745,7 @@ compare <- function(col) {
 #> Bivalvia            1.9       1.2                0.0
 #> stomachs          198.0     731.0               62.0
 (cod_length <- compare("length_class"))
-#>              [0, 25) [25, 40) [40, 110)
+#>              [0, 25) [25, 40) [40, 110]
 #> Malacostraca    58.0     40.6      34.2
 #> Teleostei       14.2     23.9      42.5
 #> NA              18.6     21.2      14.7
@@ -768,11 +768,11 @@ compare <- function(col) {
 #> length_class 2020-2022 2023-2024
 #>    [0, 25)         108       238
 #>    [25, 40)         76       342
-#>    [40, 110)        43       184
+#>    [40, 110]        43       184
 ```
 
 Fish (Teleostei) make 14.2% of the records of cod \[0, 25) cm and 42.5%
-of cod \[40, 110) cm: the shift towards fish with size is the clearest
+of cod \[40, 110\] cm: the shift towards fish with size is the clearest
 contrast in these data. Between regions, malacostracans range from 35.6%
 to 45.3%. `NA` here sums the unidentified nodes of all branches. The
 smallest single stratum has 62 stomachs, but crossing length class with
@@ -863,11 +863,11 @@ th <- ceiling(0.01 * min(n_stom))
 sw <- dv_threshold_sweep(prep4, sort(unique(c(1, 2, 5, th, 10, 20, 50))))
 sw
 #>   threshold n_categories pct_coarser
-#> 1         1          211       83.01
-#> 2         2          148       83.59
-#> 3         5          100       84.75
-#> 4         8           78       85.46
-#> 5        10           71       85.57
+#> 1         1          220       82.95
+#> 2         2          153       83.56
+#> 3         5          102       84.75
+#> 4         8           79       85.46
+#> 5        10           72       85.57
 #> 6        20           52       86.95
 #> 7        50           26       92.09
 ```
@@ -887,14 +887,14 @@ c(pooled = length(unique(agg$data$prey_category)),
   per_predator = length(unique(paste(agg_pp$data$predator_common,
                                      agg_pp$data$prey_category))))
 #>       pooled per_predator 
-#>           79          115
+#>           80          116
 table(agg$data$prey_rank, useNA = "ifany")
 #> 
 #>   class  family   genus kingdom   order  phylum species    <NA> 
-#>    1360     823     366      18    1025    1267    1075    1458
+#>    1350     833     366      18    1025    1267    1075    1458
 ```
 
-With a threshold of 8 stomachs, the pooled aggregation keeps 79
+With a threshold of 8 stomachs, the pooled aggregation keeps 80
 categories shared by the four predators. The per-predator version adapts
 the resolution to each predator’s own sample, which suits
 single-predator descriptions but makes the categories differ between
@@ -909,7 +909,7 @@ diet vector per predator:
 
 m_st <- dv_matrix(agg, currency = "occurrence")
 dim(m_st)
-#> [1] 3660   79
+#> [1] 3660   80
 m_pred <- dv_matrix(agg, unit = "predator_common", currency = "occurrence",
                     include_na = FALSE)
 m_w <- dv_matrix(agg, unit = "predator_common", currency = "weight",

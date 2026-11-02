@@ -40,6 +40,12 @@ A factor of length bins.
 
 ## Details
 
+The outer edge is closed too (`include.lowest = TRUE` in
+[`base::cut()`](https://rdrr.io/r/base/cut.html)): a length equal to the
+last break falls in the last bin, labelled `[a, b]` (or, with
+`right = TRUE`, a length equal to the first break falls in the first
+bin, labelled `[a, b]`).
+
 Lengths outside the breaks become `NA`. A covariate `NA` is not a
 taxonomic `NA`: the dashboard
 ([`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md))
@@ -51,16 +57,16 @@ shows them as an "NA" panel.
 
 ``` r
 dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60))
-#> [1] [0, 20)  [20, 30) [30, 40) [40, 60)
-#> Levels: [0, 20) [20, 30) [30, 40) [40, 60)
+#> [1] [0, 20)  [20, 30) [30, 40) [40, 60]
+#> Levels: [0, 20) [20, 30) [30, 40) [40, 60]
 dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60), right = TRUE)
-#> [1] (0, 20]  (20, 30] (30, 40] (40, 60]
-#> Levels: (0, 20] (20, 30] (30, 40] (40, 60]
+#> [1] [0, 20]  (20, 30] (30, 40] (40, 60]
+#> Levels: [0, 20] (20, 30] (30, 40] (40, 60]
 
 # length classes of the Atlantic cod in the ICES stomach data
 cod_len <- ices_stomachs$length_cm[ices_stomachs$predator_common == "Atlantic cod"]
 table(dv_size_bins(cod_len, breaks = c(0, 20, 30, 40, 60, 150)), useNA = "ifany")
 #> 
-#>   [0, 20)  [20, 30)  [30, 40)  [40, 60) [60, 150) 
+#>   [0, 20)  [20, 30)  [30, 40)  [40, 60) [60, 150] 
 #>       456       608       505       378       108 
 ```
