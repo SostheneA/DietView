@@ -9,7 +9,7 @@ dv_build_html(
   output,
   strata = prep$spec$covariates,
   cross = list(),
-  bands = c("count", "occurrence", "weight"),
+  bands = c("occurrence", "weight"),
   currency = c("records", "numbers"),
   length_col = NULL,
   species_info = list(),
@@ -31,9 +31,10 @@ dv_build_html(
 (for each level of \code{outer}, a row of \code{inner} levels). E.g.
 \code{list(c("size_bin", "period"))}.}
 
-\item{bands}{Which bands to draw and in which order: \code{"count"} (distinct
-prey items), \code{"occurrence"} (prey records, or individuals with
-\code{currency = "numbers"}) and \code{"weight"}.}
+\item{bands}{Which bands to draw and in which order, any of
+\code{"occurrence"} (prey records, or individuals with
+\code{currency = "numbers"}), \code{"weight"} and \code{"count"} (distinct prey
+items). Default: occurrence and weight.}
 
 \item{currency}{\code{"records"} (default: each record counts once) or
 \code{"numbers"} (each record counts its \code{count} column; needs \code{count} in the
@@ -60,9 +61,10 @@ The output path, invisibly.
 \description{
 Builds a dashboard from any prepared dataset: a searchable,
 sortable landing grid of predator cards (stomach counts, length range, ID
-photo, description) plus one tab per predator. Each tab shows the diet in up
-to three bands of sunbursts (distinct prey items, prey records as \% of all
-records, weight as \% of total weight); each band repeats the same structure:
+photo, description) plus one tab per predator. Each tab shows the diet in
+bands of sunbursts (by default prey records as \% of all records and weight
+as \% of total weight; distinct prey items on request); each band repeats the
+same structure:
 an aggregated sunburst, one row of sunbursts per declared covariate, and
 optionally crossed rows (e.g. length bins split by period). Covariate levels
 that are \code{NA} are omitted from the rows.

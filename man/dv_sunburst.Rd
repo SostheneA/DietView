@@ -6,7 +6,7 @@
 \usage{
 dv_sunburst(
   x,
-  mode = c("count", "occurrence", "weight"),
+  mode = c("occurrence", "weight", "count"),
   ranks = NULL,
   weight_col = NULL,
   count_col = NULL,
@@ -20,13 +20,15 @@ dv_sunburst(
 \item{x}{A \code{dietview_tree}, or a data.frame of records (then supply \code{ranks}
 and \code{weight_col}/\code{count_col}).}
 
-\item{mode}{One of "count", "occurrence", "weight".}
+\item{mode}{One of "occurrence" (default), "weight", "count".}
 
 \item{ranks, weight_col, count_col}{Passed to \code{\link[=dv_build_tree]{dv_build_tree()}} if \code{x} is raw.}
 
 \item{colors}{Optional named color vector, keyed by node \code{id} (as from
 \code{\link[=dv_palette_tree]{dv_palette_tree()}}) or by taxon label (as from \code{\link[=dv_palette]{dv_palette()}}); ids are
-looked up first. Default from \code{\link[=dv_palette]{dv_palette()}}.}
+looked up first. Default: \code{\link[=dv_palette_tree]{dv_palette_tree()}} of the tree drawn, one hue
+per phylum with lighter tints below it. To keep colors identical across
+panels, build one palette from the pooled tree and pass it to each.}
 
 \item{rotation}{Start angle in degrees (default 90 = top).}
 
@@ -53,12 +55,12 @@ the within-rank shares shown in the hover text.
 
 Three modes:
 \itemize{
-\item \code{count}: sized by the number of distinct prey items.
-\item \code{occurrence}: sized by prey records (or by individuals, if the tree
-was built with a count column); hover shows the number and the share of all
-records at that rank.
+\item \code{occurrence} (default): sized by prey records (or by individuals, if
+the tree was built with a count column); hover shows the number and the
+share of all records at that rank.
 \item \code{weight}: sized by weight; hover shows the weight and the weight share
 at that rank.
+\item \code{count}: sized by the number of distinct prey items.
 }
 }
 \examples{
@@ -81,7 +83,7 @@ cod <- dat[dat$predator_common == "Atlantic cod", ]
 prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 tree <- dv_tree(prep_cod)
-p <- dv_sunburst(tree, title = "Atlantic cod")   # mode = "count"
-p_occ <- dv_sunburst(tree, mode = "occurrence", title = "Atlantic cod")
+p <- dv_sunburst(tree, title = "Atlantic cod")   # mode = "occurrence"
+p_w <- dv_sunburst(tree, mode = "weight", title = "Atlantic cod")
 # print(p)  # opens the interactive plotly sunburst
 }

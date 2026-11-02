@@ -2,9 +2,10 @@
 #'
 #' Builds a dashboard from any prepared dataset: a searchable,
 #' sortable landing grid of predator cards (stomach counts, length range, ID
-#' photo, description) plus one tab per predator. Each tab shows the diet in up
-#' to three bands of sunbursts (distinct prey items, prey records as % of all
-#' records, weight as % of total weight); each band repeats the same structure:
+#' photo, description) plus one tab per predator. Each tab shows the diet in
+#' bands of sunbursts (by default prey records as % of all records and weight
+#' as % of total weight; distinct prey items on request); each band repeats the
+#' same structure:
 #' an aggregated sunburst, one row of sunbursts per declared covariate, and
 #' optionally crossed rows (e.g. length bins split by period). Covariate levels
 #' that are `NA` are omitted from the rows.
@@ -23,9 +24,10 @@
 #' @param cross List of `c(inner, outer)` covariate pairs to also show crossed
 #'   (for each level of `outer`, a row of `inner` levels). E.g.
 #'   `list(c("size_bin", "period"))`.
-#' @param bands Which bands to draw and in which order: `"count"` (distinct
-#'   prey items), `"occurrence"` (prey records, or individuals with
-#'   `currency = "numbers"`) and `"weight"`.
+#' @param bands Which bands to draw and in which order, any of
+#'   `"occurrence"` (prey records, or individuals with
+#'   `currency = "numbers"`), `"weight"` and `"count"` (distinct prey
+#'   items). Default: occurrence and weight.
 #' @param currency `"records"` (default: each record counts once) or
 #'   `"numbers"` (each record counts its `count` column; needs `count` in the
 #'   spec). See [dv_tree()].
@@ -71,7 +73,7 @@
 dv_build_html <- function(prep, output,
                           strata = prep$spec$covariates,
                           cross = list(),
-                          bands = c("count", "occurrence", "weight"),
+                          bands = c("occurrence", "weight"),
                           currency = c("records", "numbers"),
                           length_col = NULL,
                           species_info = list(),
@@ -83,14 +85,16 @@ dv_build_html <- function(prep, output,
   if (missing(output)) stop("Name the output file: `output = \"my_dashboard.html\"`.",
                             call. = FALSE)
   currency <- match.arg(currency)
-  bands <- match.arg(bands, several.ok = TRUE)
+  bands <- match.arg(bands, c("occurrence", "weight", "count"), several.ok = TRUE)
   photo_source <- match.arg(photo_source, c("none", "inaturalist", "wikipedia"),
                             several.ok = TRUE)
   spec <- prep$spec; d <- prep$data; ranks <- prep$ranks
   pcol <- spec$predator; scol <- spec$stomach
   wcol <- spec$weight;  ccol <- .dv_count_col(spec, d, currency)
 
-  colors <- dv_palette(unlist(lapply(ranks, function(r) .dv_fill_na(d[[r]]))))
+  # one palette keyed by node id, from the pooled tree of the whole prep, so a
+  # taxon keeps its color in every panel
+  colors <- dv_palette_tree(dv_build_tree(d, ranks = ranks))
   band_meta <- list(
     count = list(title = "Distinct prey items", color = "#2c3e50"),
     occurrence = list(title = if (currency == "numbers") "Individuals (% of all individuals)"
@@ -323,7 +327,7 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
     id = "view_home", class = "dashboard-view active",
     htmltools::tags$h1(title),
     htmltools::tags$p(
-      paste0("Click a card to open a predator's diet. Each predator shows up to three bands of sunbursts: distinct prey items, ", rec_txt, " and weight (% of total weight). White wedges are records not identified at that rank; gray wedges are identified material in groups that have no taxon at that rank in WoRMS. Both are kept, so every ring accounts for all the material and its shares sum to 100%.")
+      paste0("Click a card to open a predator's diet. Each predator shows the diet in bands of sunbursts (", rec_txt, ", weight as % of total weight, or distinct prey items). White wedges are records not identified at that rank; gray wedges are identified material in groups that have no taxon at that rank in WoRMS. Both are kept, so every ring accounts for all the material and its shares sum to 100%.")
     ),
     htmltools::tags$div(
       class = "controls",

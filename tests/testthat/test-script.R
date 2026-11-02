@@ -41,9 +41,9 @@ test_that("a generated script runs and rebuilds the same tree", {
   expect_equal(as.data.frame(env$tree), as.data.frame(ref))
   q <- as.character(agg$data$quarter); q[is.na(q) | q == ""] <- "NA"
   expect_length(env$panels, length(unique(q)))
-  # the script colors by label, from all predators, as the app does
-  expect_true(all(c(unique(agg$data$phylum[!is.na(agg$data$phylum)]), "NA") %in%
-                    names(env$pal)))
+  # the script colors by node id from the pooled tree of all predators, as the app does
+  pooled <- dv_aggregate_threshold(prep, threshold = 4, scope = "per_predator")
+  expect_identical(env$pal, dv_palette_tree(dv_build_tree(pooled$data, pooled$ranks)))
 })
 
 test_that("two facets give a grid of panels, missing values in an NA panel", {

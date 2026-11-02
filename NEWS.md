@@ -1,5 +1,23 @@
 # DietView 0.1.0.9000
 
+## Breaking changes
+
+* `dv_sunburst()` now sizes wedges by prey records by default
+  (`mode = "occurrence"`); the choices are ordered `"occurrence"`,
+  `"weight"`, `"count"`, as in `run_dietview()`.
+* `dv_build_html()` draws the record and weight bands by default
+  (`bands = c("occurrence", "weight")`); add `"count"` for distinct prey
+  items.
+* Default colors follow the hierarchy: `dv_build_html()`, `run_dietview()` and
+  the script of `dv_script()` use `dv_palette_tree()` built from the pooled tree
+  of the whole prepared dataset, and `dv_sunburst(colors = NULL)` uses
+  `dv_palette_tree()` of the tree drawn. A taxon keeps one color across panels
+  and neighbouring wedges no longer share a color. `dv_palette()` is still
+  exported for label-keyed colors.
+
+## Other changes
+
+
 * Install from GitHub with `pak::pak("SostheneA/DietView")`; the README no
   longer points to an R-universe repository.
 * The documentation site is built by GitHub Actions and served from the

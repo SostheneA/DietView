@@ -15,8 +15,8 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 modeled on the diet dashboard built for the southern Gulf of St. Lawrence. The
 landing page shows one card per predator, with its stomach count and, if you
 give a length column, its length range. Each predator page shows the diet in
-up to three bands: distinct prey items, prey records (% of all records) and
-weight (% of total weight). Every band has the same layout: one sunburst for
+bands of sunbursts: by default prey records (% of all records) and weight
+(% of total weight); add `bands = "count"` for distinct prey items. Every band has the same layout: one sunburst for
 all the predator's records, one row of sunbursts per covariate you choose, and,
 if you ask for them, crossed rows.
 

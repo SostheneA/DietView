@@ -176,8 +176,8 @@ run_dietview <- function(prep, currency = c("records", "numbers"), ...) {
     })
     recs <- shiny::reactive(prep_sel()$data)
     colors <- shiny::reactive({
-      dd <- prep_res()$data
-      dv_palette(unlist(lapply(ranks, function(r) .dv_fill_na(dd[[r]]))))
+      # one palette from the pooled tree of all predators (after aggregation)
+      dv_palette_tree(dv_build_tree(prep_res()$data, ranks = ranks))
     })
     tree <- shiny::reactive(
       dv_build_tree(recs(), ranks = ranks, weight_col = spec$weight, count_col = ccol)

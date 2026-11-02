@@ -474,7 +474,7 @@ length(pal)
 head(dv_palette(tree4$label[tree4$rank == "Class"]), 4)
 ```
 
-Prey records (`mode = "occurrence"`; the default, `"count"`, would count
+Prey records (`mode = "occurrence"`, the default; `"count"` would count
 distinct prey items). White wedges are records not identified at that rank.
 
 ```{r sb-records}

@@ -17,21 +17,23 @@
 #'
 #' Three modes:
 #' \itemize{
-#' \item `count`: sized by the number of distinct prey items.
-#' \item `occurrence`: sized by prey records (or by individuals, if the tree
-#'   was built with a count column); hover shows the number and the share of all
-#'   records at that rank.
+#' \item `occurrence` (default): sized by prey records (or by individuals, if
+#'   the tree was built with a count column); hover shows the number and the
+#'   share of all records at that rank.
 #' \item `weight`: sized by weight; hover shows the weight and the weight share
 #'   at that rank.
+#' \item `count`: sized by the number of distinct prey items.
 #' }
 #'
 #' @param x A `dietview_tree`, or a data.frame of records (then supply `ranks`
 #'   and `weight_col`/`count_col`).
-#' @param mode One of "count", "occurrence", "weight".
+#' @param mode One of "occurrence" (default), "weight", "count".
 #' @param ranks,weight_col,count_col Passed to [dv_build_tree()] if `x` is raw.
 #' @param colors Optional named color vector, keyed by node `id` (as from
 #'   [dv_palette_tree()]) or by taxon label (as from [dv_palette()]); ids are
-#'   looked up first. Default from [dv_palette()].
+#'   looked up first. Default: [dv_palette_tree()] of the tree drawn, one hue
+#'   per phylum with lighter tints below it. To keep colors identical across
+#'   panels, build one palette from the pooled tree and pass it to each.
 #' @param rotation Start angle in degrees (default 90 = top).
 #' @param title,subtitle Figure titles.
 #' @return A plotly sunburst.
@@ -55,12 +57,12 @@
 #' prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
 #'                        verbose = FALSE)
 #' tree <- dv_tree(prep_cod)
-#' p <- dv_sunburst(tree, title = "Atlantic cod")   # mode = "count"
-#' p_occ <- dv_sunburst(tree, mode = "occurrence", title = "Atlantic cod")
+#' p <- dv_sunburst(tree, title = "Atlantic cod")   # mode = "occurrence"
+#' p_w <- dv_sunburst(tree, mode = "weight", title = "Atlantic cod")
 #' # print(p)  # opens the interactive plotly sunburst
 #' @export
 dv_sunburst <- function(x,
-                        mode = c("count", "occurrence", "weight"),
+                        mode = c("occurrence", "weight", "count"),
                         ranks = NULL, weight_col = NULL, count_col = NULL,
                         colors = NULL, rotation = 90,
                         title = "", subtitle = "") {
@@ -108,7 +110,7 @@ dv_sunburst <- function(x,
 
 # ---- internal: color, size, and hover fields for one tree ----------------
 .dv_sb_prep <- function(tree, mode, colors = NULL) {
-  if (is.null(colors)) colors <- dv_palette(tree$label)
+  if (is.null(colors)) colors <- dv_palette_tree(tree)
   # colors keyed by node id (dv_palette_tree()) win over colors keyed by label
   col <- unname(colors[tree$id]); miss <- is.na(col)
   col[miss] <- unname(colors[tree$label[miss]]); col[is.na(col)] <- "#CCCCCC"

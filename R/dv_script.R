@@ -114,10 +114,10 @@ dv_script <- function(prep, predator = NULL,
       "attr(prep, \"aggregation\")")
   }
   L <- c(L, "",
-    "## 3. Colors: one per taxon label, from all predators, so a taxon keeps its",
-    "## color in every view (unidentified material is the white \"NA\" category)",
+    "## 3. Colors: one hue per phylum, from the pooled tree of all predators, so a",
+    "## taxon keeps its color in every view (unidentified material is white)",
     "fill_na <- function(x) { x <- as.character(x); x[is.na(x) | x == \"\"] <- \"NA\"; x }",
-    "pal <- dv_palette(unlist(lapply(prep$ranks, function(r) fill_na(prep$data[[r]]))))")
+    "pal <- dv_palette_tree(dv_build_tree(prep$data, prep$ranks))")
   if (!is.null(predator)) {
     L <- c(L, "",
       "## 4. Predator",
