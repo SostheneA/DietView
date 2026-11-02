@@ -83,6 +83,71 @@ test_that("an unreadable cache file is ignored with a warning and rebuilt", {
   expect_false(file.exists(paste0(cache_path(dir), ".tmp")))
 })
 
+test_that("an unreadable cache file is replaced even when nothing is fetched", {
+  skip_if_not_installed("worrms")
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  writeLines("this is not an rds file", cache_path(dir))
+  expect_warning(run_worms(no_keys, dir), "could not be read")
+  expect_type(readRDS(cache_path(dir)), "list")
+  expect_no_warning(run_worms(no_keys, dir))
+})
+
+test_that("a lineage cached with fewer ranks is fetched again for more ranks", {
+  skip_if_not_installed("worrms")
+  skip_if_not_installed("withr")
+  n_class <- 0L
+  local_mocked_bindings(
+    wm_record = function(id, ...) data.frame(
+      AphiaID = id, scientificname = "Gadus morhua", status = "accepted",
+      valid_AphiaID = id, valid_name = "Gadus morhua"),
+    wm_classification = function(id, ...) {
+      n_class <<- n_class + 1L
+      data.frame(rank = c("Kingdom", "Phylum", "Class"),
+                 scientificname = c("Animalia", "Chordata", "Teleostei"))
+    },
+    .package = "worrms"
+  )
+  dir <- withr::local_tempdir()
+  keys <- data.frame(prey_id = 126436L, prey_name = "Gadus morhua")
+  run_worms(keys, dir, ranks = c("kingdom", "phylum"))
+  out <- run_worms(keys, dir, ranks = c("kingdom", "phylum", "class"))
+  expect_equal(out$class, "Teleostei")
+  expect_equal(n_class, 2L)
+  run_worms(keys, dir, ranks = c("kingdom", "phylum"))   # cached superset is reused
+  expect_equal(n_class, 2L)
+})
+
+test_that("only a WoRMS 204 answer counts as a genuine non-match", {
+  nm <- function(msg) DietView:::.dv_is_no_match(simpleError(msg))
+  expect_true(nm("(204) No Content - AphiaRecordsByNames"))
+  expect_false(nm("Could not resolve host: www.marinespecies.org (host not found)"))
+  expect_false(nm("Timeout was reached: port 2043"))
+  expect_false(nm("(500) Internal Server Error"))
+})
+
+test_that("small edge cases of the exploration and lineage helpers", {
+  prep <- example_prep()
+  empty <- prep; empty$data <- empty$data[0, ]
+  s <- dv_summary(empty)
+  expect_equal(nrow(s), 0L)
+  expect_true(all(c("n_stomachs", "n_records", "n_taxa") %in% names(s)))
+  expect_error(dv_fo_table(prep, rank = "prey_name"), "rank")
+  lin <- data.frame(kingdom = c("Animalia", "Animaliaa", NA, "Animalia"),
+                    phylum  = c("Chordata", "Mollusca", "Chordata", "Chordata"))
+  chk <- dv_lineage_check(lin, ranks = c("kingdom", "phylum"))
+  expect_true(any(chk$check == "near_duplicate" & chk$rank == "kingdom"))
+  mp <- chk[chk$check == "multi_parent", ]
+  expect_true(all(nzchar(mp$variant)))
+})
+
+test_that("bad band names and a missing deploy folder give clear errors", {
+  prep <- example_prep()
+  expect_error(dv_build_html(prep, output = tempfile(fileext = ".html"),
+                             bands = "weigth"), "should be one of")
+  expect_error(dv_deploy(prep), "destination folder")
+})
+
 test_that("expired and undated cache entries are removed from the file", {
   skip_if_not_installed("worrms")
   skip_if_not_installed("withr")

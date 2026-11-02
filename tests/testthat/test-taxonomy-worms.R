@@ -15,9 +15,9 @@ test_that("records without an AphiaID are matched by their own name", {
       if (identical(name, "Crangonidae"))   # 999001 is a fake ID for the mock
         list(data.frame(AphiaID = 999001L, scientificname = "Crangonidae", status = "accepted",
                         valid_AphiaID = 999001L, valid_name = "Crangonidae"))
-      else stop("no match")
+      else stop("(204) No Content")
     },
-    wm_records_taxamatch = function(name, ...) stop("no match"),
+    wm_records_taxamatch = function(name, ...) stop("(204) No Content"),
     .package = "worrms"
   )
   dat <- data.frame(pred = "cod", stom = c("s1", "s1", "s2", "s3"),
@@ -38,8 +38,8 @@ test_that("a failed classification is flagged and not cached", {
     wm_record = function(id, ...) data.frame(AphiaID = id, scientificname = "Pandalus borealis",
                   status = "accepted", valid_AphiaID = id, valid_name = "Pandalus borealis"),
     wm_classification = function(id, ...) { calls <<- calls + 1L; stop("timeout") },
-    wm_records_names = function(name, ...) stop("no match"),
-    wm_records_taxamatch = function(name, ...) stop("no match"),
+    wm_records_names = function(name, ...) stop("(204) No Content"),
+    wm_records_taxamatch = function(name, ...) stop("(204) No Content"),
     .package = "worrms"
   )
   skip_if_not_installed("withr")

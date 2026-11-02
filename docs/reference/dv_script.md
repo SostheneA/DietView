@@ -57,7 +57,10 @@ dv_script(
 - facet:
 
   Up to two covariates to draw one panel per level (or per combination
-  of levels), or `NULL`.
+  of levels), or `NULL`. With two, `c(inner, outer)` as in the app:
+  `panels` is then a list over the levels of `outer`, each a list over
+  the levels of `inner`. Missing covariate values get their own `"NA"`
+  panel.
 
 - rank:
 
@@ -98,7 +101,7 @@ s <- dv_script(prep, mode = "weight",
                aggregation = list(threshold = 10, scope = "pooled"))
 s
 #> ## DietView analysis script
-#> ## Generated 2026-10-30 17:44 ADT with DietView 0.2.0 and R version 4.5.2 (2025-10-31 ucrt).
+#> ## Generated 2026-11-02 13:59 AST with DietView 0.2.0 and R version 4.5.2 (2025-10-31 ucrt).
 #> ## Predator: all predators | wedges: weight | currency: records
 #> ## Reporting resolution: threshold 10 stomachs, scope = pooled, min_predators = 1
 #> # Taxonomy source: table

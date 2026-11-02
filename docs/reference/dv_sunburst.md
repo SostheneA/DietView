@@ -76,8 +76,7 @@ Three modes:
 
 - `occurrence`: sized by prey records (or by individuals, if the tree
   was built with a count column); hover shows the number and the share
-  of all records at that rank. The value `"occurrence"` is kept for
-  backward compatibility.
+  of all records at that rank.
 
 - `weight`: sized by weight; hover shows the weight and the weight share
   at that rank.

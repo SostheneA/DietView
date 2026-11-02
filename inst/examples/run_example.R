@@ -1,13 +1,10 @@
 # =============================================================================
-# DietView — end-to-end demo starting from BASE data (no taxonomy columns)
-# Shows the package adding taxa, then deploying a standalone HTML dashboard.
+# DietView: end-to-end demo starting from BASE data (no taxonomy columns)
+# Shows the package adding taxa, then writing a standalone HTML dashboard.
 # =============================================================================
 library(DietView)
 
-ext  <- function(f) {
-  p <- system.file("extdata", f, package = "DietView")
-  if (p == "") file.path("DietView/inst/extdata", f) else p   # dev fallback
-}
+ext <- function(f) system.file("extdata", f, package = "DietView", mustWork = TRUE)
 
 # 1. Load the BASE long table (14 columns, NO kingdom..species) ---------------
 dat <- read.csv(ext("dietview_example.csv"), stringsAsFactors = FALSE,
@@ -40,19 +37,18 @@ print(prep)
 # 4. Metrics: within-rank importance (NA included; each rank sums to 100) ------
 tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
 print(dv_rank_table(tree, "Class"))
-cat("Sum of occurrence % at Class rank:",
-    round(sum(dv_rank_table(tree, "Class")$pct_occ), 3), "(should be 100)\n")
+sum(dv_rank_table(tree, "Class")$pct_occ)   # 100
 
 # 5. Figures + digestion diagnostic ------------------------------------------
 dv_sunburst(tree, mode = "occurrence", title = "All predators")
 dv_digestion_diagnostic(prep, by = "period")
 
-# 6. DEPLOY the standalone dashboard (like the sGSL HTML) ---------------------
-dv_deploy(prep, file = "dietview_dashboard.html", dir = "outputs",
+# 6. Write the standalone dashboard -------------------------------------------
+# tempdir() keeps the demo tidy; use your own folder to keep the file.
+dv_deploy(prep, file = "dietview_dashboard.html", dir = tempdir(),
           strata = c("period", "size_class", "size_bin"),
           cross  = list(c("size_bin", "period")),   # length bins x period rows
-          length_col = "somatic_length_cm",
-          use_wiki = FALSE)
+          length_col = "somatic_length_cm")
 
 # 7. Interactive app (optional) ----------------------------------------------
 # run_dietview(prep)

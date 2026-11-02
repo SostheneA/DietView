@@ -39,7 +39,26 @@ test_that("a generated script runs and rebuilds the same tree", {
   agg$data <- agg$data[agg$data$predator_common == "Whiting", ]
   ref <- dv_build_tree(agg$data, agg$ranks, weight_col = "prey_weight_g")
   expect_equal(as.data.frame(env$tree), as.data.frame(ref))
-  expect_length(env$panels, length(unique(stats::na.omit(agg$data$quarter))))
+  q <- as.character(agg$data$quarter); q[is.na(q) | q == ""] <- "NA"
+  expect_length(env$panels, length(unique(q)))
+  # the script colors by label, from all predators, as the app does
+  expect_true(all(c(unique(agg$data$phylum[!is.na(agg$data$phylum)]), "NA") %in%
+                    names(env$pal)))
+})
+
+test_that("two facets give a grid of panels, missing values in an NA panel", {
+  prep <- ices_prep_small()
+  prep$data$region2 <- ifelse(seq_len(nrow(prep$data)) %% 5 == 0, NA, "A")
+  dir <- withr::local_tempdir()
+  saveRDS(prep, file.path(dir, "my_prep.rds"))
+  f <- file.path(dir, "analysis.R")
+  s <- dv_script(prep, facet = c("quarter", "region2"), data_file = "my_prep.rds",
+                 file = f)
+  expect_true(any(grepl("saveRDS(prep, \"my_prep.rds\")", s, fixed = TRUE)))
+  env <- new.env()
+  withr::with_dir(dir, utils::capture.output(sys.source(f, envir = env)))
+  expect_setequal(names(env$panels), c("A", "NA"))
+  expect_s3_class(env$panels[["NA"]][[1]], "plotly")
 })
 
 test_that("the app exposes the three aggregation strategies and the script", {

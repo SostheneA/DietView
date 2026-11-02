@@ -54,9 +54,8 @@
 #'   keeps the licenses that allow redistribution with attribution: `"cc0"`,
 #'   `"cc-by"` and `"cc-by-sa"`. Add `"cc-by-nc"` (and `"cc-by-nc-sa"`,
 #'   `"cc-by-nd"`, `"cc-by-nc-nd"`) only if the dashboard will be shared for
-#'   non-commercial use and the license terms suit you.
-#' @param use_wiki Deprecated. `TRUE` means `photo_source = "wikipedia"`,
-#'   `FALSE` means `photo_source = "none"`.
+#'   non-commercial use and the license terms suit you. A cached iNaturalist
+#'   photo whose license is not in `licenses` is not reused.
 #' @return A list with `uri` (data URI or NULL), `path` (the image file, or
 #'   NULL), `desc`, `desc_credit` (credit
 #'   for the description text), `credit` (photo credit line, e.g.
@@ -77,14 +76,8 @@
 dv_species_card_assets <- function(predator, latin = NA, info = NULL,
                                    image_dir = file.path(tempdir(), "dietview-images"),
                                    photo_source = "none",
-                                   licenses = c("cc0", "cc-by", "cc-by-sa"),
-                                   use_wiki = NULL) {
+                                   licenses = c("cc0", "cc-by", "cc-by-sa")) {
 
-  if (!is.null(use_wiki) && missing(photo_source)) {
-    message("`use_wiki` is deprecated; use `photo_source = \"",
-            if (isTRUE(use_wiki)) "wikipedia" else "none", "\"` instead.")
-    photo_source <- if (isTRUE(use_wiki)) "wikipedia" else "none"
-  }
   photo_source <- match.arg(photo_source, c("none", "inaturalist", "wikipedia"),
                             several.ok = TRUE)
   if ("none" %in% photo_source) {
@@ -106,7 +99,8 @@ dv_species_card_assets <- function(predator, latin = NA, info = NULL,
          call. = FALSE)
   }
 
-  `%||%` <- function(a, b) {
+  # like %||%, but NA and zero-length values also fall back to `b`
+  `%|na|%` <- function(a, b) {
     if (!is.null(a) && length(a) && !all(is.na(a))) a else b
   }
 
@@ -158,14 +152,21 @@ dv_species_card_assets <- function(predator, latin = NA, info = NULL,
     invisible()
   }
 
+  # a cached iNaturalist download is reused only if its license is still accepted
+  license_ok <- function(img) {
+    m <- read_sidecar(img)
+    if (is.null(m) || !identical(m$source, "inaturalist")) return(TRUE)
+    isTRUE(m$license %in% .dv_inat_licenses[licenses])
+  }
+
   find_local <- function() {
     photo <- field("photo")
     if (!is.null(photo) && file.exists(photo)) return(photo)
 
     for (nm in c(predator, if (!is.na(latin) && nzchar(latin)) latin)) {
       cand <- file.path(image_dir, paste0(.dv_slugify(nm), ".", img_ext))
-      hit <- cand[file.exists(cand)]
-      if (length(hit)) return(hit[1])
+      hit <- Filter(license_ok, cand[file.exists(cand)])
+      if (length(hit)) return(hit[[1]])
     }
     NULL
   }
@@ -180,7 +181,7 @@ dv_species_card_assets <- function(predator, latin = NA, info = NULL,
     if (is.null(js)) return(NULL)
     list(
       desc = null_if_empty(js$extract),
-      src  = null_if_empty(js$thumbnail$source %||% js$originalimage$source)
+      src  = null_if_empty(js$thumbnail$source %|na|% js$originalimage$source)
     )
   }
 
@@ -218,7 +219,7 @@ dv_species_card_assets <- function(predator, latin = NA, info = NULL,
     license <- meta_val("LicenseShortName")
 
     list(
-      src     = null_if_empty(ii$thumburl %||% ii$url),
+      src     = null_if_empty(ii$thumburl %|na|% ii$url),
       desc    = meta_val("ImageDescription"),
       author  = artist,
       license = license,
@@ -230,12 +231,12 @@ dv_species_card_assets <- function(predator, latin = NA, info = NULL,
   # an iNaturalist photo object -> credit fields, or NULL if its license is
   # not accepted (a missing license code means "all rights reserved")
   inat_photo <- function(ph) {
-    code <- tolower(null_if_empty(ph$license_code) %||% "")
+    code <- tolower(null_if_empty(ph$license_code) %|na|% "")
     if (!code %in% licenses) return(NULL)
-    src <- null_if_empty(ph$medium_url %||% ph$url)
+    src <- null_if_empty(ph$medium_url %|na|% ph$url)
     if (is.null(src)) return(NULL)
     src <- sub("/square\\.", "/medium.", src)
-    author <- null_if_empty(ph$attribution_name) %||%
+    author <- null_if_empty(ph$attribution_name) %|na|%
       .dv_inat_author(null_if_empty(ph$attribution))
     license <- .dv_inat_licenses[[code]]
     list(
@@ -259,7 +260,7 @@ dv_species_card_assets <- function(predator, latin = NA, info = NULL,
     if (is.null(res) || !length(res)) return(NULL)
     q <- tolower(query)
     hit <- Filter(function(t) {
-      tolower(t$name %||% "") == q || tolower(t$matched_term %||% "") == q
+      tolower(t$name %|na|% "") == q || tolower(t$matched_term %|na|% "") == q
     }, res)
     if (!length(hit)) return(NULL)
     tx <- hit[[1]]
@@ -268,8 +269,8 @@ dv_species_card_assets <- function(predator, latin = NA, info = NULL,
     full <- .dv_get_json(paste0("https://api.inaturalist.org/v1/taxa/", tx$id))
     full <- if (!is.null(full$results) && length(full$results)) full$results[[1]] else tx
 
-    photos <- c(list(full$default_photo %||% tx$default_photo),
-                lapply(full$taxon_photos %||% list(), function(tp) tp$photo))
+    photos <- c(list(full$default_photo %|na|% tx$default_photo),
+                lapply(full$taxon_photos %|na|% list(), function(tp) tp$photo))
     photo <- NULL
     for (ph in photos) {
       if (is.null(ph)) next

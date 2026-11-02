@@ -57,7 +57,7 @@ dv_lineage_check <- function(x, ranks = NULL, max_dist = 2L) {
 
   out <- list()
   push <- function(...) out[[length(out) + 1L]] <<- data.frame(..., stringsAsFactors = FALSE)
-  for (j in seq_along(ranks)[-1]) {
+  for (j in seq_along(ranks)) {
     # nearest named ancestor, so a missing intermediate rank does not break the check
     par <- rep(NA_character_, nrow(L))
     for (k in seq_len(j - 1L)) par <- ifelse(!is.na(L[, k]), L[, k], par)
@@ -66,7 +66,9 @@ dv_lineage_check <- function(x, ranks = NULL, max_dist = 2L) {
 
     dup <- unique(pairs$label[duplicated(pairs$label)])
     for (l in dup) {
-      ps <- sort(pairs$parent[pairs$label == l])
+      ps <- pairs$parent[pairs$label == l]
+      ps[is.na(ps)] <- "(none)"
+      ps <- sort(ps)
       push(check = "multi_parent", rank = ranks[j], parent = ps[1], label = l,
            variant = paste(ps[-1], collapse = " | "), distance = NA_integer_,
            n_records = n_of(j, l))

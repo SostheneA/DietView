@@ -32,7 +32,9 @@ every rank) or a list with \code{threshold} and, optionally, \code{scope} and
 \code{min_predators}, passed to \code{\link[=dv_aggregate_threshold]{dv_aggregate_threshold()}}.}
 
 \item{facet}{Up to two covariates to draw one panel per level (or per
-combination of levels), or \code{NULL}.}
+combination of levels), or \code{NULL}. With two, \code{c(inner, outer)} as in the
+app: \code{panels} is then a list over the levels of \code{outer}, each a list over
+the levels of \code{inner}. Missing covariate values get their own \code{"NA"} panel.}
 
 \item{rank}{Rank for the rank table and the frequency-of-occurrence table.
 Defaults to the third rank of \code{prep}.}

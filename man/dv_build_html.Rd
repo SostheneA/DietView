@@ -16,7 +16,6 @@ dv_build_html(
   image_dir = file.path(tempdir(), "dietview-images"),
   photo_source = "none",
   licenses = c("cc0", "cc-by", "cc-by-sa"),
-  use_wiki = NULL,
   title = "DietView",
   self_contained = TRUE
 )
@@ -49,17 +48,17 @@ spec). See \code{\link[=dv_tree]{dv_tree()}}.}
 Defaults: a folder in \code{\link[=tempdir]{tempdir()}}, no network access, and only openly
 licensed iNaturalist photos (CC0, CC BY, CC BY-SA).}
 
-\item{use_wiki}{Deprecated; use \code{photo_source}.}
-
 \item{title}{Dashboard title.}
 
-\item{self_contained}{If TRUE render a single embedded file (needs rmarkdown).}
+\item{self_contained}{If TRUE render a single embedded file (needs
+rmarkdown and pandoc); without rmarkdown, a warning is given and the page
+is saved with its dependencies in a \code{lib} folder next to it.}
 }
 \value{
 The output path, invisibly.
 }
 \description{
-Reproduces the sGSL-style dashboard from any prepared dataset: a searchable,
+Builds a dashboard from any prepared dataset: a searchable,
 sortable landing grid of predator cards (stomach counts, length range, ID
 photo, description) plus one tab per predator. Each tab shows the diet in up
 to three bands of sunbursts (distinct prey items, prey records as \% of all

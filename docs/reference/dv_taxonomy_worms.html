@@ -47,7 +47,7 @@ unidentified category downstream.'><meta property="og:image" content="https://so
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -186,7 +186,7 @@ are never cached: they are flagged with <code>lineage_ok = FALSE</code> and a wa
 and are retried on the next run.</p>
 <p>The cache is managed: entries older than <code>cache_max_age</code> days are removed
 from the file each time it is read (and fetched again when needed), as are
-the undated entries written by DietView 0.1.0. An unreadable cache file is
+malformed (undated) entries. An unreadable cache file is
 ignored with a warning and rebuilt. The file is rewritten only when something
 changed, even if the run is interrupted, and <code><a href="dv_cache_clear.html">dv_cache_clear()</a></code> deletes it.</p>
     </div>

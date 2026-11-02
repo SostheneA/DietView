@@ -22,7 +22,9 @@
 #'   every rank) or a list with `threshold` and, optionally, `scope` and
 #'   `min_predators`, passed to [dv_aggregate_threshold()].
 #' @param facet Up to two covariates to draw one panel per level (or per
-#'   combination of levels), or `NULL`.
+#'   combination of levels), or `NULL`. With two, `c(inner, outer)` as in the
+#'   app: `panels` is then a list over the levels of `outer`, each a list over
+#'   the levels of `inner`. Missing covariate values get their own `"NA"` panel.
 #' @param rank Rank for the rank table and the frequency-of-occurrence table.
 #'   Defaults to the third rank of `prep`.
 #' @param data_file File name the script reads `prep` from.
@@ -112,32 +114,54 @@ dv_script <- function(prep, predator = NULL,
               format(aggregation$threshold), dq(aggregation$scope), aggregation$min_predators),
       "attr(prep, \"aggregation\")")
   }
+  L <- c(L, "",
+    "## 3. Colors: one per taxon label, from all predators, so a taxon keeps its",
+    "## color in every view (unidentified material is the white \"NA\" category)",
+    "fill_na <- function(x) { x <- as.character(x); x[is.na(x) | x == \"\"] <- \"NA\"; x }",
+    "pal <- dv_palette(unlist(lapply(prep$ranks, function(r) fill_na(prep$data[[r]]))))")
   if (!is.null(predator)) {
     L <- c(L, "",
-      "## 3. Predator",
-      sprintf("prep$data <- prep$data[as.character(prep$data[[spec$predator]]) == %s, ]",
+      "## 4. Predator",
+      sprintf("prep$data <- prep$data[which(as.character(prep$data[[spec$predator]]) == %s), ]",
               dq(predator)))
   }
   L <- c(L, "",
-    "## 4. Multi-rank tree and sunburst",
+    "## 5. Multi-rank tree and sunburst",
     sprintf("tree <- dv_build_tree(prep$data, prep$ranks, weight_col = %s, count_col = %s)",
             wt, cnt),
-    "pal <- dv_palette_tree(tree)   # one palette for every panel",
     sprintf("dv_sunburst(tree, mode = %s, colors = pal, title = %s)",
             dq(mode), dq(predator %||% "All predators")))
   if (length(facet)) {
     L <- c(L, "",
-      "## 5. One panel per covariate level, sharing the palette of the pooled tree",
-      sprintf("cells <- split(prep$data, prep$data[%s], drop = TRUE, sep = \" | \")", dq(facet)),
-      "panels <- lapply(names(cells), function(nm) {",
-      sprintf("  dv_sunburst(cells[[nm]], mode = %s, ranks = prep$ranks,", dq(mode)),
-      sprintf("              weight_col = %s, count_col = %s, colors = pal, title = nm)", wt, cnt),
-      "})",
-      "names(panels) <- names(cells)",
-      "# panels[[1]]   # print any panel; htmlwidgets::saveWidget() archives it")
+      "## 6. One panel per covariate level (missing values get their own \"NA\" panel)",
+      "panel <- function(d, title)",
+      sprintf("  dv_sunburst(d, mode = %s, ranks = prep$ranks, weight_col = %s,", dq(mode), wt),
+      sprintf("              count_col = %s, colors = pal, title = title)", cnt))
+    if (length(facet) == 1L) {
+      L <- c(L,
+        sprintf("cells <- split(prep$data, fill_na(prep$data[[%s]]))", dq(facet)),
+        sprintf("panels <- lapply(names(cells), function(l) panel(cells[[l]], paste0(%s, l)))",
+                dq(paste0(facet, ": "))),
+        "names(panels) <- names(cells)",
+        "# panels[[1]]   # print any panel; htmlwidgets::saveWidget() archives it")
+    } else {
+      L <- c(L,
+        sprintf("## rows: levels of %s; columns: levels of %s (the grid of the app)",
+                facet[2], facet[1]),
+        sprintf("rows <- split(prep$data, fill_na(prep$data[[%s]]))", dq(facet[2])),
+        "panels <- lapply(names(rows), function(o) {",
+        sprintf("  cells <- split(rows[[o]], fill_na(rows[[o]][[%s]]))", dq(facet[1])),
+        "  stats::setNames(lapply(names(cells), function(i)",
+        sprintf("    panel(cells[[i]], paste0(%s, o, %s, i))),",
+                dq(paste0(facet[2], ": ")), dq(paste0(" | ", facet[1], ": "))),
+        "    names(cells))",
+        "})",
+        "names(panels) <- names(rows)",
+        "# panels[[1]][[1]]   # print any panel; htmlwidgets::saveWidget() archives it")
+    }
   }
   L <- c(L, "",
-    "## 6. Tables behind the figure",
+    "## 7. Tables behind the figure",
     sprintf("dv_rank_table(tree, %s)", dq(.dv_titlecase(rank))),
     sprintf("dv_fo_table(prep, rank = %s)", dq(rank)))
   if (!is.null(spec$digestion) && spec$digestion %in% names(prep$data)) {

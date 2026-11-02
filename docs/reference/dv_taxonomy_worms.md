@@ -97,10 +97,9 @@ warning, and are retried on the next run.
 
 The cache is managed: entries older than `cache_max_age` days are
 removed from the file each time it is read (and fetched again when
-needed), as are the undated entries written by DietView 0.1.0. An
-unreadable cache file is ignored with a warning and rebuilt. The file is
-rewritten only when something changed, even if the run is interrupted,
-and
+needed), as are malformed (undated) entries. An unreadable cache file is
+ignored with a warning and rebuilt. The file is rewritten only when
+something changed, even if the run is interrupted, and
 [`dv_cache_clear()`](https://sosthenea.github.io/DietView/reference/dv_cache_clear.md)
 deletes it.
 

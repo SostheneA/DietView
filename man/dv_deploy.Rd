@@ -4,14 +4,15 @@
 \alias{dv_deploy}
 \title{Deploy the dashboard as a standalone HTML file}
 \usage{
-dv_deploy(prep, file = "dietview_dashboard.html", dir = ".", ...)
+dv_deploy(prep, file = "dietview_dashboard.html", dir, ...)
 }
 \arguments{
 \item{prep}{A \code{dietview_prep}.}
 
 \item{file}{Output file name.}
 
-\item{dir}{Destination directory (created if needed).}
+\item{dir}{Destination directory (created if needed). Required, so the
+function never writes to the working directory by default.}
 
 \item{...}{Passed to \code{\link[=dv_build_html]{dv_build_html()}}.}
 }

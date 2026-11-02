@@ -108,7 +108,8 @@ dv_taxonomy_worms <- function(keys,
     # without bound
     n_read <- length(cache)
     cache <- .dv_cache_prune(cache, now, cache_max_age)
-    dirty <- length(cache) != n_read
+    # an unreadable file is replaced at the end of the run
+    dirty <- length(cache) != n_read || isTRUE(attr(cache, "unreadable"))
     # saved even on error/interrupt, and only when something changed
     on.exit(if (dirty) .dv_cache_write(cache, cache_file), add = TRUE)
   }
@@ -277,7 +278,7 @@ dv_taxonomy_worms <- function(keys,
             call. = FALSE)
     NULL
   })
-  if (is.list(x)) x else list()
+  if (is.list(x)) x else structure(list(), unreadable = TRUE)
 }
 
 # Internal: keep only dated entries no older than `max_age` days.
@@ -336,7 +337,7 @@ dv_cache_clear <- function(cache_dir = tools::R_user_dir("DietView", "cache")) {
 # Internal: TRUE when a worrms error means "WoRMS has no such name" (HTTP 204,
 # "No Content"), as opposed to a failed request.
 .dv_is_no_match <- function(e) {
-  grepl("204|no content|not found|no match", conditionMessage(e), ignore.case = TRUE)
+  grepl("\\(204\\)|no content", conditionMessage(e), ignore.case = TRUE)
 }
 
 # Internal: rows of a taxonomy log (or of dv_taxonomy_worms() keys) that need a

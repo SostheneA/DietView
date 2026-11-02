@@ -91,6 +91,13 @@ dv_summary <- function(prep, by = NULL, rank = NULL) {
       out$total_weight <- sum(.dv_as_num(d[[wcol]][ix]), na.rm = TRUE)
     out
   })
+  if (!length(rows)) {
+    res <- data.frame(d[0, gcols, drop = FALSE], n_stomachs = integer(0),
+                      n_records = integer(0), n_taxa = integer(0),
+                      records_per_stomach = numeric(0), check.names = FALSE)
+    if (!is.null(wcol) && wcol %in% names(d)) res$total_weight <- numeric(0)
+    return(res)
+  }
   res <- do.call(rbind, rows)
   res <- res[order(-res$n_stomachs), , drop = FALSE]
   rownames(res) <- NULL
@@ -244,9 +251,10 @@ dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE) {
   stopifnot(inherits(prep, "dietview_prep"))
   d <- prep$data
   stom <- prep$spec$stomach
-  ranks <- if (is.null(rank)) prep$ranks else rank
-  bad <- setdiff(ranks, names(d))
+  ranks <- if (is.null(rank)) prep$ranks else tolower(rank)
+  bad <- setdiff(ranks, intersect(prep$ranks, names(d)))
   if (length(bad)) stop("rank(s) not found: ", paste(bad, collapse = ", "),
+                        ". Use any of: ", paste(prep$ranks, collapse = ", "), ".",
                         call. = FALSE)
   if (!is.null(by) && !by %in% names(d))
     stop("`by` column not found: ", by, call. = FALSE)

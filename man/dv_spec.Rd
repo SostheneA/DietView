@@ -45,7 +45,8 @@ seven flagship ranks kingdom..species. If your table already carries these
 columns, keep the default; otherwise they are filled by \code{\link[=dv_prepare]{dv_prepare()}}.}
 
 \item{predator_latin}{Optional column with the predator Latin name (used to
-auto-fetch identification photos).}
+look up identification photos when \code{\link[=dv_build_html]{dv_build_html()}} is given a
+\code{photo_source}).}
 }
 \value{
 An object of class \code{dietview_spec}.

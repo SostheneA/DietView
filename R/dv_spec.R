@@ -22,7 +22,8 @@
 #'   seven flagship ranks kingdom..species. If your table already carries these
 #'   columns, keep the default; otherwise they are filled by [dv_prepare()].
 #' @param predator_latin Optional column with the predator Latin name (used to
-#'   auto-fetch identification photos).
+#'   look up identification photos when [dv_build_html()] is given a
+#'   `photo_source`).
 #'
 #' @return An object of class `dietview_spec`.
 #' @examples

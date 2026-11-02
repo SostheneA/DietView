@@ -138,16 +138,24 @@ test_that("offline by default, and credit given in info is used for local photos
   expect_equal(a$source, "local")
 })
 
-test_that("bad license codes and the deprecated use_wiki are handled", {
+test_that("bad license codes are refused; cached photos are rechecked", {
   expect_error(dv_species_card_assets("Atlantic cod", licenses = "cc-by-4.0"),
                "Unknown iNaturalist license")
   skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
-  calls <- mock_inat(NULL, NULL)
-  expect_message(dv_species_card_assets("Atlantic cod", image_dir = dir,
-                                        use_wiki = FALSE),
-                 "deprecated")
-  expect_length(calls$urls, 0)
+  nc <- photo(2, "cc-by-nc", "Non Commercial")
+  ok <- photo(3, "cc0", "Free Person")
+  mock_inat(inat_search(nc), inat_full(nc, list(ok)))
+  a <- dv_species_card_assets("Atlantic cod", "Gadus morhua", image_dir = dir,
+                              photo_source = "inaturalist",
+                              licenses = c("cc0", "cc-by", "cc-by-nc"))
+  expect_equal(a$license, "CC BY-NC")
+  # the cached CC BY-NC photo is not reused once that license is not accepted
+  b <- dv_species_card_assets("Atlantic cod", "Gadus morhua", image_dir = dir)
+  expect_null(b$uri)
+  d <- dv_species_card_assets("Atlantic cod", "Gadus morhua", image_dir = dir,
+                              photo_source = "inaturalist")
+  expect_equal(d$license, "CC0")
 })
 
 test_that("the dashboard card shows the linked credit line", {

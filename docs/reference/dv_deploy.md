@@ -8,7 +8,7 @@ served by your web platform) and returns its path.
 ## Usage
 
 ``` r
-dv_deploy(prep, file = "dietview_dashboard.html", dir = ".", ...)
+dv_deploy(prep, file = "dietview_dashboard.html", dir, ...)
 ```
 
 ## Arguments
@@ -23,7 +23,8 @@ dv_deploy(prep, file = "dietview_dashboard.html", dir = ".", ...)
 
 - dir:
 
-  Destination directory (created if needed).
+  Destination directory (created if needed). Required, so the function
+  never writes to the working directory by default.
 
 - ...:
 
@@ -57,5 +58,5 @@ prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 dv_deploy(prep_cod, file = "cod_dashboard.html", dir = tempdir(),
           strata = character(0), bands = "count", self_contained = FALSE)
-#> Deployed standalone dashboard: C:/Users/SOSTHENEA/AppData/Local/Temp/1/Rtmpc5mkXZ/cod_dashboard.html
+#> Deployed standalone dashboard: C:/Users/SOSTHENEA/AppData/Local/Temp/1/RtmpUL6XEy/cod_dashboard.html
 ```

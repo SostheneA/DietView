@@ -27,7 +27,8 @@
 #'   `"numbers"` (each record counts its `count` column, %N; needs `count` in
 #'   the spec). See [dv_tree()].
 #' @param ... Passed to [shiny::runApp()].
-#' @return Runs the app (does not return).
+#' @return Called for its side effect of running the app; returns the value
+#'   of [shiny::runApp()] once the app is closed.
 #' @examples
 #' # the standard set-up: public ICES data, non-food items and nematodes dropped
 #' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]

@@ -10,8 +10,7 @@ dv_species_card_assets(
   info = NULL,
   image_dir = file.path(tempdir(), "dietview-images"),
   photo_source = "none",
-  licenses = c("cc0", "cc-by", "cc-by-sa"),
-  use_wiki = NULL
+  licenses = c("cc0", "cc-by", "cc-by-sa")
 )
 }
 \arguments{
@@ -35,10 +34,8 @@ e.g. \code{c("inaturalist", "wikipedia")}. Each request times out after
 keeps the licenses that allow redistribution with attribution: \code{"cc0"},
 \code{"cc-by"} and \code{"cc-by-sa"}. Add \code{"cc-by-nc"} (and \code{"cc-by-nc-sa"},
 \code{"cc-by-nd"}, \code{"cc-by-nc-nd"}) only if the dashboard will be shared for
-non-commercial use and the license terms suit you.}
-
-\item{use_wiki}{Deprecated. \code{TRUE} means \code{photo_source = "wikipedia"},
-\code{FALSE} means \code{photo_source = "none"}.}
+non-commercial use and the license terms suit you. A cached iNaturalist
+photo whose license is not in \code{licenses} is not reused.}
 }
 \value{
 A list with \code{uri} (data URI or NULL), \code{path} (the image file, or

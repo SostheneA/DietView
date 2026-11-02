@@ -27,3 +27,7 @@ images/
 # Scientific manuscript (local only)
 # Exclude manuscript, supplementary material and references
 /paper/
+
+# local-only: renv bootstrap and maintainer notes
+.Rprofile
+/dev/

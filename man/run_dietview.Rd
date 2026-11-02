@@ -16,7 +16,8 @@ the spec). See \code{\link[=dv_tree]{dv_tree()}}.}
 \item{...}{Passed to \code{\link[shiny:runApp]{shiny::runApp()}}.}
 }
 \value{
-Runs the app (does not return).
+Called for its side effect of running the app; returns the value
+of \code{\link[shiny:runApp]{shiny::runApp()}} once the app is closed.
 }
 \description{
 A Shiny explorer over a prepared dataset: pick a predator (or

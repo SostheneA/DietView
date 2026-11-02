@@ -1,6 +1,6 @@
 #' Build a self-contained HTML diet dashboard
 #'
-#' Reproduces the sGSL-style dashboard from any prepared dataset: a searchable,
+#' Builds a dashboard from any prepared dataset: a searchable,
 #' sortable landing grid of predator cards (stomach counts, length range, ID
 #' photo, description) plus one tab per predator. Each tab shows the diet in up
 #' to three bands of sunbursts (distinct prey items, prey records as % of all
@@ -35,9 +35,10 @@
 #' @param image_dir,photo_source,licenses Passed to [dv_species_card_assets()].
 #'   Defaults: a folder in [tempdir()], no network access, and only openly
 #'   licensed iNaturalist photos (CC0, CC BY, CC BY-SA).
-#' @param use_wiki Deprecated; use `photo_source`.
 #' @param title Dashboard title.
-#' @param self_contained If TRUE render a single embedded file (needs rmarkdown).
+#' @param self_contained If TRUE render a single embedded file (needs
+#'   rmarkdown and pandoc); without rmarkdown, a warning is given and the page
+#'   is saved with its dependencies in a `lib` folder next to it.
 #' @return The output path, invisibly.
 #' @examples
 #' # the standard set-up: public ICES data, non-food items and nematodes dropped
@@ -77,17 +78,12 @@ dv_build_html <- function(prep, output,
                           image_dir = file.path(tempdir(), "dietview-images"),
                           photo_source = "none",
                           licenses = c("cc0", "cc-by", "cc-by-sa"),
-                          use_wiki = NULL,
                           title = "DietView", self_contained = TRUE) {
   stopifnot(inherits(prep, "dietview_prep"))
   if (missing(output)) stop("Name the output file: `output = \"my_dashboard.html\"`.",
                             call. = FALSE)
   currency <- match.arg(currency)
-  if (!is.null(use_wiki) && missing(photo_source)) {
-    message("`use_wiki` is deprecated; use `photo_source = \"",
-            if (isTRUE(use_wiki)) "wikipedia" else "none", "\"` instead.")
-    photo_source <- if (isTRUE(use_wiki)) "wikipedia" else "none"
-  }
+  bands <- match.arg(bands, several.ok = TRUE)
   photo_source <- match.arg(photo_source, c("none", "inaturalist", "wikipedia"),
                             several.ok = TRUE)
   spec <- prep$spec; d <- prep$data; ranks <- prep$ranks
@@ -239,7 +235,8 @@ dv_build_html <- function(prep, output,
 #'
 #' @param prep A `dietview_prep`.
 #' @param file Output file name.
-#' @param dir Destination directory (created if needed).
+#' @param dir Destination directory (created if needed). Required, so the
+#'   function never writes to the working directory by default.
 #' @param ... Passed to [dv_build_html()].
 #' @return The output path, invisibly.
 #' @examples
@@ -264,7 +261,9 @@ dv_build_html <- function(prep, output,
 #' dv_deploy(prep_cod, file = "cod_dashboard.html", dir = tempdir(),
 #'           strata = character(0), bands = "count", self_contained = FALSE)
 #' @export
-dv_deploy <- function(prep, file = "dietview_dashboard.html", dir = ".", ...) {
+dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
+  if (missing(dir)) stop("Name the destination folder: `dir = \"my_folder\"`.",
+                         call. = FALSE)
   if (!dir.exists(dir)) dir.create(dir, recursive = TRUE, showWarnings = FALSE)
   path <- file.path(normalizePath(dir, winslash = "/", mustWork = TRUE), file)
   dv_build_html(prep, output = path, ...)
@@ -354,7 +353,12 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir = ".", ...) {
   out_dir <- normalizePath(out_dir, winslash = "/", mustWork = TRUE)
   out_abs <- file.path(out_dir, basename(output))
 
-  if (isTRUE(self_contained) && requireNamespace("rmarkdown", quietly = TRUE)) {
+  has_rmd <- requireNamespace("rmarkdown", quietly = TRUE)
+  if (isTRUE(self_contained) && !has_rmd)
+    warning("`self_contained = TRUE` needs the 'rmarkdown' package; the dashboard ",
+            "is written with its dependencies in a 'lib' folder instead.",
+            call. = FALSE)
+  if (isTRUE(self_contained) && has_rmd) {
     tmp <- tempfile(fileext = ".Rmd")
     # a JSON string is valid YAML, so quotes and apostrophes in the title are safe
     writeLines(c("---", paste0("title: ", jsonlite::toJSON(title, auto_unbox = TRUE)),
