@@ -117,11 +117,11 @@ table(dat$predator_common, dat$size_bin, useNA = "ifany")
 #>   European plaice         0      359        0      955        0        0
 #>   Whiting               503        0        0      855        0        0
 #>                    
-#>                     [30, 50) [30, 60) [35, 50) [50, 110)
-#>   Atlantic cod             0        0      544       432
-#>   Atlantic mackerel        0        0      577         0
-#>   European plaice          0      576        0         0
-#>   Whiting                247        0        0         0
+#>                     [30, 50] [30, 60] [35, 50) [35, 50] [50, 110]
+#>   Atlantic cod             0        0      544        0       432
+#>   Atlantic mackerel        0        0        0      577         0
+#>   European plaice          0      576        0        0         0
+#>   Whiting                247        0        0        0         0
 ```
 
 The breaks are a choice you make on biology and state in your methods.
@@ -284,7 +284,7 @@ tapply(cod$stomach_id, list(cod$size_bin, cod$period), function(z) length(unique
 #> [0, 20)     89       119
 #> [20, 35)    73       375
 #> [35, 50)    43       171
-#> [50, 110)   18        99
+#> [50, 110]   18        99
 ```
 
 All the 2022 cod come from the North Sea, while 2023-2024 adds the
@@ -322,7 +322,7 @@ fish_share
 #> [0, 20)        208             14.0            16.3
 #> [20, 35)       450             18.8            31.5
 #> [35, 50)       215             32.2            56.6
-#> [50, 110)      118             50.2            79.7
+#> [50, 110]      118             50.2            79.7
 ```
 
 The share of fish in the cod diet rises steadily with cod length, from
@@ -337,7 +337,7 @@ dv_sunburst(by_size[["[0, 20)"]], mode = "weight", colors = pal,
 
 ``` r
 
-dv_sunburst(by_size[["[50, 110)"]], mode = "weight", colors = pal,
+dv_sunburst(by_size[["[50, 110]"]], mode = "weight", colors = pal,
             title = "Atlantic cod, 50 cm and over", subtitle = "share of prey weight")
 ```
 
@@ -380,7 +380,7 @@ cells
 #> [0, 20)     89       119
 #> [20, 35)    73       375
 #> [35, 50)    43       171
-#> [50, 110)   18        99
+#> [50, 110]   18        99
 ```
 
 Crossing divides the sample quickly. With 2291 cod records split into
@@ -399,7 +399,7 @@ which(cells >= 30, arr.ind = TRUE)
 #> [0, 20)     1   2
 #> [20, 35)    2   2
 #> [35, 50)    3   2
-#> [50, 110)   4   2
+#> [50, 110]   4   2
 ```
 
 Draw a cell only when it passes:

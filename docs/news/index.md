@@ -1,6 +1,36 @@
 # Changelog
 
-## DietView (development version)
+## DietView 0.2.0
+
+First CRAN submission.
+
+### Reproducibility and review
+
+- New
+  [`dv_script()`](https://sosthenea.github.io/DietView/reference/dv_script.md)
+  writes a plain R script that rebuilds a view (predator, currency,
+  reporting resolution, covariate panels, rank and frequency of
+  occurrence tables, digestion diagnostic) with exported functions only,
+  from a saved `dietview_prep`. Its header records the package and R
+  versions, the date, the taxonomy source and the column specification.
+- [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md)
+  gains a reporting-resolution control with the full hierarchy and the
+  three threshold aggregations of
+  [`dv_aggregate_threshold()`](https://sosthenea.github.io/DietView/reference/dv_aggregate_threshold.md)
+  (pooled, pooled cross-predator, per predator); tabs for the frequency
+  of occurrence and the digestion diagnostic; and a “Reproduce” tab that
+  shows the
+  [`dv_script()`](https://sosthenea.github.io/DietView/reference/dv_script.md)
+  of the current view and downloads the script, the prepared data and
+  the current tables.
+- New
+  [`dv_lineage_check()`](https://sosthenea.github.io/DietView/reference/dv_lineage_check.md)
+  flags, offline, spelling variants of one taxon under the same parent,
+  labels placed under more than one parent and binomials whose genus
+  differs from the genus column, all of which split one taxon into
+  several nodes. On `ices_lineage` it flags spelling variants kept from
+  unaccepted AphiaIDs in the stomachr lookup (e.g. “Trisopterus esmarki”
+  next to “Trisopterus esmarkii”).
 
 ### Example data
 
@@ -82,6 +112,76 @@
   no longer assumes a “class” rank for its default table.
 - [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md)
   writes titles containing quotes or apostrophes correctly.
+- A weight or count column declared in the spec but absent from the data
+  no longer makes
+  [`dv_tree()`](https://sosthenea.github.io/DietView/reference/dv_tree.md),
+  [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md),
+  [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md),
+  [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md)
+  and
+  [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md)
+  fail with “replacement has 0 rows”:
+  [`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.md)
+  drops it from the spec with a warning, and
+  [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)
+  treats an absent weight column as no weight (with a warning) and stops
+  with a clear message on an absent count column.
+- Weight and count columns stored as factors are now read by their
+  values, not by their level codes, in
+  [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md),
+  [`dv_summary()`](https://sosthenea.github.io/DietView/reference/dv_summary.md),
+  [`dv_matrix()`](https://sosthenea.github.io/DietView/reference/dv_matrix.md)
+  and
+  [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md).
+- The WoRMS name cache now keeps `marine_only = TRUE` and
+  `marine_only = FALSE` results apart; before, an answer cached under
+  one setting was reused under the other.
+- A WoRMS name lookup that fails (timeout, server error) is no longer
+  logged as a genuine non-match: it is flagged with
+  `lineage_ok = FALSE`, reported by a warning and by
+  [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md),
+  not cached, and retried on the next run. A “no match” answer from
+  WoRMS (HTTP 204) is still `"unresolved"`.
+- [`dv_aggregate_threshold()`](https://sosthenea.github.io/DietView/reference/dv_aggregate_threshold.md):
+  - a rank missing in the middle of a lineage (e.g. Priapulida, which
+    have no class) no longer stops the record from settling at a finer
+    rank; a record that moves up skips the empty rank;
+  - with `scope = "per_predator"`, a category is labelled
+    `"<taxon> (other)"` only when the same predator kept deeper
+    categories under it;
+  - `threshold = NA` gives a clear error.
+- [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md)
+  stops with a clear message when `by` is not a column of the data.
+- [`dv_size_bins()`](https://sosthenea.github.io/DietView/reference/dv_size_bins.md)
+  closes the outer edge (`include.lowest = TRUE`): a length equal to the
+  last break is now in the last bin, labelled `[a, b]`, instead of
+  becoming `NA`.
+- [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md):
+  predator tabs get unique ids, so predators whose names differ only by
+  punctuation (e.g. “A-b” and “A b”) no longer open the same tab.
+  Records with no predator trigger a warning (they appear only in the
+  Global view).
+- A `|` inside a taxon label no longer breaks the node ids of
+  [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)
+  (it is escaped in the id; the label is unchanged).
+  [`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)
+  takes node depth from the id and assigns hues in sorted id order, so
+  its colors no longer depend on the row order of the tree.
+- [`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.md)
+  returns an empty result for an empty `keys` table instead of failing.
+
+### WoRMS cache
+
+- The cache is now managed: entries older than `cache_max_age` days, and
+  the undated entries of 0.1.0, are removed from the file whenever it is
+  read, so it no longer grows without bound. An unreadable cache file is
+  ignored with a warning and rebuilt instead of stopping the run. The
+  file is written through a temporary file (never left truncated) and
+  only when something changed.
+- New
+  [`dv_cache_clear()`](https://sosthenea.github.io/DietView/reference/dv_cache_clear.md)
+  deletes the cache file, and the cache folder if nothing else is left
+  in it.
 
 ### Changes in behavior
 
@@ -191,9 +291,9 @@
 ### Documentation and metadata
 
 - New title: “Interactive, Hierarchical Visualization of Stomach-Content
-  Data”; new Description, author name split correctly (with ORCID
-  placeholder), CADI Gulf Center listed as funder, unused packages
-  removed from Suggests; `inst/CITATION` and `CITATION.cff` updated.
+  Data”; new Description, author name split correctly, CADI Gulf Center
+  listed as funder, unused packages removed from Suggests;
+  `inst/CITATION` and `CITATION.cff` updated.
 - “Taxonomically complete” replaced by “hierarchical” throughout.
 - The data dictionary states that the example data are invented, defines
   the weight and digestion scale, and requires stomach IDs to be unique
@@ -201,7 +301,9 @@
 - New tests cover the tree invariants, frequency of occurrence, the
   digestion diagnostic, threshold aggregation, the matrix, validation,
   the lineage-table join, covariate labels and the WoRMS path (with
-  mocked `worrms` calls).
+  mocked `worrms` calls), and every exported function now has a direct
+  test. Tests that use `withr` skip when it is not installed;
+  `testthat (>= 3.1.7)` and `dplyr (>= 1.0.0)` are now required.
 - Internal notes (`CRAN_SUBMISSION.md`, `DEPLOYMENT.md`) moved to `dev/`
   and no longer published on the website.
 

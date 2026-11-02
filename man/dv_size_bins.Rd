@@ -28,6 +28,11 @@ default) and \verb{(a, b]} for right-closed bins.
 [a, b)\verb{for left-closed bins (the default) and}(a, b]: R:a,\%20b)\%60\%20for\%20left-closed\%20bins\%20(the\%0Adefault)\%20and\%20\%60(a,\%20b
 }
 \details{
+The outer edge is closed too (\code{include.lowest = TRUE} in \code{\link[base:cut]{base::cut()}}): a
+length equal to the last break falls in the last bin, labelled \verb{[a, b]}
+(or, with \code{right = TRUE}, a length equal to the first break falls in the
+first bin, labelled \verb{[a, b]}).
+
 Lengths outside the breaks become \code{NA}. A covariate \code{NA} is not a taxonomic
 \code{NA}: the dashboard (\code{\link[=dv_build_html]{dv_build_html()}}) omits \code{NA} strata, while the Shiny
 app (\code{\link[=run_dietview]{run_dietview()}}) shows them as an "NA" panel.

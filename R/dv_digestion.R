@@ -41,8 +41,11 @@ dv_digestion_diagnostic <- function(prep, by = NULL) {
     stop("No digestion column declared in the spec.", call. = FALSE)
   }
   d <- prep$data
+  if (!is.null(by) && (length(by) != 1L || !by %in% names(d)))
+    stop("`by` column not found: ", paste(by, collapse = ", "), call. = FALSE)
   ranks <- prep$ranks
   wcol <- spec$weight
+  if (!is.null(wcol) && !wcol %in% names(d)) wcol <- NULL
 
   # finest resolved rank per record
   mat <- as.data.frame(lapply(d[ranks], function(v) !is.na(v) & v != ""))
@@ -54,7 +57,7 @@ dv_digestion_diagnostic <- function(prep, by = NULL) {
   out <- data.frame(
     digestion = d[[spec$digestion]],
     finest_rank = factor(finest, levels = c(.dv_titlecase(ranks), "Unresolved")),
-    w = if (!is.null(wcol)) suppressWarnings(as.numeric(d[[wcol]])) else 0,
+    w = if (!is.null(wcol)) .dv_as_num(d[[wcol]]) else rep(0, nrow(d)),
     stringsAsFactors = FALSE
   )
   if (!is.null(by)) out$by <- d[[by]]

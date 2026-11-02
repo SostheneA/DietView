@@ -84,7 +84,8 @@ dv_aggregate_threshold <- function(prep, threshold,
                                    other_label = NULL) {
   stopifnot(inherits(prep, "dietview_prep"))
   scope <- match.arg(scope)
-  if (!is.numeric(threshold) || length(threshold) != 1L || threshold < 1)
+  if (!is.numeric(threshold) || length(threshold) != 1L || is.na(threshold) ||
+      threshold < 1)
     stop("`threshold` must be a single number >= 1.", call. = FALSE)
 
   ranks <- prep$ranks
@@ -103,17 +104,23 @@ dv_aggregate_threshold <- function(prep, threshold,
   sv <- as.character(d[[stom]])
   pv <- if (!is.null(pred) && pred %in% names(d)) as.character(d[[pred]]) else rep("", n)
 
-  # cumulative node key at each rank; NA beyond the resolved (contiguous) depth
+  # cumulative node key at each resolved rank; NA where the rank is empty. A
+  # rank missing from the lineage in the middle (e.g. Priapulida have no class)
+  # is skipped rather than ending the path, so finer ranks stay usable.
   key <- matrix(NA_character_, n, K)
-  prev_ok <- rep(TRUE, n)
   acc <- rep("", n)
   for (j in seq_len(K)) {
     lab <- as.character(d[[ranks[j]]])
-    ok  <- prev_ok & !is.na(lab) & lab != ""
+    ok  <- !is.na(lab) & lab != ""
     acc_j <- ifelse(ok, paste(acc, lab, sep = ">"), NA_character_)
     key[, j] <- acc_j
     acc <- ifelse(ok, acc_j, acc)
-    prev_ok <- ok
+  }
+  # the next coarser resolved rank of record r below rank s (NA if none)
+  step_up <- function(r, s) {
+    s <- s - 1L
+    while (s >= 1L && is.na(key[r, s])) s <- s - 1L
+    if (s < 1L) NA_integer_ else s
   }
   depth <- rowSums(!is.na(key))   # 0 = nothing resolved
 
@@ -145,10 +152,9 @@ dv_aggregate_threshold <- function(prep, threshold,
     bad   <- names(s_cnt)[s_cnt < threshold | p_cnt < mp]
     hit   <- rows[gk %in% bad]
     if (!length(hit)) break
-    up <- hit[settled[hit] > 1L]
-    settled[up] <- settled[up] - 1L
-    settled[setdiff(hit, up)] <- NA_integer_     # failed at the coarsest rank -> "other"
-    if (!length(up)) break
+    # NA = failed at the coarsest resolved rank -> "other". Every pass moves at
+    # least one record strictly up, so the loop ends.
+    settled[hit] <- vapply(hit, function(r) step_up(r, settled[r]), integer(1))
   }
 
   # records that never meet the threshold -> coarsest rank, flagged "other"
@@ -176,7 +182,10 @@ dv_aggregate_threshold <- function(prep, threshold,
     if (!any(sel)) next
     lab <- as.character(d[[ranks[j]]])[sel]
     deeper <- !is.na(settled) & settled > j
-    has_desc <- key[sel, j] %in% key[deeper, j]
+    # per predator, only that predator's own deeper categories count
+    kj <- if (scope == "per_predator") paste(pv, key[, j], sep = "@@") else key[, j]
+    kj[is.na(key[, j])] <- NA_character_
+    has_desc <- kj[sel] %in% stats::na.omit(kj[deeper])
     lab[has_desc] <- paste0(lab[has_desc], " (other)")
     lab_settled[sel] <- lab
   }

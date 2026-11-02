@@ -6,6 +6,5 @@ bibentry(
   author  = person(given = c("Sosthène", "A. V."), family = "Akia"),
   year    = "2026",
   note    = sprintf("R package version %s", meta$Version),
-  url     = "https://sosthenea.github.io/DietView/",
-  doi     = "10.5281/zenodo.XXXXXXX"
+  url     = "https://sosthenea.github.io/DietView/"
 )

@@ -266,7 +266,7 @@ dv_sunburst(by_size[["[0, 20)"]], mode = "weight", colors = pal,
 ```
 
 ```{r sunburst-large}
-dv_sunburst(by_size[["[50, 110)"]], mode = "weight", colors = pal,
+dv_sunburst(by_size[["[50, 110]"]], mode = "weight", colors = pal,
             title = "Atlantic cod, 50 cm and over", subtitle = "share of prey weight")
 ```
 
@@ -307,7 +307,7 @@ cells
 
 Crossing divides the sample quickly. With
 `r sum(!is.na(cod$period))` cod records split into eight cells, the largest
-cod of 2022 come from only `r cells["[50, 110)", "2022"]` stomachs. Decide in
+cod of 2022 come from only `r cells["[50, 110]", "2022"]` stomachs. Decide in
 advance how many stomachs a cell needs before you interpret it, and report
 that number with the figure. With a minimum of 30 stomachs, for example, the
 cells to read are:

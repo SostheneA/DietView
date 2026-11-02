@@ -23,3 +23,7 @@ Thumbs.db
 # outputs from examples
 outputs/
 images/
+
+# Scientific manuscript (local only)
+# Exclude manuscript, supplementary material and references
+/paper/

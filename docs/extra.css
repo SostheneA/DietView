@@ -1,0 +1,30 @@
+/* DietView site: justified body text, like "Justify" in Word.
+   pkgdown includes pkgdown/extra.css automatically on every page. */
+
+main p,
+main li,
+main dd,
+main blockquote {
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;            /* breaks long words so justified lines do not leave big gaps */
+  -webkit-hyphens: auto;
+}
+
+/* Keep short or technical blocks left-aligned */
+main .ref-index p,
+main .ref-arguments dd,
+main table p,
+main td, main th,
+main pre, main code,
+main .sourceCode,
+main nav p,
+main .section-toc li {
+  text-align: left;
+  hyphens: manual;
+}
+
+/* On phones, justified narrow columns look worse: go back to left alignment */
+@media (max-width: 576px) {
+  main p, main li, main dd, main blockquote { text-align: left; }
+}

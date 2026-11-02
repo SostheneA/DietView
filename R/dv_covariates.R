@@ -31,6 +31,11 @@ dv_add_period <- function(year, breaks, labels = NULL) {
 #' interval notation that follows `right`: `[a, b)` for left-closed bins (the
 #' default) and `(a, b]` for right-closed bins.
 #'
+#' The outer edge is closed too (`include.lowest = TRUE` in [base::cut()]): a
+#' length equal to the last break falls in the last bin, labelled `[a, b]`
+#' (or, with `right = TRUE`, a length equal to the first break falls in the
+#' first bin, labelled `[a, b]`).
+#'
 #' Lengths outside the breaks become `NA`. A covariate `NA` is not a taxonomic
 #' `NA`: the dashboard ([dv_build_html()]) omits `NA` strata, while the Shiny
 #' app ([run_dietview()]) shows them as an "NA" panel.
@@ -52,7 +57,13 @@ dv_add_period <- function(year, breaks, labels = NULL) {
 dv_size_bins <- function(length, breaks, right = FALSE, labels = NULL) {
   if (is.null(labels)) {
     lo <- utils::head(breaks, -1); hi <- utils::tail(breaks, -1)
-    labels <- if (isTRUE(right)) paste0("(", lo, ", ", hi, "]") else paste0("[", lo, ", ", hi, ")")
+    open <- if (isTRUE(right)) "(" else "["
+    close <- if (isTRUE(right)) "]" else ")"
+    opens <- rep(open, length(lo)); closes <- rep(close, length(lo))
+    # include.lowest closes the outer edge: the last bin when left-closed, the
+    # first when right-closed
+    if (isTRUE(right)) opens[1] <- "[" else closes[length(closes)] <- "]"
+    labels <- paste0(opens, lo, ", ", hi, closes)
   }
-  cut(length, breaks = breaks, labels = labels, right = right)
+  cut(length, breaks = breaks, labels = labels, right = right, include.lowest = TRUE)
 }

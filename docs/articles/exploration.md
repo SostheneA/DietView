@@ -244,8 +244,8 @@ species:
 sw <- dv_threshold_sweep(prep, thresholds = c(5, 10, 20, 30, 50, 100))
 sw
 #>   threshold n_categories pct_coarser
-#> 1         5          110       83.28
-#> 2        10           81       84.29
+#> 1         5          112       83.28
+#> 2        10           82       84.29
 #> 3        20           57       86.17
 #> 4        30           42       88.19
 #> 5        50           32       89.60
@@ -255,7 +255,7 @@ sw
 The share of records above species is high whatever the threshold
 (83.28% at 5 stomachs), because most records were never identified to
 species. Raising the threshold from 5 to 20 stomachs halves the number
-of categories (110 to 57) and moves only 2.9 more percent of the records
+of categories (112 to 57) and moves only 2.9 more percent of the records
 to a coarser rank; beyond 50 the categories become broad groups. We use
 20 stomachs here: about 0.5% of the 4,222 stomachs, enough for a
 category to be compared between the main predators, and a point where
@@ -330,11 +330,11 @@ the same threshold:
 
 dv_threshold_sweep(prep, thresholds = c(5, 10, 20, 30, 50), scope = "per_predator")
 #>   threshold n_categories pct_coarser
-#> 1         5           98       84.83
-#> 2        10           74       86.81
-#> 3        20           46       90.33
-#> 4        30           31       93.93
-#> 5        50           28       94.42
+#> 1         5          120       84.83
+#> 2        10           86       86.81
+#> 3        20           58       90.33
+#> 4        30           40       93.93
+#> 5        50           32       94.42
 ```
 
 DietView stops at the aggregation. If you summarize a statistic across

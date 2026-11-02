@@ -18,8 +18,7 @@
 #' \item `count`: sized by the number of distinct prey items.
 #' \item `occurrence`: sized by prey records (or by individuals, if the tree
 #'   was built with a count column); hover shows the number and the share of all
-#'   records at that rank. The value `"occurrence"` is kept for backward
-#'   compatibility.
+#'   records at that rank.
 #' \item `weight`: sized by weight; hover shows the weight and the weight share
 #'   at that rank.
 #' }

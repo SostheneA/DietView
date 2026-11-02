@@ -60,10 +60,18 @@ dv_build_tree <- function(df, ranks,
   n <- nrow(df)
   if (n == 0) return(.dv_empty_tree())
 
-  occ_unit <- if (is.null(count_col)) rep(1, n) else suppressWarnings(as.numeric(df[[count_col]]))
+  if (!is.null(count_col) && !count_col %in% names(df))
+    stop("The count column `", count_col, "` is not in the data.", call. = FALSE)
+  if (!is.null(weight_col) && !weight_col %in% names(df)) {
+    warning("The weight column `", weight_col, "` is not in the data; weights ",
+            "are treated as absent.", call. = FALSE)
+    weight_col <- NULL
+  }
+
+  occ_unit <- if (is.null(count_col)) rep(1, n) else .dv_as_num(df[[count_col]])
   occ_unit[is.na(occ_unit)] <- 0
 
-  w_val <- if (is.null(weight_col)) rep(0, n) else suppressWarnings(as.numeric(df[[weight_col]]))
+  w_val <- if (is.null(weight_col)) rep(0, n) else .dv_as_num(df[[weight_col]])
   w_val[is.na(w_val)] <- 0
 
   d <- df[, ranks, drop = FALSE]
@@ -90,9 +98,12 @@ dv_build_tree <- function(df, ranks,
       .groups = "drop"
     )
     g <- as.data.frame(g)
-    g$id <- do.call(paste, c(g[cols_i], sep = "|"))
+    # "|" separates ranks in node ids, so a "|" inside a label is escaped in
+    # the id (the label itself is unchanged)
+    parts <- lapply(g[cols_i], .dv_id_part)
+    g$id <- do.call(paste, c(parts, sep = "|"))
     g$label <- g[[cols_i[length(cols_i)]]]
-    g$parent <- if (i == 1) "" else do.call(paste, c(g[cols_i[-length(cols_i)]], sep = "|"))
+    g$parent <- if (i == 1) "" else do.call(paste, c(parts[-length(parts)], sep = "|"))
     g$rank <- rank_labels[i]
     g[, c("id", "label", "parent", "rank", "value_item", "value_occ", "value_w")]
   })
@@ -200,7 +211,10 @@ dv_tree <- function(prep, currency = c("records", "numbers")) {
   if (currency != "numbers") return(NULL)
   cc <- spec$count
   if (is.null(cc)) stop("currency = 'numbers' needs `count` in the spec.", call. = FALSE)
-  v <- suppressWarnings(as.numeric(data[[cc]]))
+  if (!cc %in% names(data))
+    stop("currency = 'numbers' but the count column `", cc, "` is not in the data.",
+         call. = FALSE)
+  v <- .dv_as_num(data[[cc]])
   if (any(is.na(v)))
     warning(sum(is.na(v)), " record(s) have no count and contribute 0 to the ",
             "numbers currency; unidentified material usually has no count, so ",

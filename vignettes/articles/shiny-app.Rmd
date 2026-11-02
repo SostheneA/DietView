@@ -81,15 +81,39 @@ disappears from that view.
 - a predator selector, with "(all predators)" to pool every predator;
 - a choice of what sizes the wedges: prey records (% of all records), weight
   (% of total weight) or the number of distinct prey items;
-- a covariate to facet by, which draws one sunburst per level;
-- a second covariate to cross with the first, which draws one sunburst per
-  combination of levels;
-- a rank selector for the table under the figure.
+- a reporting-resolution selector: the full hierarchy, or rare prey merged up
+  their lineage with `dv_aggregate_threshold()` in one of its three variants
+  (pooled; pooled cross-predator, with a minimum number of predators; per
+  predator), with the threshold as a number of stomachs;
+- a covariate to facet by, which draws one sunburst per level, and a second
+  covariate to cross with the first, which draws one sunburst per combination;
+- a rank selector for the tables.
 
-For each selection the app takes the records of the chosen predator, builds
-the tree with `dv_build_tree()`, draws the sunburst with one palette built from
-all the records, and shows the table for the chosen rank: one row per taxon
-at that rank, with its records, weight and shares.
+The tabs show the sunburst, the rank table (shares of records and weight at
+the chosen rank, unidentified rows included), the frequency of occurrence at
+that rank (`dv_fo_table()`) and, when the spec declares a digestion column,
+the digestion diagnostic (`dv_digestion_diagnostic()`).
+
+Pooled aggregations are computed on all predators before one is selected, so
+a category means the same thing in every predator's view. Per-predator
+aggregation counts stomachs within each predator, so its categories differ
+between predators.
+
+## Reproducing a view
+
+The **Reproduce** tab shows the R script that rebuilds the current view, as
+written by `dv_script()`, and offers the script, the prepared data it reads
+(`dietview_prep.rds`) and the current tables (CSV) as downloads. The script
+uses exported functions only, so it runs without the app, and its header
+records the date, the DietView and R versions, the taxonomy source, the
+reporting resolution and the column specification. The same script can be
+written without the app:
+
+```{r script}
+s <- dv_script(prep, predator = "Atlantic cod", mode = "weight",
+               aggregation = list(threshold = 8, scope = "pooled"))
+s
+```
 
 ## The app or the dashboard?
 

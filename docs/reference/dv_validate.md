@@ -43,7 +43,8 @@ dropped covariates) and `dv_report` (a list of counts).
 
 A missing weight or digestion column is not an error: it only disables
 the weight views or the digestion diagnostic, and is reported as a
-message.
+message. A weight or count column declared in the spec but absent from
+`data` is dropped from the returned spec, with a warning.
 
 ## Examples
 

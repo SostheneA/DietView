@@ -6,12 +6,26 @@
 
 .dv_slugify <- function(x) tolower(gsub("[^A-Za-z0-9]+", "_", x))
 
+# Null default (base R has it only from 4.4.0).
+`%||%` <- function(a, b) if (is.null(a)) b else a
+
 # Replace NA / "" by the explicit "NA" category (character).
 .dv_fill_na <- function(x) {
   v <- as.character(x)
   v[is.na(v) | v == ""] <- "NA"
   v
 }
+
+# Numeric value of a column. Factors go through their labels, not their level
+# codes; values that are not numbers become NA.
+.dv_as_num <- function(x) {
+  if (is.factor(x)) x <- as.character(x)
+  suppressWarnings(as.numeric(x))
+}
+
+# A taxon label as one component of a node id: "|" is the rank separator, so
+# it is replaced by a broken bar.
+.dv_id_part <- function(x) gsub("|", "\u00a6", as.character(x), fixed = TRUE)
 
 .dv_empty_tree <- function() {
   out <- data.frame(
@@ -88,11 +102,13 @@ dv_palette <- function(labels, palette = .DV_D3) {
 #' p <- dv_sunburst(tree, mode = "occurrence", colors = cols)
 #' @export
 dv_palette_tree <- function(tree, base_rank = 2L, palette = .DV_D3[c(TRUE, FALSE)]) {
-  ranks <- unique(tree$rank)
-  depth <- match(tree$rank, ranks)
-  base  <- tree$id[depth == base_rank & tree$label != "NA"]
+  # depth from the id itself, so the row order of `tree` does not matter
+  parts <- strsplit(tree$id, "|", fixed = TRUE)
+  depth <- lengths(parts)
+  # hues follow the sorted ids, not the row order
+  base  <- sort(tree$id[depth == base_rank & tree$label != "NA"], method = "radix")
   base_col <- stats::setNames(rep(palette, length.out = length(base)), base)
-  anc <- vapply(strsplit(tree$id, "|", fixed = TRUE), function(p)
+  anc <- vapply(parts, function(p)
     if (length(p) >= base_rank) paste(p[seq_len(base_rank)], collapse = "|")
     else NA_character_, character(1))
   col <- unname(base_col[anc]); col[is.na(col)] <- "#BDBDBD"

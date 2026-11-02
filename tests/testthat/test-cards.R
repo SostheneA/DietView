@@ -45,6 +45,7 @@ mock_inat <- function(search, full, env = parent.frame()) {
 }
 
 test_that("an openly licensed iNaturalist photo comes with author and license", {
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   p <- photo(111, "cc-by")
   mock_inat(inat_search(p), inat_full(p))
@@ -61,6 +62,7 @@ test_that("an openly licensed iNaturalist photo comes with author and license", 
 })
 
 test_that("photos outside the accepted licenses are skipped, never used", {
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   arr   <- photo(1, NULL, "Rights Reserved")      # all rights reserved
   nc    <- photo(2, "cc-by-nc", "Non Commercial")
@@ -81,6 +83,7 @@ test_that("photos outside the accepted licenses are skipped, never used", {
 })
 
 test_that("no acceptable photo means no photo, but the description is kept", {
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   arr <- photo(1, NULL)
   mock_inat(inat_search(arr), inat_full(arr))
@@ -94,6 +97,7 @@ test_that("no acceptable photo means no photo, but the description is kept", {
 })
 
 test_that("a taxon whose name does not match the query is not used", {
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   wrong <- list(results = list(list(id = 1, name = "Gadus", matched_term = "Gadus",
                                     default_photo = photo(1, "cc-by"))))
@@ -105,6 +109,7 @@ test_that("a taxon whose name does not match the query is not used", {
 })
 
 test_that("a cached photo keeps its credit without any network call", {
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   p <- photo(111, "cc-by-sa", "Cached Author")
   mock_inat(inat_search(p), inat_full(p))
@@ -121,6 +126,7 @@ test_that("a cached photo keeps its credit without any network call", {
 })
 
 test_that("offline by default, and credit given in info is used for local photos", {
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   calls <- mock_inat(NULL, NULL)
   img <- file.path(dir, "cod.jpg")
@@ -135,6 +141,7 @@ test_that("offline by default, and credit given in info is used for local photos
 test_that("bad license codes and the deprecated use_wiki are handled", {
   expect_error(dv_species_card_assets("Atlantic cod", licenses = "cc-by-4.0"),
                "Unknown iNaturalist license")
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   calls <- mock_inat(NULL, NULL)
   expect_message(dv_species_card_assets("Atlantic cod", image_dir = dir,
@@ -144,6 +151,7 @@ test_that("bad license codes and the deprecated use_wiki are handled", {
 })
 
 test_that("the dashboard card shows the linked credit line", {
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   p <- photo(111, "cc-by")
   mock_inat(inat_search(p), inat_full(p))
@@ -161,6 +169,7 @@ test_that("the dashboard card shows the linked credit line", {
 })
 
 test_that("sources are tried in order: iNaturalist first, then Wikimedia", {
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   arr <- photo(1, NULL)                       # iNaturalist has no usable photo
   thumb <- "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Gadus_morhua.jpg/320px-Gadus_morhua.jpg"
@@ -194,6 +203,7 @@ test_that("\"none\" cannot be combined, and the default stays offline", {
   expect_error(dv_species_card_assets("Atlantic cod",
                                       photo_source = c("none", "inaturalist")),
                "cannot be combined")
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   calls <- mock_inat(NULL, NULL)
   a <- dv_species_card_assets("Atlantic cod", "Gadus morhua", image_dir = dir)

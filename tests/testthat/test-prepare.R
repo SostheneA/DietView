@@ -21,8 +21,8 @@ test_that("strict_covariates = FALSE really drops the missing covariate", {
 })
 
 test_that("bin and period labels say what they contain", {
-  expect_equal(levels(dv_size_bins(c(18, 26), breaks = c(0, 20, 30))), c("[0, 20)", "[20, 30)"))
-  expect_equal(as.character(dv_size_bins(20, breaks = c(0, 20, 30))), "[20, 30)")
+  expect_equal(levels(dv_size_bins(c(18, 26), breaks = c(0, 20, 30))), c("[0, 20)", "[20, 30]"))
+  expect_equal(as.character(dv_size_bins(20, breaks = c(0, 20, 30))), "[20, 30]")
   expect_equal(levels(dv_add_period(c(2004, 2010), breaks = c(2003, 2007, 2020))),
                c("2003-2007", "2008-2020"))
 })

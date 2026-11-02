@@ -28,10 +28,13 @@
 #' are cached to disk, so re-runs and other surveys do not requery. Failed
 #' lookups (timeout, no network, server error, an AphiaID WoRMS does not know)
 #' are never cached: they are flagged with `lineage_ok = FALSE` and a warning,
-#' and are retried on the next run. Cache entries written by DietView 0.1.0,
-#' which carry no date, are fetched again; the empty lineages it cached after
-#' failed lookups are discarded. The cache file is written even if the run is
-#' interrupted.
+#' and are retried on the next run.
+#'
+#' The cache is managed: entries older than `cache_max_age` days are removed
+#' from the file each time it is read (and fetched again when needed), as are
+#' malformed (undated) entries. An unreadable cache file is
+#' ignored with a warning and rebuilt. The file is rewritten only when something
+#' changed, even if the run is interrupted, and [dv_cache_clear()] deletes it.
 #'
 #' @param keys Data.frame with columns `prey_id` (AphiaID, may be NA) and
 #'   `prey_name` (may be NA); one row per unique prey. Other columns are kept.
@@ -81,38 +84,45 @@ dv_taxonomy_worms <- function(keys,
   }
   keys <- as.data.frame(keys, stringsAsFactors = FALSE)
   n <- nrow(keys)
-  for (r in ranks) keys[[r]] <- NA_character_
-  keys$aphia_used   <- NA_integer_
+  # rep(..., n) so that an empty `keys` gives an empty result, not an error
+  for (r in ranks) keys[[r]] <- rep(NA_character_, n)
+  keys$aphia_used   <- rep(NA_integer_, n)
   keys$match_type   <- rep("unresolved", n)
-  keys$name_check   <- NA_character_
-  keys$matched_name <- NA_character_
-  keys$n_candidates <- NA_integer_
+  keys$name_check   <- rep(NA_character_, n)
+  keys$matched_name <- rep(NA_character_, n)
+  keys$n_candidates <- rep(NA_integer_, n)
   keys$homonym      <- rep(FALSE, n)
-  keys$lineage_ok   <- NA                       # TRUE / FALSE once a lookup is tried
-  keys$retrieved    <- NA_character_
+  keys$lineage_ok   <- rep(NA, n)                    # TRUE / FALSE once a lookup is tried
+  keys$retrieved    <- rep(NA_character_, n)
 
   # ---- cache ---------------------------------------------------------------
   # Entries are list(v = value, t = time of the WoRMS call). Only successful
   # lookups are stored.
   now <- Sys.time()
-  cache_file <- NULL; cache <- list()
+  cache_file <- NULL; cache <- list(); dirty <- FALSE
   if (!is.null(cache_dir)) {
     dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
-    cache_file <- file.path(cache_dir, "worms_lineage.rds")
-    if (file.exists(cache_file)) cache <- readRDS(cache_file)
-    # entries written by DietView <= 0.1.0 after a failed lookup: all-NA lineages
-    bad <- vapply(cache, function(v) is.character(v) && all(is.na(v)), logical(1))
-    if (any(bad)) cache <- cache[!bad]
-    on.exit(saveRDS(cache, cache_file), add = TRUE)   # saved even on error/interrupt
+    cache_file <- file.path(cache_dir, .DV_CACHE_FILE)
+    cache <- .dv_cache_read(cache_file)
+    # expired and malformed (undated) entries are removed, so the file does not grow
+    # without bound
+    n_read <- length(cache)
+    cache <- .dv_cache_prune(cache, now, cache_max_age)
+    dirty <- length(cache) != n_read
+    # saved even on error/interrupt, and only when something changed
+    on.exit(if (dirty) .dv_cache_write(cache, cache_file), add = TRUE)
   }
   cache_get <- function(key) {
     e <- cache[[key]]
-    if (!is.list(e) || is.null(e$t)) return(NULL)     # missing, or 0.1.0 (undated)
+    if (!is.list(e) || is.null(e$t)) return(NULL)     # missing or malformed (undated)
     age <- as.numeric(difftime(now, e$t, units = "days"))
     if (is.finite(cache_max_age) && age > cache_max_age) return(NULL)
     e
   }
-  cache_set <- function(key, v) cache[[key]] <<- list(v = v, t = now)
+  cache_set <- function(key, v) {
+    cache[[key]] <<- list(v = v, t = now)
+    dirty <<- TRUE
+  }
 
   # ---- record for one AphiaID (cached): status, name, accepted ID ----------
   record_for <- function(aphia) {
@@ -134,7 +144,8 @@ dv_taxonomy_worms <- function(keys,
   lineage_for <- function(aphia) {
     key <- paste0("id:", aphia)
     hit <- cache_get(key)
-    if (!is.null(hit)) return(hit)
+    # an entry cached with fewer ranks than requested now is fetched again
+    if (!is.null(hit) && all(ranks %in% names(hit$v))) return(hit)
     cl <- tryCatch(worrms::wm_classification(as.integer(aphia)),
                    error = function(e) NULL)
     if (is.null(cl) || !NROW(cl)) return(NULL)        # failure: NOT cached
@@ -150,7 +161,9 @@ dv_taxonomy_worms <- function(keys,
 
   # ---- name -> record (exact, then TAXAMATCH); follows unaccepted -> valid --
   match_name <- function(nm) {
-    key <- paste0("nm:", tolower(nm), if (fuzzy) ":f" else ":e")
+    # the key carries every option that changes the answer
+    key <- paste0("nm:", tolower(nm), if (fuzzy) ":f" else ":e",
+                  if (marine_only) ":m" else ":a")
     hit <- cache_get(key)
     if (!is.null(hit)) return(hit$v)
 
@@ -166,26 +179,32 @@ dv_taxonomy_worms <- function(keys,
       list(aphia = as.integer(id), name = as.character(nmm), type = type,
            n_candidates = nrow(df), homonym = length(ok) > 1L)
     }
-    # exact: wm_records_names() matches the name as written (no wildcard)
-    res <- tryCatch({
-      lst <- worrms::wm_records_names(name = nm, marine_only = marine_only)
+    # WoRMS answers "no match" with an HTTP 204 error; any other error (timeout,
+    # server error) means the lookup itself failed and must not look like a
+    # genuine non-match
+    failed <- FALSE
+    ask <- function(fun, type) tryCatch({
+      lst <- fun(name = nm, marine_only = marine_only)
       df <- if (length(lst)) lst[[1]] else NULL
-      pick(df, "exact")
-    }, error = function(e) NULL)
+      pick(df, type)
+    }, error = function(e) {
+      if (!.dv_is_no_match(e)) failed <<- TRUE
+      NULL
+    })
 
+    # exact: wm_records_names() matches the name as written (no wildcard)
+    res <- ask(worrms::wm_records_names, "exact")
     # fuzzy: TAXAMATCH, which tolerates misspellings (a LIKE search does not)
-    if (is.null(res) && isTRUE(fuzzy)) {
-      res <- tryCatch({
-        lst <- worrms::wm_records_taxamatch(name = nm, marine_only = marine_only)
-        df  <- if (length(lst)) lst[[1]] else NULL
-        pick(df, "fuzzy")
-      }, error = function(e) NULL)
-    }
+    if (is.null(res) && isTRUE(fuzzy))
+      res <- ask(worrms::wm_records_taxamatch, "fuzzy")
+
     if (!is.null(res)) cache_set(key, res)
+    else if (failed) res <- list(failed = TRUE)     # failure: NOT cached
     res
   }
 
   # ---- resolve each prey ---------------------------------------------------
+  n_name_fail <- 0L
   for (i in seq_len(n)) {
     aphia <- suppressWarnings(as.integer(keys$prey_id[i]))
     nm    <- trimws(as.character(keys$prey_name[i]))
@@ -201,7 +220,10 @@ dv_taxonomy_worms <- function(keys,
         keys$name_check[i] <- if (tolower(nm) == tolower(rec$name)) "agrees" else "differs"
     } else if (!is.na(nm) && nzchar(nm)) {
       m <- match_name(nm)
-      if (!is.null(m)) {
+      if (isTRUE(m$failed)) {
+        keys$lineage_ok[i] <- FALSE
+        n_name_fail <- n_name_fail + 1L
+      } else if (!is.null(m)) {
         keys$aphia_used[i]   <- m$aphia
         keys$match_type[i]   <- m$type
         keys$matched_name[i] <- m$name
@@ -221,7 +243,11 @@ dv_taxonomy_worms <- function(keys,
     if (verbose && i %% 100 == 0) message(" resolved ", i, "/", n)
   }
 
-  n_fail <- sum(keys$lineage_ok %in% FALSE)
+  if (n_name_fail)
+    warning(n_name_fail, " prey name(s) could not be looked up in WoRMS (network ",
+            "or server error). They are left unresolved for now and were not ",
+            "cached; run again to retry, and see dv_taxonomy_report().", call. = FALSE)
+  n_fail <- sum(keys$lineage_ok %in% FALSE) - n_name_fail
   if (n_fail)
     warning(n_fail, " prey key(s) were matched but WoRMS returned no classification ",
             "(network or server error, or an ID WoRMS does not know). Their records are ",
@@ -238,8 +264,83 @@ dv_taxonomy_worms <- function(keys,
   keys
 }
 
+# ---- on-disk WoRMS cache ----------------------------------------------------
+
+.DV_CACHE_FILE <- "worms_lineage.rds"
+
+# Internal: read the cache; an unreadable file is ignored (and later replaced).
+.dv_cache_read <- function(file) {
+  if (!file.exists(file)) return(list())
+  x <- tryCatch(readRDS(file), error = function(e) {
+    warning("The WoRMS cache file '", file, "' could not be read (",
+            conditionMessage(e), "); it is ignored and will be rebuilt.",
+            call. = FALSE)
+    NULL
+  })
+  if (is.list(x)) x else list()
+}
+
+# Internal: keep only dated entries no older than `max_age` days.
+.dv_cache_prune <- function(cache, now, max_age) {
+  if (!length(cache)) return(cache)
+  keep <- vapply(cache, function(e) {
+    if (!is.list(e) || is.null(e$t)) return(FALSE)
+    !is.finite(max_age) ||
+      as.numeric(difftime(now, e$t, units = "days")) <= max_age
+  }, logical(1))
+  cache[keep]
+}
+
+# Internal: write to a temporary file first, so an interrupted write never
+# leaves a truncated cache behind.
+.dv_cache_write <- function(cache, file) {
+  tmp <- paste0(file, ".tmp")
+  ok <- tryCatch({
+    saveRDS(cache, tmp)
+    file.rename(tmp, file)
+  }, error = function(e) FALSE)
+  if (!isTRUE(ok)) {
+    unlink(tmp)
+    warning("Could not write the WoRMS cache to '", file, "'.", call. = FALSE)
+  }
+  invisible(isTRUE(ok))
+}
+
+#' Delete the WoRMS lookup cache
+#'
+#' [dv_prepare()] and [dv_taxonomy_worms()] keep successful WoRMS lookups in a
+#' cache file, by default in `tools::R_user_dir("DietView", "cache")`. Expired
+#' entries are removed automatically; this function deletes the whole cache,
+#' and the cache directory too if nothing else is left in it.
+#'
+#' @param cache_dir The cache directory, as given to [dv_prepare()].
+#' @return `TRUE` if a cache file was deleted, `FALSE` otherwise, invisibly.
+#' @examples
+#' # a cache in a temporary folder, so the example leaves nothing behind
+#' dir <- file.path(tempdir(), "dietview-cache")
+#' dir.create(dir)
+#' saveRDS(list(), file.path(dir, "worms_lineage.rds"))
+#' dv_cache_clear(dir)
+#' dir.exists(dir)
+#' @export
+dv_cache_clear <- function(cache_dir = tools::R_user_dir("DietView", "cache")) {
+  f <- file.path(cache_dir, .DV_CACHE_FILE)
+  had <- file.exists(f)
+  if (had) unlink(f)
+  if (dir.exists(cache_dir) &&
+      !length(list.files(cache_dir, all.files = TRUE, no.. = TRUE)))
+    unlink(cache_dir, recursive = TRUE)
+  invisible(had)
+}
+
+# Internal: TRUE when a worrms error means "WoRMS has no such name" (HTTP 204,
+# "No Content"), as opposed to a failed request.
+.dv_is_no_match <- function(e) {
+  grepl("204|no content|not found|no match", conditionMessage(e), ignore.case = TRUE)
+}
+
 # Internal: rows of a taxonomy log (or of dv_taxonomy_worms() keys) that need a
-# human eye. Columns missing from older logs count as "no problem".
+# human eye. Columns missing from the log count as "no problem".
 .dv_review_rows <- function(log) {
   col <- function(nm) if (is.null(log[[nm]])) rep(NA, nrow(log)) else log[[nm]]
   keep <- col("match_type") %in% c("fuzzy", "unresolved", "id_synonym", "id_unchecked") |

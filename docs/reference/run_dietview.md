@@ -3,11 +3,9 @@
 A Shiny explorer over a prepared dataset: pick a predator (or "(all
 predators)" to pool every predator together), what sizes the wedges
 (prey records as % of all records, weight as % of total weight, or the
-number of distinct prey items), and optionally one covariate to facet by
-plus a second one to cross it with (e.g. length bins by period). Shows
-the sunburst – one panel per covariate cell when faceting, covariate
-`NA` values getting their own "NA" panel – plus the within-rank
-importance table for the current selection.
+number of distinct prey items), the reporting resolution, and optionally
+one covariate to facet by plus a second one to cross it with (e.g.
+length bins by period).
 
 ## Usage
 
@@ -36,6 +34,27 @@ run_dietview(prep, currency = c("records", "numbers"), ...)
 ## Value
 
 Runs the app (does not return).
+
+## Details
+
+The reporting resolution is either the full hierarchy (every record at
+every rank, unidentified material carried outward) or one of the three
+threshold aggregations of
+[`dv_aggregate_threshold()`](https://sosthenea.github.io/DietView/reference/dv_aggregate_threshold.md):
+pooled, pooled cross-predator (a category must also span `min_predators`
+predators) and per predator. Pooled aggregations are computed on all
+predators before one is selected, so the categories are the same in
+every predator's view.
+
+The tabs show the sunburst (one panel per covariate cell when faceting,
+covariate `NA` values getting their own "NA" panel), the rank table, the
+frequency of occurrence at the chosen rank, the digestion diagnostic
+(when a digestion column is declared) and a "Reproduce" tab. That tab
+shows the R script that rebuilds the current view with exported
+functions only (see
+[`dv_script()`](https://sosthenea.github.io/DietView/reference/dv_script.md))
+and offers the script, the prepared data it reads and the current tables
+as downloads.
 
 ## Examples
 

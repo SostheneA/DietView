@@ -54,8 +54,7 @@ Three modes:
 \item \code{count}: sized by the number of distinct prey items.
 \item \code{occurrence}: sized by prey records (or by individuals, if the tree
 was built with a count column); hover shows the number and the share of all
-records at that rank. The value \code{"occurrence"} is kept for backward
-compatibility.
+records at that rank.
 \item \code{weight}: sized by weight; hover shows the weight and the weight share
 at that rank.
 }

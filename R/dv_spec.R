@@ -70,7 +70,9 @@ dv_spec <- function(predator, stomach,
 #' repair.
 #'
 #' A missing weight or digestion column is not an error: it only disables the
-#' weight views or the digestion diagnostic, and is reported as a message.
+#' weight views or the digestion diagnostic, and is reported as a message. A
+#' weight or count column declared in the spec but absent from `data` is
+#' dropped from the returned spec, with a warning.
 #'
 #' @param data A data.frame, one row per prey record.
 #' @param spec A `dietview_spec` from [dv_spec()].
@@ -114,6 +116,16 @@ dv_validate <- function(data, spec, strict_covariates = TRUE, quiet = FALSE) {
     if (isTRUE(strict_covariates)) stop(msg, call. = FALSE)
     warning(msg, "; they are dropped from the spec.", call. = FALSE)
     spec$covariates <- setdiff(spec$covariates, cov_miss)
+  }
+
+  # a declared weight or count column that is absent disables that view; it is
+  # dropped from the spec so that no later step tries to read it
+  for (opt in c("weight", "count")) {
+    if (!is.null(spec[[opt]]) && !spec[[opt]] %in% cols) {
+      warning("Declared ", opt, " column `", spec[[opt]], "` is absent from the ",
+              "data; it is dropped from the spec.", call. = FALSE)
+      spec[opt] <- list(NULL)
+    }
   }
 
   # prey keys

@@ -16,7 +16,6 @@ authors:
   - given-names: "Sosthène A. V."
     family-names: "Akia"
     email: "akiasosthene@gmail.com"
-doi: "10.5281/zenodo.XXXXXXX"
 repository-code: "https://github.com/SostheneA/DietView"
 url: "https://sosthenea.github.io/DietView/"
 license: MIT

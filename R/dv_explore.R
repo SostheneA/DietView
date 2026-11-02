@@ -88,7 +88,7 @@ dv_summary <- function(prep, by = NULL, rank = NULL) {
     out$n_taxa     <- length(unique(stats::na.omit(leaf[ix])))
     out$records_per_stomach <- round(out$n_records / out$n_stomachs, 2)
     if (!is.null(wcol) && wcol %in% names(d))
-      out$total_weight <- sum(suppressWarnings(as.numeric(d[[wcol]][ix])), na.rm = TRUE)
+      out$total_weight <- sum(.dv_as_num(d[[wcol]][ix]), na.rm = TRUE)
     out
   })
   res <- do.call(rbind, rows)
@@ -356,7 +356,7 @@ dv_matrix <- function(prep, category = NULL, unit = NULL, rank = NULL,
       if (is.null(w) || !w %in% names(d))
         stop("currency = 'weight' needs a weight column in the spec.",
              call. = FALSE)
-      suppressWarnings(as.numeric(d[[w]]))[keep]
+      .dv_as_num(d[[w]])[keep]
     },
     occurrence = rep(1, length(u)),
     fo = rep(1, length(u))

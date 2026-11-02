@@ -31,7 +31,9 @@ repair.
 }
 \details{
 A missing weight or digestion column is not an error: it only disables the
-weight views or the digestion diagnostic, and is reported as a message.
+weight views or the digestion diagnostic, and is reported as a message. A
+weight or count column declared in the spec but absent from \code{data} is
+dropped from the returned spec, with a warning.
 }
 \examples{
 # the standard set-up: public ICES data, non-food items and nematodes dropped

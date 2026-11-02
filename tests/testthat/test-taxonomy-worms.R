@@ -42,6 +42,7 @@ test_that("a failed classification is flagged and not cached", {
     wm_records_taxamatch = function(name, ...) stop("no match"),
     .package = "worrms"
   )
+  skip_if_not_installed("withr")
   dir <- withr::local_tempdir()
   dat  <- data.frame(pred = "cod", stom = "s1", aphia = 107649, name = "Pandalus borealis")
   spec <- dv_spec(predator = "pred", stomach = "stom", prey_id = "aphia", prey_name = "name")

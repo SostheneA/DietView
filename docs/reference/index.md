@@ -45,6 +45,10 @@ logging every match for review.
   fuzzy)
 - [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md)
   : Review doubtful prey matches
+- [`dv_lineage_check()`](https://sosthenea.github.io/DietView/reference/dv_lineage_check.md)
+  : Check a lineage for spelling variants and inconsistent placements
+- [`dv_cache_clear()`](https://sosthenea.github.io/DietView/reference/dv_cache_clear.md)
+  : Delete the WoRMS lookup cache
 
 ## 3 · Build covariates
 
@@ -100,6 +104,8 @@ A self-contained HTML dashboard, a deploy wrapper, and a Shiny explorer.
   : Deploy the dashboard as a standalone HTML file
 - [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md)
   : Launch the interactive DietView app
+- [`dv_script()`](https://sosthenea.github.io/DietView/reference/dv_script.md)
+  : Write a reproducible R script for one DietView analysis
 
 ## 9 · Explore, aggregate, and export
 

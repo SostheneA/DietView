@@ -1,38 +1,36 @@
 ## Submission summary
 
-This is a new submission of DietView, a package for interactive, taxonomically
-complete visualization of predator diet from stomach-content data.
+This is a new submission of DietView (version 0.1.0), a package for
+interactive, hierarchical visualization of predator diet from stomach-content
+data.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 0 notes
 
-* This is a new release, so the only NOTE is the expected "New submission".
+* On CRAN's incoming checks the NOTE "New submission" is expected.
 
 ## Test environments
 
-* Local: <your OS>, R <your R version>
-* win-builder: devel and release
-* macOS-builder (mac.r-project.org)
-* GitHub Actions: ubuntu-latest (devel, release, oldrel-1), macOS-latest, windows-latest
-* R-hub: linux, windows, macos
+* Local: Windows 11 x64 (build 26100), R 4.5.2
 
 ## Notes for the CRAN team
 
-* Possibly misspelled words in DESCRIPTION are intentional domain terms, data
-  sources, and software names: "AphiaID", "WoRMS", "covariate(s)", "plotly",
-  "shiny", "sunburst", "taxonomically". "WoRMS", "shiny", and "plotly" are given
-  in single quotes as required for data sources and software.
-* The package uses several suggested packages (worrms, shiny, DT, rmarkdown).
-  All of them are used conditionally via requireNamespace(..., quietly = TRUE);
-  none are needed for the core pipeline, tests, or the executed vignettes.
+* "sunburst" in the Description is the name of a chart type, not a misspelling.
+  'WoRMS', 'worrms', 'shiny' and 'plotly' are in single quotes as data source
+  and software names.
+* The suggested packages (worrms, shiny, DT, rmarkdown, withr) are used
+  conditionally via requireNamespace(..., quietly = TRUE) in the code and
+  testthat::skip_if_not_installed() in the tests; none is needed for the core
+  pipeline.
 * The optional WoRMS taxonomy path (dv_taxonomy_worms(), dv_prepare(taxonomy =
-  "worms")) and the species-card photo lookups access the internet. They are
-  never triggered in examples, tests, or the executed vignettes, and their cache
-  defaults to tools::R_user_dir("DietView", "cache"). The tests and the rendered
-  vignettes run fully offline on bundled example data.
-* dv_build_html()/dv_deploy() write an HTML file to a user-specified location;
-  they are not called in examples, tests, or executed vignettes.
+  "worms")) and the species-card photo lookups access the internet. Their
+  examples are not run, the tests mock every network call, and the executed
+  vignettes run offline on bundled data. The WoRMS cache is written to
+  tools::R_user_dir("DietView", "cache") only when the user calls these
+  functions; cache_dir = NULL disables it.
+* The examples of dv_build_html() and dv_deploy() write their HTML file to
+  tempdir().
 
 ## Reverse dependencies
 

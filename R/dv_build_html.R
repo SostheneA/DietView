@@ -169,6 +169,10 @@ dv_build_html <- function(prep, output,
   }
 
   preds <- sort(unique(as.character(d[[pcol]])))
+  n_na_pred <- sum(is.na(d[[pcol]]))
+  if (n_na_pred)
+    warning(n_na_pred, " record(s) have no predator; they appear only in the ",
+            "Global view.", call. = FALSE)
   cards <- list(); tabs <- list()
 
   # Global
@@ -186,7 +190,8 @@ dv_build_html <- function(prep, output,
 
   for (i in seq_along(preds)) {
     p <- preds[i]; recs <- d[which(as.character(d[[pcol]]) == p), ]
-    pid <- gsub("[^A-Za-z0-9]", "_", p)
+    # the index keeps ids unique ("A-b" and "A b" would otherwise collide)
+    pid <- paste0("p", i, "_", gsub("[^A-Za-z0-9]", "_", p))
     latin <- if (!is.null(spec$predator_latin)) as.character(recs[[spec$predator_latin]])[1] else NA
     a <- dv_species_card_assets(p, latin, species_info[[p]], image_dir = image_dir,
                                 photo_source = photo_source, licenses = licenses)

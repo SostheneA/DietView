@@ -28,7 +28,7 @@ BugReports: https://github.com/SostheneA/DietView/issues
 Depends:
     R (>= 4.1)
 Imports:
-    dplyr,
+    dplyr (>= 1.0.0),
     grDevices,
     htmltools,
     jsonlite,
@@ -41,7 +41,7 @@ Suggests:
     DT,
     rmarkdown,
     shiny,
-    testthat (>= 3.0.0),
+    testthat (>= 3.1.7),
     withr,
     worrms
 VignetteBuilder:
