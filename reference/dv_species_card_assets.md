@@ -33,8 +33,7 @@ dv_species_card_assets(
   info = NULL,
   image_dir = file.path(tempdir(), "dietview-images"),
   photo_source = "none",
-  licenses = c("cc0", "cc-by", "cc-by-sa"),
-  use_wiki = NULL
+  licenses = c("cc0", "cc-by", "cc-by-sa")
 )
 ```
 
@@ -73,12 +72,8 @@ dv_species_card_assets(
   licenses that allow redistribution with attribution: `"cc0"`,
   `"cc-by"` and `"cc-by-sa"`. Add `"cc-by-nc"` (and `"cc-by-nc-sa"`,
   `"cc-by-nd"`, `"cc-by-nc-nd"`) only if the dashboard will be shared
-  for non-commercial use and the license terms suit you.
-
-- use_wiki:
-
-  Deprecated. `TRUE` means `photo_source = "wikipedia"`, `FALSE` means
-  `photo_source = "none"`.
+  for non-commercial use and the license terms suit you. A cached
+  iNaturalist photo whose license is not in `licenses` is not reused.
 
 ## Value
 

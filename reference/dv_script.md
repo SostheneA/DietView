@@ -57,7 +57,10 @@ dv_script(
 - facet:
 
   Up to two covariates to draw one panel per level (or per combination
-  of levels), or `NULL`.
+  of levels), or `NULL`. With two, `c(inner, outer)` as in the app:
+  `panels` is then a list over the levels of `outer`, each a list over
+  the levels of `inner`. Missing covariate values get their own `"NA"`
+  panel.
 
 - rank:
 
@@ -98,7 +101,7 @@ s <- dv_script(prep, mode = "weight",
                aggregation = list(threshold = 10, scope = "pooled"))
 s
 #> ## DietView analysis script
-#> ## Generated 2026-11-02 17:37 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).
+#> ## Generated 2026-11-02 18:19 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).
 #> ## Predator: all predators | wedges: weight | currency: records
 #> ## Reporting resolution: threshold 10 stomachs, scope = pooled, min_predators = 1
 #> # Taxonomy source: table
@@ -123,12 +126,16 @@ s
 #> prep <- dv_aggregate_threshold(prep, threshold = 10, scope = "pooled", min_predators = 1)
 #> attr(prep, "aggregation")
 #> 
-#> ## 4. Multi-rank tree and sunburst
+#> ## 3. Colors: one per taxon label, from all predators, so a taxon keeps its
+#> ## color in every view (unidentified material is the white "NA" category)
+#> fill_na <- function(x) { x <- as.character(x); x[is.na(x) | x == ""] <- "NA"; x }
+#> pal <- dv_palette(unlist(lapply(prep$ranks, function(r) fill_na(prep$data[[r]]))))
+#> 
+#> ## 5. Multi-rank tree and sunburst
 #> tree <- dv_build_tree(prep$data, prep$ranks, weight_col = "prey_weight_g", count_col = NULL)
-#> pal <- dv_palette_tree(tree)   # one palette for every panel
 #> dv_sunburst(tree, mode = "weight", colors = pal, title = "All predators")
 #> 
-#> ## 6. Tables behind the figure
+#> ## 7. Tables behind the figure
 #> dv_rank_table(tree, "Class")
 #> dv_fo_table(prep, rank = "class")
 #> 

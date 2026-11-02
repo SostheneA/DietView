@@ -74,8 +74,10 @@ dv_spec(
 
 - predator_latin:
 
-  Optional column with the predator Latin name (used to auto-fetch
-  identification photos).
+  Optional column with the predator Latin name (used to look up
+  identification photos when
+  [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md)
+  is given a `photo_source`).
 
 ## Value
 

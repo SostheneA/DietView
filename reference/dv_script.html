@@ -117,7 +117,9 @@ every rank) or a list with <code>threshold</code> and, optionally, <code>scope</
 
 <dt id="arg-facet">facet<a class="anchor" aria-label="anchor" href="#arg-facet"></a></dt>
 <dd><p>Up to two covariates to draw one panel per level (or per
-combination of levels), or <code>NULL</code>.</p></dd>
+combination of levels), or <code>NULL</code>. With two, <code>c(inner, outer)</code> as in the
+app: <code>panels</code> is then a list over the levels of <code>outer</code>, each a list over
+the levels of <code>inner</code>. Missing covariate values get their own <code>"NA"</code> panel.</p></dd>
 
 
 <dt id="arg-rank">rank<a class="anchor" aria-label="anchor" href="#arg-rank"></a></dt>
@@ -159,7 +161,7 @@ lineage came from WoRMS) and the column specification.</p>
 <span class="r-in"><span>               aggregation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>threshold <span class="op">=</span> <span class="fl">10</span>, scope <span class="op">=</span> <span class="st">"pooled"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">s</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ## DietView analysis script</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ## Generated 2026-11-02 17:37 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ## Generated 2026-11-02 18:19 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ## Predator: all predators | wedges: weight | currency: records</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ## Reporting resolution: threshold 10 stomachs, scope = pooled, min_predators = 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> # Taxonomy source: table</span>
@@ -184,12 +186,16 @@ lineage came from WoRMS) and the column specification.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> prep &lt;- dv_aggregate_threshold(prep, threshold = 10, scope = "pooled", min_predators = 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(prep, "aggregation")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ## 4. Multi-rank tree and sunburst</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ## 3. Colors: one per taxon label, from all predators, so a taxon keeps its</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ## color in every view (unidentified material is the white "NA" category)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> fill_na &lt;- function(x) { x &lt;- as.character(x); x[is.na(x) | x == ""] &lt;- "NA"; x }</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> pal &lt;- dv_palette(unlist(lapply(prep$ranks, function(r) fill_na(prep$data[[r]]))))</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ## 5. Multi-rank tree and sunburst</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> tree &lt;- dv_build_tree(prep$data, prep$ranks, weight_col = "prey_weight_g", count_col = NULL)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> pal &lt;- dv_palette_tree(tree)   # one palette for every panel</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dv_sunburst(tree, mode = "weight", colors = pal, title = "All predators")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ## 6. Tables behind the figure</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ## 7. Tables behind the figure</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dv_rank_table(tree, "Class")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dv_fo_table(prep, rank = "class")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>

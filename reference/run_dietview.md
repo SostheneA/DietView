@@ -33,7 +33,9 @@ run_dietview(prep, currency = c("records", "numbers"), ...)
 
 ## Value
 
-Runs the app (does not return).
+Called for its side effect of running the app; returns the value of
+[`shiny::runApp()`](https://rdrr.io/pkg/shiny/man/runApp.html) once the
+app is closed.
 
 ## Details
 
