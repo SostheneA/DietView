@@ -13,6 +13,8 @@ dv_prepare(
   cache_dir = tools::R_user_dir("DietView", "cache"),
   cache_max_age = 180,
   strict_covariates = TRUE,
+  stomachs = NULL,
+  empty_col = NULL,
   gaps = c("label", "keep"),
   verbose = TRUE
 )
@@ -40,6 +42,23 @@ days are fetched again (default 180). See \code{\link[=dv_taxonomy_worms]{dv_tax
 declared covariate missing from \code{data} is an error; if \code{FALSE} it is dropped
 from the returned spec with a warning.}
 
+\item{stomachs}{Optional data.frame with one row per examined stomach, empty
+ones included (e.g. \link{ices_stomachs}): the stomach column of the spec, plus
+optionally the predator and covariate columns and an empty flag (see
+\code{empty_col}). It is stored as \code{prep$stomachs} and lets \code{\link[=dv_summary]{dv_summary()}}
+report vacuity, \code{\link[=dv_fo_table]{dv_fo_table()}} use all examined stomachs as the
+denominator, and \code{\link[=dv_matrix]{dv_matrix()}} add rows for empty stomachs. Without it, a
+long prey table holds only non-empty stomachs: \%FO is over non-empty
+stomachs and the matrix has no empty rows. Stomachs of predators absent
+from \code{data} are ignored, so the full sampling frame can be passed with a
+subset of the predators.}
+
+\item{empty_col}{Optional column of \code{stomachs} flagging empty stomachs
+(logical, or 0/1). With it, a stomach without records counts as empty only
+when flagged; one that is neither flagged nor in \code{data} has an unknown
+status and is left out of every count. Without it, every stomach of
+\code{stomachs} without a record in \code{data} counts as empty.}
+
 \item{gaps}{How to show a rank that has no taxon in the lineage between two
 identified ranks: \code{"label"} (default) fills it with
 \code{"<ancestor> (no <rank>)"}, e.g. \code{"Polychaeta (no order)"}; \code{"keep"} leaves
@@ -54,7 +73,9 @@ actually used) and \code{taxonomy_log}. When \code{taxonomy = "worms"},
 \code{taxonomy_log} is the per-prey provenance table, with the attributes
 \code{retrieved} (time of the run) and \code{worrms_version}; otherwise it is \code{NULL}.
 The attribute \code{lineage_gaps} is a named integer vector: the number of
-records whose rank was filled as a lineage gap, per rank.
+records whose rank was filled as a lineage gap, per rank. With \code{stomachs},
+the list also holds \code{stomachs}: the examined stomachs, with their stomach,
+predator and covariate columns and a logical \code{empty_flag} column.
 }
 \description{
 Validates the long table with \code{\link[=dv_validate]{dv_validate()}} and attaches the taxonomic

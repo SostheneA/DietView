@@ -10,7 +10,8 @@ dv_matrix(
   unit = NULL,
   rank = NULL,
   currency = c("weight", "occurrence", "fo"),
-  include_na = TRUE
+  include_na = TRUE,
+  include_empty = FALSE
 )
 }
 \arguments{
@@ -31,6 +32,11 @@ then the taxa at that rank, plus the unidentified column (\code{"NA"}) when
 \code{"fo"} (presence/absence, one per unit).}
 
 \item{include_na}{Keep an explicit unidentified column.}
+
+\item{include_empty}{Add an all-zero row for every empty stomach (default
+\code{FALSE}). Needs a stomach table in \code{prep} (see \code{\link[=dv_prepare]{dv_prepare()}}) and \code{unit}
+to be the stomach column. Without a stomach table the matrix holds only
+stomachs with records.}
 }
 \value{
 A numeric matrix with \code{unit} row names and category column names.

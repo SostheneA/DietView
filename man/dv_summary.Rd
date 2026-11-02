@@ -19,7 +19,8 @@ group such as \code{"Polychaeta (no order)"} counts as one category.}
 \value{
 A data.frame with one row per predator (and per \code{by} level), with
 \code{n_stomachs}, \code{n_records}, \code{n_taxa}, \code{records_per_stomach}, and, when a
-weight column is declared, \code{total_weight}.
+weight column is declared, \code{total_weight}; with a stomach table, also
+\code{n_examined}, \code{n_empty} and \code{pct_vacuity}.
 }
 \description{
 A quick overview of sample structure, computed before any figure: how many
@@ -34,9 +35,13 @@ record, which mixes ranks: a stomach with \emph{Themisto libellula} and
 overstates richness, more so as digestion advances. Give \code{rank} to count
 taxa at one stated rank instead, unidentified records excluded.
 
-Note that a long prey-record table represents only non-empty stomachs, so
-this function cannot report a vacuity (percent-empty) index; that must be
-computed upstream from the full sampling frame.
+A long prey-record table represents only non-empty stomachs. When \code{prep}
+was built with \code{stomachs} (the table of every examined stomach, see
+\code{\link[=dv_prepare]{dv_prepare()}}), the summary also reports \code{n_examined} (stomachs examined:
+with records or empty), \code{n_empty} and \code{pct_vacuity} (percentage of examined
+stomachs that were empty). Stomachs of unknown status (no record and not
+flagged empty) are left out of all three. Without \code{stomachs}, vacuity cannot
+be computed and these columns are absent.
 }
 \examples{
 # the standard set-up: public ICES data, non-food items and nematodes dropped
@@ -57,5 +62,11 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
                    verbose = FALSE)
 dv_summary(prep)
 dv_summary(prep, by = "region")
+# with every examined stomach, empty ones included: vacuity per predator
+prep_st <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+                      stomachs = ices_stomachs, empty_col = "stomach_empty",
+                      verbose = FALSE)
+head(dv_summary(prep_st)[, c("predator_common", "n_stomachs", "n_examined",
+                            "n_empty", "pct_vacuity")])
 head(dv_summary(prep, rank = "class"))
 }

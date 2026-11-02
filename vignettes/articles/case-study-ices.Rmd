@@ -64,30 +64,37 @@ c(records  = nrow(ices_diet),
 
 A stomach falls in one of three groups: it has prey records, it is flagged
 empty, or it has no record and no "empty" flag, so its content is unknown.
-The last group matters: it must not be counted as empty.
+The last group matters: it must not be counted as empty. Pass the stomach
+table to `dv_prepare()` with `stomachs` and the flag with `empty_col`; the
+printed object counts the three groups and `dv_summary()` gives the vacuity
+(percentage of examined stomachs that were empty), stomachs of unknown status
+left out:
 
 ```{r stomach-status}
 st <- ices_stomachs
-st$status <- ifelse(st$stomach_empty %in% 1, "empty",
-             ifelse(st$stomach_id %in% ices_diet$stomach_id, "with prey",
-                    "unknown"))
-tab <- table(st$predator_common, st$status)
-tab <- tab[order(-rowSums(tab)), c("with prey", "empty", "unknown")]
-head(tab, 8)
+prep0 <- dv_prepare(ices_diet,
+                    dv_spec(predator = "predator_common", stomach = "stomach_id",
+                            prey_id = "prey_aphia_id", prey_name = "prey_name"),
+                    taxonomy = "table", lineage = ices_lineage,
+                    stomachs = st, empty_col = "stomach_empty", verbose = FALSE)
+prep0
+vac_tab <- dv_summary(prep0)[, c("predator_common", "n_stomachs", "n_examined",
+                                "n_empty", "pct_vacuity")]
+head(vac_tab, 8)
 ```
 
-```{r vacuity}
-known <- tab[m4, "with prey"] + tab[m4, "empty"]
-vac <- round(100 * tab[m4, "empty"] / known, 1)
-vac
+```{r vacuity, include = FALSE}
+vac <- setNames(vac_tab$pct_vacuity, vac_tab$predator_common)[m4]
+n_flagged <- sum(st$stomach_empty %in% 1)
+n_unknown <- sum(!st$stomach_id %in% ices_diet$stomach_id & !st$stomach_empty %in% 1)
 ```
 
-Of the `r nrow(st)` stomachs, `r sum(st$status == "empty")` are flagged
-empty and `r sum(st$status == "unknown")` have an unknown status. Among
-stomachs of known status, the share of empty stomachs (vacuity) ranges from
-`r min(vac)`% (`r names(which.min(vac))`) to `r max(vac)`%
-(`r names(which.max(vac))`). This can only be computed from `ices_stomachs`:
-a long prey table holds no empty stomachs.
+Of the `r nrow(st)` stomachs, `r n_flagged` are flagged empty and
+`r n_unknown` have an unknown status. Among the four main predators, the share
+of empty stomachs (vacuity) ranges from `r min(vac)`%
+(`r names(which.min(vac))`) to `r max(vac)`% (`r names(which.max(vac))`). This
+can only be computed from `ices_stomachs`: a long prey table holds no empty
+stomachs.
 
 The sampling is uneven in space and time, which will matter for every
 comparison:
@@ -206,7 +213,7 @@ cat(sprintf(paste(
   rep_clean$n_records, rep_clean$n_stomachs, rep_clean$n_predators,
   min(dat$year), max(dat$year),
   sum(ices_diet$item_type == "non_food"), sum(is_nem),
-  sum(st$status == "empty"), sum(st$status == "unknown"),
+  n_flagged, n_unknown,
   rep_clean$n_missing_weight, pc(100 * rep_clean$n_missing_weight / rep_clean$n_records),
   sum(dat$digestion_label == "not recorded"),
   pc(100 * mean(dat$digestion_label == "not recorded"))))
@@ -832,7 +839,7 @@ The limits are those of the data, and they bound every sentence above:
   season and region are confounded (mackerel: one quarter of one year).
 - **Uneven sampling.** A predator-by-region stratum holds from
   `r min(pr_cells[pr_cells > 0])` to `r max(pr_cells)` stomachs, and
-  `r sum(st$status == "unknown")` sampled stomachs have no known status.
+  `r n_unknown` sampled stomachs have no known status.
 - **Inferred digestion labels.** The stage names attached to ICES codes 0, 1
   and 2 are an inference; the diagnostic depends on the codes, the words do
   not.

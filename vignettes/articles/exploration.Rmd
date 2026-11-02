@@ -41,7 +41,9 @@ spec <- dv_spec(
   digestion      = "digestion_label",
   covariates     = c("region", "year", "quarter")
 )
+# ices_stomachs lists every examined stomach, empty ones included
 prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+                   stomachs = ices_stomachs, empty_col = "stomach_empty",
                    verbose = FALSE)
 ```
 
@@ -84,13 +86,16 @@ its records are "Unidentified material", "Crustacea", "Pisces" or sandeels
 (Ammodytidae).
 
 A table of prey records holds only stomachs that contained something, so it
-cannot give the share of empty stomachs. That has to come from the full list of
-stomachs examined, which the package ships as `ices_stomachs`:
+cannot give the share of empty stomachs. That comes from the full list of
+stomachs examined, `ices_stomachs`, passed to `dv_prepare()` above with
+`stomachs` and `empty_col`. `dv_summary()` then adds the number of stomachs
+examined, the number found empty and the vacuity (percentage empty). A stomach
+with neither a record nor an "empty" flag has an unknown status and is left
+out of the three:
 
 ```{r empty}
-# % of sampled stomachs flagged empty
-e <- tapply(ices_stomachs$stomach_empty %in% 1, ices_stomachs$predator_common, mean)
-round(100 * e[c("Atlantic cod", "Atlantic mackerel", "European plaice", "Whiting")], 1)
+s[s$predator_common %in% c("Atlantic cod", "Atlantic mackerel", "European plaice", "Whiting"),
+  c("predator_common", "n_stomachs", "n_examined", "n_empty", "pct_vacuity")]
 ```
 
 ## 2. Is the diet adequately sampled?
@@ -169,7 +174,16 @@ and fish (Teleostei) in `r fo_tel`%. The same classes are
 The two quantities answer different questions (how many fish ate it, and how
 much of the recorded material it is) and should be reported under their own
 names. The column `n_total` is the number of non-empty stomachs in the group:
-the denominator of %FO.
+the denominator of %FO. Some studies divide by every stomach examined, empty
+ones included; with a stomach table in `prep`, ask for it explicitly:
+
+```{r fo-examined}
+fo_ex <- dv_fo_table(prep, rank = "class", by = spec$predator, denominator = "examined")
+head(fo_ex[fo_ex$predator_common == "Atlantic cod", ], 3)
+```
+
+State which denominator you used: for a predator with many empty stomachs,
+such as plaice here, the two differ a lot.
 
 %FO does not add up across ranks: a parent's %FO is computed from the stomachs
 that contain it, not summed from its children, and the `NA` row (stomachs

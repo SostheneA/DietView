@@ -46,6 +46,21 @@
 #' @param strict_covariates Passed to [dv_validate()]: if `TRUE` (default) a
 #'   declared covariate missing from `data` is an error; if `FALSE` it is dropped
 #'   from the returned spec with a warning.
+#' @param stomachs Optional data.frame with one row per examined stomach, empty
+#'   ones included (e.g. [ices_stomachs]): the stomach column of the spec, plus
+#'   optionally the predator and covariate columns and an empty flag (see
+#'   `empty_col`). It is stored as `prep$stomachs` and lets [dv_summary()]
+#'   report vacuity, [dv_fo_table()] use all examined stomachs as the
+#'   denominator, and [dv_matrix()] add rows for empty stomachs. Without it, a
+#'   long prey table holds only non-empty stomachs: %FO is over non-empty
+#'   stomachs and the matrix has no empty rows. Stomachs of predators absent
+#'   from `data` are ignored, so the full sampling frame can be passed with a
+#'   subset of the predators.
+#' @param empty_col Optional column of `stomachs` flagging empty stomachs
+#'   (logical, or 0/1). With it, a stomach without records counts as empty only
+#'   when flagged; one that is neither flagged nor in `data` has an unknown
+#'   status and is left out of every count. Without it, every stomach of
+#'   `stomachs` without a record in `data` counts as empty.
 #' @param gaps How to show a rank that has no taxon in the lineage between two
 #'   identified ranks: `"label"` (default) fills it with
 #'   `"<ancestor> (no <rank>)"`, e.g. `"Polychaeta (no order)"`; `"keep"` leaves
@@ -57,7 +72,9 @@
 #'   `taxonomy_log` is the per-prey provenance table, with the attributes
 #'   `retrieved` (time of the run) and `worrms_version`; otherwise it is `NULL`.
 #'   The attribute `lineage_gaps` is a named integer vector: the number of
-#'   records whose rank was filled as a lineage gap, per rank.
+#'   records whose rank was filled as a lineage gap, per rank. With `stomachs`,
+#'   the list also holds `stomachs`: the examined stomachs, with their stomach,
+#'   predator and covariate columns and a logical `empty_flag` column.
 #' @examples
 #' # the standard set-up: public ICES data, non-food items and nematodes dropped
 #' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
@@ -88,6 +105,8 @@ dv_prepare <- function(data, spec,
                        cache_dir = tools::R_user_dir("DietView", "cache"),
                        cache_max_age = 180,
                        strict_covariates = TRUE,
+                       stomachs = NULL,
+                       empty_col = NULL,
                        gaps = c("label", "keep"),
                        verbose = TRUE) {
   taxonomy <- match.arg(taxonomy)
@@ -210,7 +229,8 @@ dv_prepare <- function(data, spec,
   }
 
   out <- list(data = data, spec = spec, ranks = ranks,
-              taxonomy_source = taxonomy, taxonomy_log = tax_log)
+              taxonomy_source = taxonomy, taxonomy_log = tax_log,
+              stomachs = .dv_prep_stomachs(stomachs, spec, data, empty_col))
   class(out) <- "dietview_prep"
   attr(out, "lineage_gaps") <- n_gap
   out
@@ -259,6 +279,12 @@ print.dietview_prep <- function(x, ...) {
   cat("  covariates:", paste(x$spec$covariates, collapse = ", "), "\n")
   if (!is.null(x$taxonomy_source))
     cat("  source    :", x$taxonomy_source, "\n")
+  st <- .dv_stomach_status(x)
+  if (!is.null(st))
+    cat("  examined  :", sum(st$status != "unknown"), "stomachs,",
+        sum(st$status == "empty"), "empty",
+        if (any(st$status == "unknown")) paste0("(", sum(st$status == "unknown"), " of unknown status)"),
+        "\n")
   if (!is.null(x$taxonomy_log)) {
     tb <- table(factor(x$taxonomy_log$match_type, levels = .DV_MATCH_TYPES))
     cat("  taxonomy  : ", paste(sprintf("%s=%d", names(tb), as.integer(tb)),
@@ -267,4 +293,73 @@ print.dietview_prep <- function(x, ...) {
       cat("              review: dv_taxonomy_report(prep)\n")
   }
   invisible(x)
+}
+
+# Internal: check and standardise the table of examined stomachs: the stomach,
+# predator and covariate columns it has, plus a logical `empty_flag` (NA when
+# no `empty_col` is given). Attribute "flagged" records whether a flag exists.
+.dv_prep_stomachs <- function(stomachs, spec, data, empty_col = NULL) {
+  if (is.null(stomachs)) {
+    if (!is.null(empty_col)) stop("`empty_col` needs `stomachs`.", call. = FALSE)
+    return(NULL)
+  }
+  if (!is.data.frame(stomachs)) stop("`stomachs` must be a data.frame.", call. = FALSE)
+  st <- as.data.frame(stomachs)
+  sid <- spec$stomach
+  if (!sid %in% names(st))
+    stop("`stomachs` must contain the stomach column `", sid, "`.", call. = FALSE)
+  ids <- as.character(st[[sid]])
+  if (anyNA(ids)) stop("`stomachs` has stomachs without an identifier.", call. = FALSE)
+  dup <- unique(ids[duplicated(ids)])
+  if (length(dup))
+    stop("`stomachs` must have one row per stomach; duplicated: ",
+         paste(utils::head(dup, 3), collapse = ", "), call. = FALSE)
+  if (is.null(spec$predator) || !spec$predator %in% names(st))
+    warning("`stomachs` has no predator column `", spec$predator, "`: stomachs ",
+            "without records cannot be assigned to a predator.", call. = FALSE)
+  keep <- intersect(c(sid, spec$predator, spec$covariates), names(st))
+  out <- st[, keep, drop = FALSE]
+  out[[sid]] <- ids
+  if (is.null(empty_col)) {
+    out$empty_flag <- NA
+  } else {
+    if (!empty_col %in% names(st))
+      stop("`empty_col` `", empty_col, "` is not a column of `stomachs`.", call. = FALSE)
+    v <- st[[empty_col]]
+    out$empty_flag <- if (is.numeric(v)) v != 0 else as.logical(v)
+    bad <- out$empty_flag %in% TRUE & ids %in% as.character(data[[sid]])
+    if (any(bad))
+      warning(sum(bad), " stomach(s) flagged empty have prey records; they are ",
+              "counted as non-empty.", call. = FALSE)
+  }
+  attr(out, "flagged") <- !is.null(empty_col)
+  out
+}
+
+# Internal: the examined stomachs of a prep with their status against the
+# current prep$data: "with_records", "empty" or "unknown" (no record and not
+# flagged empty, when a flag exists). Only predators present in the data are
+# kept; stomachs of the data missing from the table are added as examined.
+# NULL when the prep has no stomach table.
+.dv_stomach_status <- function(prep) {
+  st <- prep$stomachs
+  if (is.null(st)) return(NULL)
+  sid <- prep$spec$stomach; pcol <- prep$spec$predator
+  d <- prep$data
+  has_pred <- !is.null(pcol) && pcol %in% names(st) && pcol %in% names(d)
+  if (has_pred)
+    st <- st[as.character(st[[pcol]]) %in% unique(as.character(d[[pcol]])), , drop = FALSE]
+  d_ids <- as.character(d[[sid]])
+  extra <- setdiff(unique(d_ids), st[[sid]])
+  if (length(extra)) {
+    first <- d[match(extra, d_ids), intersect(names(st), names(d)), drop = FALSE]
+    first[[sid]] <- extra
+    first$empty_flag <- NA
+    st <- dplyr::bind_rows(st, first)
+  }
+  has <- st[[sid]] %in% d_ids
+  flagged <- isTRUE(attr(prep$stomachs, "flagged"))
+  st$status <- ifelse(has, "with_records",
+               ifelse(!flagged | st$empty_flag %in% TRUE, "empty", "unknown"))
+  st
 }

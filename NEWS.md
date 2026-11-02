@@ -17,6 +17,13 @@
 
 ## Other changes
 
+* `dv_prepare()` gains `stomachs` (one row per examined stomach, empty ones
+  included, e.g. `ices_stomachs`) and `empty_col` (the empty flag), stored in
+  `prep$stomachs`. With it, `dv_summary()` adds `n_examined`, `n_empty` and
+  `pct_vacuity`; `dv_fo_table()` gains `denominator = c("nonempty",
+  "examined")`; and `dv_matrix()` gains `include_empty` to add all-zero rows
+  for empty stomachs. Stomachs with neither a record nor an empty flag are of
+  unknown status and left out. Without `stomachs`, nothing changes.
 * `ices_lineage` now gives the three unaccepted AphiaIDs of the ICES data the
   lineage of their accepted record (231869 -> *Aphrodita aculeata*, 400596 ->
   *Trisopterus esmarkii*, 298205 -> *Lumpenus lampretaeformis*), so Norway pout

@@ -36,9 +36,13 @@
 #' overstates richness, more so as digestion advances. Give `rank` to count
 #' taxa at one stated rank instead, unidentified records excluded.
 #'
-#' Note that a long prey-record table represents only non-empty stomachs, so
-#' this function cannot report a vacuity (percent-empty) index; that must be
-#' computed upstream from the full sampling frame.
+#' A long prey-record table represents only non-empty stomachs. When `prep`
+#' was built with `stomachs` (the table of every examined stomach, see
+#' [dv_prepare()]), the summary also reports `n_examined` (stomachs examined:
+#' with records or empty), `n_empty` and `pct_vacuity` (percentage of examined
+#' stomachs that were empty). Stomachs of unknown status (no record and not
+#' flagged empty) are left out of all three. Without `stomachs`, vacuity cannot
+#' be computed and these columns are absent.
 #'
 #' @param prep A `dietview_prep` from [dv_prepare()].
 #' @param by Optional covariate column to break the summary down by.
@@ -48,7 +52,8 @@
 #'   group such as `"Polychaeta (no order)"` counts as one category.
 #' @return A data.frame with one row per predator (and per `by` level), with
 #'   `n_stomachs`, `n_records`, `n_taxa`, `records_per_stomach`, and, when a
-#'   weight column is declared, `total_weight`.
+#'   weight column is declared, `total_weight`; with a stomach table, also
+#'   `n_examined`, `n_empty` and `pct_vacuity`.
 #' @examples
 #' # the standard set-up: public ICES data, non-food items and nematodes dropped
 #' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
@@ -68,6 +73,12 @@
 #'                    verbose = FALSE)
 #' dv_summary(prep)
 #' dv_summary(prep, by = "region")
+#' # with every examined stomach, empty ones included: vacuity per predator
+#' prep_st <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+#'                       stomachs = ices_stomachs, empty_col = "stomach_empty",
+#'                       verbose = FALSE)
+#' head(dv_summary(prep_st)[, c("predator_common", "n_stomachs", "n_examined",
+#'                             "n_empty", "pct_vacuity")])
 #' head(dv_summary(prep, rank = "class"))
 #' @export
 dv_summary <- function(prep, by = NULL, rank = NULL) {
@@ -103,6 +114,23 @@ dv_summary <- function(prep, by = NULL, rank = NULL) {
     return(res)
   }
   res <- do.call(rbind, rows)
+  st <- .dv_stomach_status(prep)
+  if (!is.null(st)) {
+    st <- st[st$status != "unknown", , drop = FALSE]
+    if (!all(gcols %in% names(st))) {
+      warning("The stomach table has no column ",
+              paste(setdiff(gcols, names(st)), collapse = ", "),
+              "; vacuity is not reported by that grouping.", call. = FALSE)
+    } else {
+      key <- function(x) do.call(paste, c(lapply(x[gcols], as.character), sep = "\r"))
+      sk <- key(st); rk <- key(res)
+      n_ex <- tapply(rep(1L, nrow(st)), sk, sum)
+      n_em <- tapply(st$status == "empty", sk, sum)
+      res$n_examined  <- as.integer(n_ex[rk])
+      res$n_empty     <- as.integer(n_em[rk])
+      res$pct_vacuity <- round(100 * res$n_empty / res$n_examined, 1)
+    }
+  }
   res <- res[order(-res$n_stomachs), , drop = FALSE]
   rownames(res) <- NULL
   res
@@ -223,14 +251,22 @@ dv_prey_accumulation <- function(prep, by = NULL, rank = NULL,
 #' of the taxon, which rarely holds at coarse ranks. Stomach identifiers must be
 #' unique across predators (see [dv_validate()]).
 #'
+#' A long prey table holds only non-empty stomachs, so by default %FO is over
+#' non-empty stomachs. When `prep` was built with `stomachs` (see
+#' [dv_prepare()]), `denominator = "examined"` uses every examined stomach,
+#' empty ones included (stomachs of unknown status are left out).
+#'
 #' @param prep A `dietview_prep` from [dv_prepare()].
 #' @param rank One or more ranks (e.g. `"genus"`; case-insensitive) or `NULL`
 #'   for every rank stacked.
 #' @param by Optional covariate to compute %FO within each level of.
 #' @param include_na Keep the explicit unidentified category at each rank.
+#' @param denominator `"nonempty"` (default: stomachs with records) or
+#'   `"examined"` (all examined stomachs, empty ones included; needs a stomach
+#'   table in `prep`, and the `by` column in it).
 #' @return A data.frame with (optional) `by`, `rank`, `taxon`, `n_stomachs`
-#'   (stomachs containing the taxon), `n_total` (stomachs in the group), and
-#'   `pct_fo`.
+#'   (stomachs containing the taxon), `n_total` (stomachs in the group: the
+#'   denominator), and `pct_fo`.
 #' @examples
 #' # the standard set-up: public ICES data, non-food items and nematodes dropped
 #' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
@@ -251,9 +287,16 @@ dv_prey_accumulation <- function(prep, by = NULL, rank = NULL,
 #' prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
 #'                        verbose = FALSE)
 #' dv_fo_table(prep_cod, rank = "class")
+#' # over every examined cod stomach, empty ones included
+#' prep_cod_st <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+#'                           stomachs = ices_stomachs, empty_col = "stomach_empty",
+#'                           verbose = FALSE)
+#' dv_fo_table(prep_cod_st, rank = "class", denominator = "examined")
 #' @export
-dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE) {
+dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE,
+                        denominator = c("nonempty", "examined")) {
   stopifnot(inherits(prep, "dietview_prep"))
+  denominator <- match.arg(denominator)
   d <- prep$data
   stom <- prep$spec$stomach
   ranks <- if (is.null(rank)) prep$ranks else
@@ -266,11 +309,23 @@ dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE) {
 
   grp <- if (is.null(by)) rep("all", nrow(d)) else as.character(d[[by]])
   sid <- as.character(d[[stom]])
+  if (denominator == "examined") {
+    st <- .dv_stomach_status(prep)
+    if (is.null(st))
+      stop("denominator = 'examined' needs the examined stomachs: build `prep` ",
+           "with dv_prepare(stomachs = ).", call. = FALSE)
+    st <- st[st$status != "unknown", , drop = FALSE]
+    if (!is.null(by) && !by %in% names(st))
+      stop("denominator = 'examined' with `by` needs the column `", by,
+           "` in the stomach table.", call. = FALSE)
+    st_grp <- if (is.null(by)) rep("all", nrow(st)) else as.character(st[[by]])
+  }
 
   out <- list()
   for (gv in unique(grp)) {
     gi <- which(grp == gv)
-    n_total <- length(unique(sid[gi]))
+    n_total <- if (denominator == "examined") sum(st_grp %in% gv)
+               else length(unique(sid[gi]))
     for (r in ranks) {
       lab <- as.character(d[[r]])[gi]
       if (include_na) lab[is.na(lab) | lab == ""] <- "NA"
@@ -314,6 +369,10 @@ dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE) {
 #' @param currency `"weight"` (summed mass), `"occurrence"` (record counts), or
 #'   `"fo"` (presence/absence, one per unit).
 #' @param include_na Keep an explicit unidentified column.
+#' @param include_empty Add an all-zero row for every empty stomach (default
+#'   `FALSE`). Needs a stomach table in `prep` (see [dv_prepare()]) and `unit`
+#'   to be the stomach column. Without a stomach table the matrix holds only
+#'   stomachs with records.
 #' @return A numeric matrix with `unit` row names and category column names.
 #' @examples
 #' # the standard set-up: public ICES data, non-food items and nematodes dropped
@@ -342,11 +401,18 @@ dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE) {
 #' @export
 dv_matrix <- function(prep, category = NULL, unit = NULL, rank = NULL,
                       currency = c("weight", "occurrence", "fo"),
-                      include_na = TRUE) {
+                      include_na = TRUE, include_empty = FALSE) {
   stopifnot(inherits(prep, "dietview_prep"))
   currency <- match.arg(currency)
   d <- prep$data
   if (is.null(unit)) unit <- prep$spec$stomach
+  if (isTRUE(include_empty)) {
+    if (!identical(unit, prep$spec$stomach))
+      stop("include_empty = TRUE needs the stomach as the unit.", call. = FALSE)
+    if (is.null(prep$stomachs))
+      stop("include_empty = TRUE needs the examined stomachs: build `prep` with ",
+           "dv_prepare(stomachs = ).", call. = FALSE)
+  }
   if (!unit %in% names(d)) stop("`unit` column not found: ", unit, call. = FALSE)
 
   if (!is.null(rank)) {
@@ -381,5 +447,13 @@ dv_matrix <- function(prep, category = NULL, unit = NULL, rank = NULL,
   m[is.na(m)] <- 0
   if (currency == "fo") m[m > 0] <- 1
   storage.mode(m) <- "double"
+  if (isTRUE(include_empty)) {
+    st <- .dv_stomach_status(prep)
+    empty <- setdiff(st[[unit]][st$status == "empty"], rownames(m))
+    if (length(empty)) {
+      z <- matrix(0, length(empty), ncol(m), dimnames = list(empty, colnames(m)))
+      m <- rbind(m, z)
+    }
+  }
   m
 }

@@ -4,7 +4,13 @@
 \alias{dv_fo_table}
 \title{Frequency of occurrence per rank (the Buckland Table B1 layout)}
 \usage{
-dv_fo_table(prep, rank = NULL, by = NULL, include_na = TRUE)
+dv_fo_table(
+  prep,
+  rank = NULL,
+  by = NULL,
+  include_na = TRUE,
+  denominator = c("nonempty", "examined")
+)
 }
 \arguments{
 \item{prep}{A \code{dietview_prep} from \code{\link[=dv_prepare]{dv_prepare()}}.}
@@ -15,11 +21,15 @@ for every rank stacked.}
 \item{by}{Optional covariate to compute \%FO within each level of.}
 
 \item{include_na}{Keep the explicit unidentified category at each rank.}
+
+\item{denominator}{\code{"nonempty"} (default: stomachs with records) or
+\code{"examined"} (all examined stomachs, empty ones included; needs a stomach
+table in \code{prep}, and the \code{by} column in it).}
 }
 \value{
 A data.frame with (optional) \code{by}, \code{rank}, \code{taxon}, \code{n_stomachs}
-(stomachs containing the taxon), \code{n_total} (stomachs in the group), and
-\code{pct_fo}.
+(stomachs containing the taxon), \code{n_total} (stomachs in the group: the
+denominator), and \code{pct_fo}.
 }
 \description{
 The classical frequency of occurrence (\%FO): the proportion of
@@ -33,6 +43,12 @@ in \code{\link[=dv_build_tree]{dv_build_tree()}} (\code{pct_occ}), which is addi
 as a sunburst: the two agree only where each stomach holds at most one record
 of the taxon, which rarely holds at coarse ranks. Stomach identifiers must be
 unique across predators (see \code{\link[=dv_validate]{dv_validate()}}).
+}
+\details{
+A long prey table holds only non-empty stomachs, so by default \%FO is over
+non-empty stomachs. When \code{prep} was built with \code{stomachs} (see
+\code{\link[=dv_prepare]{dv_prepare()}}), \code{denominator = "examined"} uses every examined stomach,
+empty ones included (stomachs of unknown status are left out).
 }
 \examples{
 # the standard set-up: public ICES data, non-food items and nematodes dropped
@@ -54,4 +70,9 @@ cod <- dat[dat$predator_common == "Atlantic cod", ]
 prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 dv_fo_table(prep_cod, rank = "class")
+# over every examined cod stomach, empty ones included
+prep_cod_st <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                          stomachs = ices_stomachs, empty_col = "stomach_empty",
+                          verbose = FALSE)
+dv_fo_table(prep_cod_st, rank = "class", denominator = "examined")
 }
