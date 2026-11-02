@@ -117,6 +117,31 @@
 #' @source World Register of Marine Species (WoRMS, <https://www.marinespecies.org>),
 #'   as compiled in the R package stomachr (Lindmark 2026); kingdom and species
 #'   columns derived from the WoRMS phylum and the name's rank.
+#' Three AphiaIDs reported in the ICES data are unaccepted in WoRMS (231869
+#' *Aphrodite aculeata*, 400596 *Trisopterus esmarki*, 298205 *Lumpenus
+#' lampetraeformis*). They keep their key here but carry the lineage of their
+#' accepted record (129840, 126444 and 154675), so each species is one node of
+#' the tree. The table as built from the reported AphiaIDs is
+#' [ices_lineage_raw].
+#'
 #' @examples
 #' ices_lineage[ices_lineage$scientific_name %in% c("Crustacea", "Crangon crangon"), ]
+#' nrow(dv_lineage_check(ices_lineage))   # no spelling variants
 "ices_lineage"
+
+#' Uncorrected WoRMS lineage for the ICES example data
+#'
+#' The lineage of [ices_diet] as built from the AphiaIDs as reported, before
+#' unaccepted AphiaIDs were given the lineage of their accepted record. It
+#' keeps three species under two spellings each (*Aphrodita*/*Aphrodite
+#' aculeata*, *Trisopterus esmarkii*/*esmarki*, *Lumpenus
+#' lampretaeformis*/*lampetraeformis*), which split one taxon into two nodes.
+#' It is shipped to demonstrate [dv_lineage_check()]; use [ices_lineage] for
+#' analyses.
+#'
+#' @format A data frame with the same 461 rows and 10 columns as
+#'   [ices_lineage].
+#' @source As [ices_lineage].
+#' @examples
+#' dv_lineage_check(ices_lineage_raw)[, c("check", "rank", "label", "variant")]
+"ices_lineage_raw"

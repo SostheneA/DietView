@@ -14,6 +14,12 @@ seven ranks \code{kingdom}, \code{phylum}, \code{class}, \code{order}, \code{fam
 World Register of Marine Species (WoRMS, \url{https://www.marinespecies.org}),
 as compiled in the R package stomachr (Lindmark 2026); kingdom and species
 columns derived from the WoRMS phylum and the name's rank.
+Three AphiaIDs reported in the ICES data are unaccepted in WoRMS (231869
+\emph{Aphrodite aculeata}, 400596 \emph{Trisopterus esmarki}, 298205 \emph{Lumpenus
+lampetraeformis}). They keep their key here but carry the lineage of their
+accepted record (129840, 126444 and 154675), so each species is one node of
+the tree. The table as built from the reported AphiaIDs is
+\link{ices_lineage_raw}.
 }
 \usage{
 ices_lineage
@@ -32,5 +38,6 @@ material; \code{gaps = "keep"} leaves them \code{NA}.
 }
 \examples{
 ices_lineage[ices_lineage$scientific_name \%in\% c("Crustacea", "Crangon crangon"), ]
+nrow(dv_lineage_check(ices_lineage))   # no spelling variants
 }
 \keyword{datasets}

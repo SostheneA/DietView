@@ -79,6 +79,7 @@ reference:
   - ices_diet
   - ices_stomachs
   - ices_lineage
+  - ices_lineage_raw
 
 - title: 1 · Declare and validate your data
   desc: >

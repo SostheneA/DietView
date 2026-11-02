@@ -48,6 +48,27 @@ lineage <- data.frame(
 # exactly what DietView shows as the unidentified share.
 lineage <- lineage[!duplicated(lineage$prey_aphia_id), ]
 
+# The stomachr lookup keeps the lineage of unaccepted AphiaIDs, which splits one
+# taxon into two spellings (dv_lineage_check() flags them). The uncorrected
+# table is kept as ices_lineage_raw to demonstrate that check; ices_lineage
+# gives those keys the lineage of their accepted record. The keys
+# (prey_aphia_id) are unchanged. Checked in WoRMS on 2026-11-02 with
+# worrms::wm_record():
+#   231869 Aphrodite aculeata       (unaccepted) -> 129840 Aphrodita aculeata
+#   400596 Trisopterus esmarki      (unaccepted) -> 126444 Trisopterus esmarkii
+#   298205 Lumpenus lampetraeformis (unaccepted) -> 154675 Lumpenus lampretaeformis
+# (154675 itself is the accepted record and needs no change.)
+lineage_raw <- lineage
+accepted <- c("231869" = 129840, "400596" = 126444, "298205" = 154675)
+taxon_cols <- c("scientific_name", "worms_rank", "kingdom", "phylum", "class",
+                "order", "family", "genus", "species")
+for (k in names(accepted)) {
+  from <- match(accepted[[k]], lineage$prey_aphia_id)
+  to   <- match(as.integer(k), lineage$prey_aphia_id)
+  stopifnot(!is.na(from), !is.na(to))
+  lineage[to, taxon_cols] <- lineage[from, taxon_cols]
+}
+
 # ---- stomachs (predators) ----------------------------------------------------
 common <- c(
   "Gadus morhua" = "Atlantic cod", "Merlangius merlangus" = "Whiting",
@@ -157,12 +178,15 @@ prey_tab <- fix_units(prey_tab)
 ices_diet     <- prey_tab
 ices_stomachs <- stomachs
 ices_lineage  <- lineage
-rownames(ices_diet) <- rownames(ices_stomachs) <- rownames(ices_lineage) <- NULL
+ices_lineage_raw <- lineage_raw
+rownames(ices_diet) <- rownames(ices_stomachs) <- rownames(ices_lineage) <-
+  rownames(ices_lineage_raw) <- NULL
 
 dir.create("data", showWarnings = FALSE)
 save(ices_diet, file = "data/ices_diet.rda", compress = "xz")
 save(ices_stomachs, file = "data/ices_stomachs.rda", compress = "xz")
 save(ices_lineage, file = "data/ices_lineage.rda", compress = "xz")
+save(ices_lineage_raw, file = "data/ices_lineage_raw.rda", compress = "xz")
 
 message(sprintf("dropped %d empty-stomach marker rows", sum(placeholder) + sum(marker)))
 message(sprintf("ices_diet: %d records (%d prey, %d unidentified, %d non-food) in %d stomachs of %d predators",

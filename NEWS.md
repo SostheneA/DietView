@@ -17,6 +17,12 @@
 
 ## Other changes
 
+* `ices_lineage` now gives the three unaccepted AphiaIDs of the ICES data the
+  lineage of their accepted record (231869 -> *Aphrodita aculeata*, 400596 ->
+  *Trisopterus esmarkii*, 298205 -> *Lumpenus lampretaeformis*), so Norway pout
+  and the others are one node each and `dv_lineage_check(ices_lineage)` is
+  clean. The keys are unchanged. The uncorrected table is the new dataset
+  `ices_lineage_raw`, used to demonstrate `dv_lineage_check()`.
 * The dashboard of `dv_build_html()` is drawn on demand: plotly.js is included
   once, the data of every sunburst is stored once as JSON, and a predator's
   sunbursts are drawn the first time its tab is opened. On the full ICES data

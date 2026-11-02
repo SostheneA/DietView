@@ -34,6 +34,24 @@ test_that("the ICES datasets have the documented dimensions", {
   expect_false(anyDuplicated(ices_lineage$prey_aphia_id) > 0)
   expect_true(all(c("prey_aphia_id", "kingdom", "phylum", "class", "order",
                     "family", "genus", "species") %in% names(ices_lineage)))
+  expect_equal(dim(ices_lineage), c(461L, 10L))
+  expect_equal(dim(ices_lineage_raw), c(461L, 10L))
+})
+
+test_that("ices_lineage gives unaccepted AphiaIDs their accepted lineage", {
+  expect_identical(ices_lineage$prey_aphia_id, ices_lineage_raw$prey_aphia_id)
+  sp <- function(lin, id) lin$species[match(id, lin$prey_aphia_id)]
+  expect_equal(sp(ices_lineage, c(231869, 400596, 298205)),
+               c("Aphrodita aculeata", "Trisopterus esmarkii", "Lumpenus lampretaeformis"))
+  expect_equal(sp(ices_lineage_raw, c(231869, 400596, 298205)),
+               c("Aphrodite aculeata", "Trisopterus esmarki", "Lumpenus lampetraeformis"))
+  # every other row is the same in both tables
+  differ <- rowSums(as.matrix(ices_lineage) != as.matrix(ices_lineage_raw), na.rm = TRUE) > 0
+  expect_equal(sort(ices_lineage$prey_aphia_id[differ]), c(231869, 298205, 400596))
+  # Norway pout is one species node
+  prep <- ices_standard_prep()
+  tree <- dv_tree(prep)
+  expect_equal(sum(grepl("^Trisopterus esmarki", tree$label[tree$rank == "Species"])), 1L)
 })
 
 test_that("every prey AphiaID of ices_diet is in ices_lineage", {

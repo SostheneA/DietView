@@ -20,9 +20,13 @@ test_that("dv_lineage_check flags spelling variants and misplaced labels", {
 })
 
 test_that("dv_lineage_check counts records on a prep and finds the ICES variants", {
-  chk <- dv_lineage_check(ices_lineage)
+  # the corrected lineage is clean; the raw one keeps three spelling variants
+  expect_equal(nrow(dv_lineage_check(ices_lineage)), 0L)
+  chk <- dv_lineage_check(ices_lineage_raw)
+  expect_equal(nrow(chk), 3L)
   nd <- chk[chk$check == "near_duplicate", ]
-  expect_true(any(nd$label == "Trisopterus esmarki" | nd$variant == "Trisopterus esmarki"))
+  for (v in c("Trisopterus esmarki", "Aphrodite", "Lumpenus lampetraeformis"))
+    expect_true(any(nd$label == v | nd$variant == v))
   expect_true(all(is.na(chk$n_records)))
   # unidentified material has no prey key; dv_validate() warns about it
   prep <- suppressWarnings(
