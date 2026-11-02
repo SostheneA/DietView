@@ -19,7 +19,8 @@ data.
 * "sunburst" in the Description is the name of a chart type, not a misspelling.
   'WoRMS', 'worrms', 'shiny' and 'plotly' are in single quotes as data source
   and software names.
-* The suggested packages (worrms, shiny, DT, rmarkdown, withr) are used
+* The suggested packages (worrms, shiny, DT, withr; rmarkdown for the
+  vignettes) are used
   conditionally via requireNamespace(..., quietly = TRUE) in the code and
   testthat::skip_if_not_installed() in the tests; none is needed for the core
   pipeline.

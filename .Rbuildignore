@@ -18,3 +18,4 @@
 ^Meta$
 ^data-raw$
 ^paper$
+^\.posit/assistant$

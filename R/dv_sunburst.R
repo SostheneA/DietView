@@ -122,14 +122,7 @@ dv_sunburst <- function(x,
                 occurrence = tree$value_occ, weight = tree$value_w)
   size_vals <- ifelse(is_leaf, raw, 0)
 
-  gap <- .dv_is_gap(tree$label)
-  gap_anc  <- sub("\\s*\\(no [a-z_]+\\)$", "", tree$label)
-  gap_rank <- sub("^.*\\(no ([a-z_]+)\\)$", "\\1", tree$label)
-  gap_txt  <- ifelse(nzchar(gap_anc),
-                     paste0(gap_anc, " \u2014 no ", gap_rank, " in WoRMS (identified material)"),
-                     paste0("No ", gap_rank, " in WoRMS (identified material)"))
-  taxon <- ifelse(tree$label == "NA", "Not identified at this rank",
-                  ifelse(gap, gap_txt, tree$label))
+  taxon <- .dv_taxon_display(tree$label)
   head  <- paste0("<b>Rank:</b> ", tree$rank, "<br><b>Taxon:</b> ", taxon)
   tree$hovertext <- switch(
     mode,
@@ -220,4 +213,17 @@ dv_sunburst <- function(x,
     annotations = anns,
     margin = list(t = 70)
   )
+}
+
+# Internal: the taxon as shown in hover text: unidentified and lineage-gap
+# nodes are described rather than named.
+.dv_taxon_display <- function(label) {
+  label <- as.character(label)
+  gap <- .dv_is_gap(label)
+  gap_anc  <- sub("\\s*\\(no [a-z_]+\\)$", "", label)
+  gap_rank <- sub("^.*\\(no ([a-z_]+)\\)$", "\\1", label)
+  gap_txt  <- ifelse(nzchar(gap_anc),
+                     paste0(gap_anc, " \u2014 no ", gap_rank, " in WoRMS (identified material)"),
+                     paste0("No ", gap_rank, " in WoRMS (identified material)"))
+  ifelse(label == "NA", "Not identified at this rank", ifelse(gap, gap_txt, label))
 }

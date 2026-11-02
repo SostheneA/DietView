@@ -152,9 +152,12 @@ records band and `"weight"` the weight band. Crossing multiplies the number of
 panels: five cod length classes in three regions give up to fifteen sunbursts
 per band, and some of them rest on few stomachs (see `stom` above). Each panel
 prints its stomach count; read it before the sunburst. With these four
-predators and this crossing, the file holds several hundred sunbursts: it took
-about a minute to build and weighs about 20 MB. Drop a band or the crossing for
-a lighter file.
+predators and this crossing, the file holds several hundred sunbursts. They
+are stored as data and drawn the first time a predator's tab is opened, so the
+file stays small: the full ICES dashboard (22 predators, three strata, two
+bands) weighs about 4 MB, most of it the plotly.js library, and builds in
+seconds. With `self_contained = FALSE`, plotly.js goes to a `lib` folder next
+to the file instead, and the HTML itself is a few hundred kB.
 
 To show individuals (%N) rather than records in the second band, add
 `currency = "numbers"`. Records without a count, which here include almost all

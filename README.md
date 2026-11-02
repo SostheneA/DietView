@@ -127,11 +127,12 @@ Install DietView from GitHub:
 pak::pak("SostheneA/DietView")
 ```
 
-Optional features need a few more packages: `worrms` (WoRMS taxonomy),
-`shiny` + `DT` (interactive app), `rmarkdown` (self-contained HTML).
+Optional features need a few more packages: `worrms` (WoRMS taxonomy) and
+`shiny` + `DT` (interactive app). The HTML dashboard needs neither `rmarkdown`
+nor pandoc.
 
 ```r
-install.packages(c("worrms", "shiny", "DT", "rmarkdown"))
+install.packages(c("worrms", "shiny", "DT"))
 ```
 
 ## Basic use

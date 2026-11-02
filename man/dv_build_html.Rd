@@ -51,9 +51,10 @@ licensed iNaturalist photos (CC0, CC BY, CC BY-SA).}
 
 \item{title}{Dashboard title.}
 
-\item{self_contained}{If TRUE render a single embedded file (needs
-rmarkdown and pandoc); without rmarkdown, a warning is given and the page
-is saved with its dependencies in a \code{lib} folder next to it.}
+\item{self_contained}{If \code{TRUE} (default), plotly.js is embedded and the
+dashboard is one file. If \code{FALSE}, plotly.js is written once to a \code{lib}
+folder next to the file and linked, which keeps the HTML small when several
+dashboards share a folder. Neither needs pandoc.}
 }
 \value{
 The output path, invisibly.
@@ -70,6 +71,14 @@ optionally crossed rows (e.g. length bins split by period). Covariate levels
 that are \code{NA} are omitted from the rows.
 }
 \details{
+The file stays small and opens fast: plotly.js is included once, the data of
+every sunburst (node ids, labels, parents, values and colors) is stored once
+as JSON, and the sunbursts of a tab are drawn the first time the tab is
+opened. The file works offline. Colors come from \code{\link[=dv_palette_tree]{dv_palette_tree()}} built on
+the pooled tree of the whole dataset, so a taxon has the same color in every
+panel. The cards can be opened with the mouse or with the keyboard (Tab,
+then Enter or Space).
+
 By default the record band counts prey records, even when the spec declares
 a \code{count} column; set \code{currency = "numbers"} to count individuals (\%N)
 instead. The default call touches neither the network nor the working
@@ -98,11 +107,8 @@ cod <- dat[dat$predator_common == "Atlantic cod", ]
 prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 
-# a dashboard for cod, stratified by quarter, written to tempdir();
-# self_contained = FALSE keeps this quick and needs no pandoc; the default
-# (TRUE) embeds everything in one file
+# a dashboard for cod, stratified by quarter, written to tempdir()
 out <- dv_build_html(prep_cod, output = file.path(tempdir(), "cod_dashboard.html"),
-                     strata = "quarter", bands = "count",
-                     self_contained = FALSE)
+                     strata = "quarter")
 file.exists(out)
 }

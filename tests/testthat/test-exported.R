@@ -115,9 +115,6 @@ test_that("dv_deploy() writes the dashboard into the given directory", {
 })
 
 test_that("dv_build_html(self_contained = TRUE) writes one file with no lib folder", {
-  skip_on_cran()
-  skip_if_not_installed("rmarkdown")
-  skip_if_not(rmarkdown::pandoc_available(), "pandoc not available")
   prep <- example_prep()
   dir <- tempfile("dv_sc_")
   dir.create(dir)

@@ -17,6 +17,15 @@
 
 ## Other changes
 
+* The dashboard of `dv_build_html()` is drawn on demand: plotly.js is included
+  once, the data of every sunburst is stored once as JSON, and a predator's
+  sunbursts are drawn the first time its tab is opened. On the full ICES data
+  (22 predators, strata region/year/quarter) the file went from 17.1 MB to
+  4.1 MB with three bands (13.3 MB to 4.0 MB with two), and the build from
+  70 s to 9 s. The file still works offline and no longer needs rmarkdown or
+  pandoc; `self_contained = FALSE` links plotly.js from a `lib` folder.
+* Dashboard cards are keyboard-accessible (`role = "button"`, focusable,
+  opened with Enter or Space).
 
 * Install from GitHub with `pak::pak("SostheneA/DietView")`; the README no
   longer points to an R-universe repository.

@@ -34,3 +34,4 @@ images/
 
 # pkgdown site: built by CI and served from the gh-pages branch
 docs/
+.posit/assistant
