@@ -135,7 +135,9 @@ dv_build_tree <- function(df, ranks,
 #' row included.
 #'
 #' @param tree A `dietview_tree` (or a data.frame from [dv_build_tree()]).
-#' @param rank Rank label to extract (e.g. "Class").
+#' @param rank Rank to extract, by its display label or column name,
+#'   case-insensitive (`"Class"`, `"class"` and `" CLASS "` are the same). An
+#'   unknown rank is an error.
 #' @return A data.frame: `label, value_item, value_occ, pct_occ, value_w, pct_w`.
 #' @examples
 #' # the standard set-up: public ICES data, non-food items and nematodes dropped
@@ -158,6 +160,7 @@ dv_build_tree <- function(df, ranks,
 #' dv_rank_table(tree, "Class")
 #' @export
 dv_rank_table <- function(tree, rank) {
+  if (nrow(tree)) rank <- .dv_match_rank(rank, unique(as.character(tree$rank)))
   sub <- tree[tree$rank == rank,
               c("label", "value_item", "value_occ", "pct_occ", "value_w", "pct_w")]
   sub[order(-sub$pct_occ), , drop = FALSE]

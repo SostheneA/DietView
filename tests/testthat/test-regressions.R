@@ -146,7 +146,14 @@ test_that("a rank missing in the middle of a lineage does not prune finer ranks"
   expect_equal(agg$data$prey_rank, rep("order", 3))
   expect_equal(agg$data$prey_category, rep("Priapulimorphida", 3))
   expect_equal(agg$data$order, rep("Priapulimorphida", 3))
-  expect_true(all(is.na(agg$data$class)))
+  # the empty class is a labelled lineage gap by default, NA with gaps = "keep"
+  expect_equal(agg$data$class, rep("Priapulida (no class)", 3))
+  spec <- dv_spec(predator = "pred", stomach = "stom", prey_name = "name",
+                  ranks = c("phylum", "class", "order"))
+  keep <- dv_prepare(df, spec, taxonomy = "columns", gaps = "keep", verbose = FALSE)
+  agg_k <- dv_aggregate_threshold(keep, threshold = 2)
+  expect_true(all(is.na(agg_k$data$class)))
+  expect_identical(agg_k$data$prey_category, agg$data$prey_category)
 })
 
 test_that("a gap record that fails the threshold moves up past the empty rank", {

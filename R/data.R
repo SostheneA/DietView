@@ -105,8 +105,10 @@
 #' [ices_diet]. A taxon that is itself above species (e.g. "Crustacea", a
 #' subphylum) has `NA` at the finer ranks, which DietView shows as the
 #' unidentified share of that branch. WoRMS gives no order to some polychaetes
-#' and lancelets and no class to Priapulida, so a few records identified to
-#' family or species also reach an `NA` node at those ranks.
+#' and lancelets and no class to Priapulida, so a few prey identified to family
+#' or species have `NA` at those ranks. [dv_prepare()] shows those as gray
+#' lineage gaps such as `"Polychaeta (no order)"`, not as unidentified
+#' material; `gaps = "keep"` leaves them `NA`.
 #'
 #' @format A data frame with 461 rows and 10 columns: `prey_aphia_id`,
 #'   `scientific_name`, `worms_rank` (the WoRMS rank of the name), then the

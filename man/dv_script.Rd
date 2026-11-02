@@ -36,8 +36,9 @@ combination of levels), or \code{NULL}. With two, \code{c(inner, outer)} as in t
 app: \code{panels} is then a list over the levels of \code{outer}, each a list over
 the levels of \code{inner}. Missing covariate values get their own \code{"NA"} panel.}
 
-\item{rank}{Rank for the rank table and the frequency-of-occurrence table.
-Defaults to the third rank of \code{prep}.}
+\item{rank}{Rank for the rank table and the frequency-of-occurrence table,
+by column name or display label, case-insensitive. Defaults to the third
+rank of \code{prep}.}
 
 \item{data_file}{File name the script reads \code{prep} from.}
 

@@ -9,7 +9,8 @@ dv_fo_table(prep, rank = NULL, by = NULL, include_na = TRUE)
 \arguments{
 \item{prep}{A \code{dietview_prep} from \code{\link[=dv_prepare]{dv_prepare()}}.}
 
-\item{rank}{A single rank (e.g. \code{"genus"}) or \code{NULL} for every rank stacked.}
+\item{rank}{One or more ranks (e.g. \code{"genus"}; case-insensitive) or \code{NULL}
+for every rank stacked.}
 
 \item{by}{Optional covariate to compute \%FO within each level of.}
 

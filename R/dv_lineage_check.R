@@ -50,7 +50,12 @@ dv_lineage_check <- function(x, ranks = NULL, max_dist = 2L) {
   miss <- setdiff(ranks, names(d))
   if (length(miss)) stop("Rank column(s) absent: ", paste(miss, collapse = ", "),
                          call. = FALSE)
-  lab <- function(r) { v <- trimws(as.character(d[[r]])); v[v %in% c("", "NA")] <- NA; v }
+  # lineage gaps ("Polychaeta (no order)") are not taxa: treated as empty
+  lab <- function(r) {
+    v <- trimws(as.character(d[[r]]))
+    v[v %in% c("", "NA") | .dv_is_gap(v)] <- NA
+    v
+  }
   L <- vapply(ranks, lab, character(nrow(d)))
   if (is.null(dim(L))) L <- matrix(L, nrow = nrow(d), dimnames = list(NULL, ranks))
   n_of <- function(j, label) if (counted) sum(L[, j] %in% label) else NA_integer_

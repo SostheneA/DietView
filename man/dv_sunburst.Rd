@@ -42,7 +42,9 @@ and the reading order stay the same across covariate cells. Angular
 positions are not fixed: a taxon absent from one cell shifts every wedge
 after it, so compare cells by color, not by angle. Records not identified at
 a rank form a white wedge with a thin gray outline, shown as "Not identified
-at this rank" in the hover text.
+at this rank" in the hover text. Lineage gaps (identified material in a group
+that has no taxon at that rank, such as \code{"Polychaeta (no order)"}; see
+\code{\link[=dv_prepare]{dv_prepare()}}) form a light gray wedge, described as such in the hover text.
 }
 \details{
 Wedges are sized from the raw values of the leaves (\code{branchvalues = "remainder"}), and plotly sums them upward, so a parent always equals the sum

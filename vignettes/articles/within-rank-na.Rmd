@@ -168,29 +168,51 @@ sapply(rings, function(r) round(sum(tree$pct_occ[tree$rank == r & tree$label == 
 
 ## An unidentified node with named children
 
-Most `NA` nodes have only `NA` below them. A few do not, because WoRMS gives no
-taxon at one rank to some groups. In the ICES lineage, several polychaete
-families have no order, and Priapulida have no class:
+WoRMS gives no taxon at one rank to some groups: in the ICES lineage several
+polychaete families have no order, lancelets have no order, and Priapulida
+have no class. A record identified to family in such a group has nothing at
+order, yet it is not unidentified there. Left as `NA`, it would sit in the
+unidentified order node under Polychaeta, drawn white, and inflate the
+unidentified share of that ring.
+
+By default `dv_prepare()` (argument `gaps = "label"`) fills such a rank with
+`"<nearest named ancestor> (no <rank>)"`, for example
+`"Polychaeta (no order)"`, drawn light gray. Only ranks with an identified rank
+below them are filled; a polychaete identified to class and no further stays
+`NA` at order, because it is truly unidentified there. The number of filled
+records per rank is stored with the prepared data:
 
 ```{r na-children}
-kid_named <- tapply(tree$label != "NA", tree$parent, any)
-na_with_kids <- tree[tree$label == "NA" & tree$id %in% names(kid_named)[kid_named], ]
-na_with_kids[, c("id", "rank", "value_occ")]
-tree[tree$parent %in% na_with_kids$id & tree$label != "NA", c("parent", "label", "value_occ")]
+attr(prep, "lineage_gaps")
+gap_nodes <- tree[grepl("\\(no [a-z]+\\)$", tree$label), c("id", "rank", "value_occ")]
+gap_nodes
+tree[tree$parent %in% gap_nodes$id, c("parent", "label", "value_occ")]
+# identified nodes sitting under an unidentified ("NA") node: none
+sum(tree$label != "NA" & grepl("(^|\\|)NA(\\||$)", tree$parent))
+```
+
+`gaps = "keep"` gives the older behaviour, where those records sit under the
+unidentified node of the empty rank. Compare the unidentified share at order:
+
+```{r na-children-keep}
+prep_keep <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                        gaps = "keep", verbose = FALSE)
+tree_keep <- dv_tree(prep_keep)
+na_share <- function(t) round(sum(t$pct_occ[t$rank == "Order" & t$label == "NA"]), 2)
+c(gaps_label = na_share(tree), gaps_keep = na_share(tree_keep))
+sum(tree_keep$label != "NA" & grepl("(^|\\|)NA(\\||$)", tree_keep$parent))
 ```
 
 ```{r na-children-num, include = FALSE}
-n_poly <- na_with_kids$value_occ[na_with_kids$rank == "Order"]
+n_gap <- sum(gap_nodes$value_occ[gap_nodes$rank == "Order"])
 ```
 
-Such a node mixes two things. The `r n_poly` cod records in the unidentified
-order node under Polychaeta are `r n_poly - 1` polychaetes not identified
-beyond class and one lugworm (Arenicolidae), a family to which WoRMS gives no
-order: identified to family, it still appears unidentified at order. The
-effect is one record here, but on another predator or survey it can be
-large. Before you
-report an unidentified share at that rank, check these rows; the article
-"Adapting DietView to your own survey" comes back to it.
+In cod the difference is small, `r n_gap` record(s) at order, but on another
+predator or survey it can be large. A gap is not a taxon: threshold
+aggregation (`dv_aggregate_threshold()`) skips it and never reports it as a
+category, and richness counts (`dv_summary()`, `dv_prey_accumulation()`) use
+the finest real taxon of each record, so they are the same with either
+setting.
 
 ## The figures
 
@@ -207,8 +229,9 @@ dv_sunburst(tree, mode = "weight", title = "Atlantic cod",
             subtitle = "share of prey weight")
 ```
 
-White wedges with gray edges are records not identified at that rank. Hovering
-over a wedge shows its count and its share of the ring.
+White wedges with gray edges are records not identified at that rank; light
+gray wedges are lineage gaps, identified material in a group with no taxon at
+that rank. Hovering over a wedge shows its count and its share of the ring.
 
 ## Colors
 

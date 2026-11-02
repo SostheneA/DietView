@@ -20,7 +20,9 @@ color in every panel built from one dictionary. The palette cycles after 20
 colors, so in a large survey several taxa share a color; see
 \code{\link[=dv_palette_tree]{dv_palette_tree()}} for colors that follow the hierarchy. The unidentified
 (\code{"NA"}) category is always white; the sunburst draws a gray outline around
-every wedge so white wedges stay visible.
+every wedge so white wedges stay visible. Lineage gaps (labels such as
+\code{"Polychaeta (no order)"}, see the \code{gaps} argument of \code{\link[=dv_prepare]{dv_prepare()}}) are
+light gray.
 }
 \examples{
 dv_palette(c("Teleostei", "Malacostraca", "Polychaeta", "NA"))

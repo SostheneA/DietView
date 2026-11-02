@@ -16,6 +16,36 @@
   v
 }
 
+# Lineage gaps: a rank WoRMS does not define for a group (e.g. many polychaete
+# families have no order) above a rank that is identified. They are labelled
+# "<nearest named ancestor> (no <rank>)" and drawn gray, not white.
+.DV_GAP_COLOR <- "#D9D9D9"
+
+.dv_gap_label <- function(ancestor, rank) {
+  rank <- tolower(rank)
+  ifelse(is.na(ancestor) | ancestor == "",
+         paste0("(no ", rank, ")"),
+         paste0(ancestor, " (no ", rank, ")"))
+}
+
+.dv_is_gap <- function(x) {
+  x <- as.character(x)
+  !is.na(x) & grepl("^(.+ )?\\(no [a-z_]+\\)$", x)
+}
+
+# Internal: one rank given as its column name ("class") or display label
+# ("Class"), case-insensitive and trimmed; returns the matching element of
+# `ranks`.
+.dv_match_rank <- function(rank, ranks, arg = "rank") {
+  valid <- paste(ranks, collapse = ", ")
+  if (length(rank) != 1L || is.na(rank))
+    stop("`", arg, "` must be a single rank, one of: ", valid, ".", call. = FALSE)
+  hit <- match(tolower(trimws(as.character(rank))), tolower(trimws(ranks)))
+  if (is.na(hit))
+    stop("Unknown `", arg, "` \"", rank, "\". Use one of: ", valid, ".", call. = FALSE)
+  ranks[hit]
+}
+
 # Numeric value of a column. Factors go through their labels, not their level
 # codes; values that are not numbers become NA.
 .dv_as_num <- function(x) {
@@ -48,7 +78,9 @@
 #' colors, so in a large survey several taxa share a color; see
 #' [dv_palette_tree()] for colors that follow the hierarchy. The unidentified
 #' (`"NA"`) category is always white; the sunburst draws a gray outline around
-#' every wedge so white wedges stay visible.
+#' every wedge so white wedges stay visible. Lineage gaps (labels such as
+#' `"Polychaeta (no order)"`, see the `gaps` argument of [dv_prepare()]) are
+#' light gray.
 #'
 #' @param labels Character vector of taxon labels (any rank).
 #' @param palette Colors to cycle through. Defaults to a d3 category-20 set.
@@ -58,8 +90,10 @@
 #' @export
 dv_palette <- function(labels, palette = .DV_D3) {
   labels <- unique(as.character(labels))
-  normal <- labels[labels != "NA" & !is.na(labels)]
+  gap    <- labels[.dv_is_gap(labels)]
+  normal <- labels[labels != "NA" & !is.na(labels) & !.dv_is_gap(labels)]
   cols <- stats::setNames(rep(palette, length.out = length(normal)), normal)
+  cols[gap] <- .DV_GAP_COLOR
   cols["NA"] <- "#FFFFFF"
   cols
 }
@@ -70,7 +104,9 @@ dv_palette <- function(labels, palette = .DV_D3) {
 #' of that hue for its descendants, unidentified nodes white. Colors are keyed
 #' by node `id`, so a taxon keeps its color in every panel built from trees of
 #' the same ranks; pass the result as `colors` to [dv_sunburst()]. Nodes above
-#' `base_rank`, and nodes below an unidentified `base_rank` node, are gray.
+#' `base_rank`, and nodes below an unidentified `base_rank` node, are gray. A
+#' lineage gap node (e.g. `"Polychaeta (no order)"`) is light gray itself, while
+#' its descendants keep the tint of their `base_rank` ancestor.
 #'
 #' @param tree A `dietview_tree` from [dv_build_tree()] or [dv_tree()]. To keep
 #'   colors stable across strata, build the palette from the pooled tree.
@@ -116,6 +152,7 @@ dv_palette_tree <- function(tree, base_rank = 2L, palette = .DV_D3[c(TRUE, FALSE
   f   <- pmin(0.15 * pmax(depth - base_rank, 0), 0.75)
   m   <- grDevices::col2rgb(col)
   out <- grDevices::rgb(t(m + (255 - m) * rep(f, each = 3)), maxColorValue = 255)
+  out[.dv_is_gap(tree$label)] <- .DV_GAP_COLOR
   out[tree$label == "NA"] <- "#FFFFFF"
   stats::setNames(out, tree$id)
 }

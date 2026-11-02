@@ -25,8 +25,9 @@
 #'   combination of levels), or `NULL`. With two, `c(inner, outer)` as in the
 #'   app: `panels` is then a list over the levels of `outer`, each a list over
 #'   the levels of `inner`. Missing covariate values get their own `"NA"` panel.
-#' @param rank Rank for the rank table and the frequency-of-occurrence table.
-#'   Defaults to the third rank of `prep`.
+#' @param rank Rank for the rank table and the frequency-of-occurrence table,
+#'   by column name or display label, case-insensitive. Defaults to the third
+#'   rank of `prep`.
 #' @param data_file File name the script reads `prep` from.
 #' @param file Optional path; if given, the script is written there.
 #' @return A character vector of script lines, of class `dietview_script`
@@ -52,9 +53,7 @@ dv_script <- function(prep, predator = NULL,
   currency <- match.arg(currency)
   spec <- prep$spec
   if (is.null(rank)) rank <- prep$ranks[min(3L, length(prep$ranks))]
-  rank <- tolower(rank)
-  if (!rank %in% prep$ranks)
-    stop("`rank` must be one of: ", paste(prep$ranks, collapse = ", "), call. = FALSE)
+  rank <- .dv_match_rank(rank, prep$ranks)
   facet <- facet[!is.na(facet) & nzchar(facet)]
   if (length(facet) > 2L) stop("`facet` takes at most two covariates.", call. = FALSE)
   bad <- setdiff(facet, names(prep$data))

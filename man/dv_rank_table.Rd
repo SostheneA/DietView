@@ -9,7 +9,9 @@ dv_rank_table(tree, rank)
 \arguments{
 \item{tree}{A \code{dietview_tree} (or a data.frame from \code{\link[=dv_build_tree]{dv_build_tree()}}).}
 
-\item{rank}{Rank label to extract (e.g. "Class").}
+\item{rank}{Rank to extract, by its display label or column name,
+case-insensitive (\code{"Class"}, \code{"class"} and \code{" CLASS "} are the same). An
+unknown rank is an error.}
 }
 \value{
 A data.frame: \verb{label, value_item, value_occ, pct_occ, value_w, pct_w}.

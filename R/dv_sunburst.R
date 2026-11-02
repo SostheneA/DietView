@@ -6,7 +6,9 @@
 #' positions are not fixed: a taxon absent from one cell shifts every wedge
 #' after it, so compare cells by color, not by angle. Records not identified at
 #' a rank form a white wedge with a thin gray outline, shown as "Not identified
-#' at this rank" in the hover text.
+#' at this rank" in the hover text. Lineage gaps (identified material in a group
+#' that has no taxon at that rank, such as `"Polychaeta (no order)"`; see
+#' [dv_prepare()]) form a light gray wedge, described as such in the hover text.
 #'
 #' Wedges are sized from the raw values of the leaves (`branchvalues =
 #' "remainder"`), and plotly sums them upward, so a parent always equals the sum
@@ -118,7 +120,14 @@ dv_sunburst <- function(x,
                 occurrence = tree$value_occ, weight = tree$value_w)
   size_vals <- ifelse(is_leaf, raw, 0)
 
-  taxon <- ifelse(tree$label == "NA", "Not identified at this rank", tree$label)
+  gap <- .dv_is_gap(tree$label)
+  gap_anc  <- sub("\\s*\\(no [a-z_]+\\)$", "", tree$label)
+  gap_rank <- sub("^.*\\(no ([a-z_]+)\\)$", "\\1", tree$label)
+  gap_txt  <- ifelse(nzchar(gap_anc),
+                     paste0(gap_anc, " \u2014 no ", gap_rank, " in WoRMS (identified material)"),
+                     paste0("No ", gap_rank, " in WoRMS (identified material)"))
+  taxon <- ifelse(tree$label == "NA", "Not identified at this rank",
+                  ifelse(gap, gap_txt, tree$label))
   head  <- paste0("<b>Rank:</b> ", tree$rank, "<br><b>Taxon:</b> ", taxon)
   tree$hovertext <- switch(
     mode,

@@ -105,13 +105,15 @@ dv_aggregate_threshold <- function(prep, threshold,
   pv <- if (!is.null(pred) && pred %in% names(d)) as.character(d[[pred]]) else rep("", n)
 
   # cumulative node key at each resolved rank; NA where the rank is empty. A
-  # rank missing from the lineage in the middle (e.g. Priapulida have no class)
-  # is skipped rather than ending the path, so finer ranks stay usable.
+  # rank missing from the lineage in the middle (e.g. Priapulida have no class),
+  # whether NA or labelled as a gap ("Priapulida (no class)"), is skipped rather
+  # than ending the path, so finer ranks stay usable and a gap never becomes a
+  # category of its own.
   key <- matrix(NA_character_, n, K)
   acc <- rep("", n)
   for (j in seq_len(K)) {
     lab <- as.character(d[[ranks[j]]])
-    ok  <- !is.na(lab) & lab != ""
+    ok  <- !is.na(lab) & lab != "" & !.dv_is_gap(lab)
     acc_j <- ifelse(ok, paste(acc, lab, sep = ">"), NA_character_)
     key[, j] <- acc_j
     acc <- ifelse(ok, acc_j, acc)

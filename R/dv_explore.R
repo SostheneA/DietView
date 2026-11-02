@@ -1,21 +1,23 @@
 # Internal: the taxon label used to count richness or build categories. With
 # `rank = NULL`, the finest resolved (deepest non-NA) label of each record;
-# otherwise the label at that rank, records unidentified there giving NA.
+# otherwise the label at that rank (case-insensitive, see .dv_match_rank()),
+# records unidentified there giving NA. A lineage gap label at that rank
+# ("Polychaeta (no order)") is kept as a category.
 .dv_taxon_label <- function(data, ranks, rank = NULL) {
   if (is.null(rank)) return(.dv_leaf_label(data, ranks))
-  if (length(rank) != 1L || !rank %in% ranks)
-    stop("`rank` must be one of: ", paste(ranks, collapse = ", "), call. = FALSE)
+  rank <- .dv_match_rank(rank, ranks)
   v <- as.character(data[[rank]])
   v[v == "" | v == "NA"] <- NA
   v
 }
 
 # Internal: the finest resolved (deepest non-NA) rank label for each record.
+# Lineage gap labels are skipped: they are never a resolved taxon.
 .dv_leaf_label <- function(data, ranks) {
   lab <- rep(NA_character_, nrow(data))
   for (r in ranks) {
     v <- as.character(data[[r]])
-    ok <- !is.na(v) & v != ""
+    ok <- !is.na(v) & v != "" & !.dv_is_gap(v)
     lab[ok] <- v[ok]          # later (finer) ranks overwrite -> deepest wins
   }
   lab
@@ -41,7 +43,9 @@
 #' @param prep A `dietview_prep` from [dv_prepare()].
 #' @param by Optional covariate column to break the summary down by.
 #' @param rank Optional rank (one of `prep$ranks`, e.g. `"family"`) at which
-#'   `n_taxa` is counted. `NULL` (default) uses the finest resolved label.
+#'   `n_taxa` is counted, case-insensitive (`"family"` or `"Family"`). `NULL`
+#'   (default) uses the finest resolved label. At a stated rank, a lineage gap
+#'   group such as `"Polychaeta (no order)"` counts as one category.
 #' @return A data.frame with one row per predator (and per `by` level), with
 #'   `n_stomachs`, `n_records`, `n_taxa`, `records_per_stomach`, and, when a
 #'   weight column is declared, `total_weight`.
@@ -220,7 +224,8 @@ dv_prey_accumulation <- function(prep, by = NULL, rank = NULL,
 #' unique across predators (see [dv_validate()]).
 #'
 #' @param prep A `dietview_prep` from [dv_prepare()].
-#' @param rank A single rank (e.g. `"genus"`) or `NULL` for every rank stacked.
+#' @param rank One or more ranks (e.g. `"genus"`; case-insensitive) or `NULL`
+#'   for every rank stacked.
 #' @param by Optional covariate to compute %FO within each level of.
 #' @param include_na Keep the explicit unidentified category at each rank.
 #' @return A data.frame with (optional) `by`, `rank`, `taxon`, `n_stomachs`
@@ -251,11 +256,11 @@ dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE) {
   stopifnot(inherits(prep, "dietview_prep"))
   d <- prep$data
   stom <- prep$spec$stomach
-  ranks <- if (is.null(rank)) prep$ranks else tolower(rank)
-  bad <- setdiff(ranks, intersect(prep$ranks, names(d)))
-  if (length(bad)) stop("rank(s) not found: ", paste(bad, collapse = ", "),
-                        ". Use any of: ", paste(prep$ranks, collapse = ", "), ".",
-                        call. = FALSE)
+  ranks <- if (is.null(rank)) prep$ranks else
+    vapply(rank, .dv_match_rank, character(1), ranks = prep$ranks, USE.NAMES = FALSE)
+  bad <- setdiff(ranks, names(d))
+  if (length(bad)) stop("rank column(s) not found in the data: ",
+                        paste(bad, collapse = ", "), call. = FALSE)
   if (!is.null(by) && !by %in% names(d))
     stop("`by` column not found: ", by, call. = FALSE)
 
@@ -302,7 +307,8 @@ dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE) {
 #'   (from [dv_aggregate_threshold()]) if present, otherwise the finest resolved
 #'   rank label. Ignored when `rank` is given.
 #' @param unit Column giving the sampling unit. Defaults to the spec's stomach.
-#' @param rank Optional rank (one of `prep$ranks`, e.g. `"class"`): columns are
+#' @param rank Optional rank (one of `prep$ranks`, e.g. `"class"`;
+#'   case-insensitive): columns are
 #'   then the taxa at that rank, plus the unidentified column (`"NA"`) when
 #'   `include_na = TRUE`.
 #' @param currency `"weight"` (summed mass), `"occurrence"` (record counts), or

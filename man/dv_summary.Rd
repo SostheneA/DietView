@@ -12,7 +12,9 @@ dv_summary(prep, by = NULL, rank = NULL)
 \item{by}{Optional covariate column to break the summary down by.}
 
 \item{rank}{Optional rank (one of \code{prep$ranks}, e.g. \code{"family"}) at which
-\code{n_taxa} is counted. \code{NULL} (default) uses the finest resolved label.}
+\code{n_taxa} is counted, case-insensitive (\code{"family"} or \code{"Family"}). \code{NULL}
+(default) uses the finest resolved label. At a stated rank, a lineage gap
+group such as \code{"Polychaeta (no order)"} counts as one category.}
 }
 \value{
 A data.frame with one row per predator (and per \code{by} level), with

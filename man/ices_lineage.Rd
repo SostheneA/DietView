@@ -25,8 +25,10 @@ its key column, \code{prey_aphia_id}, has the same name as the prey key of
 \link{ices_diet}. A taxon that is itself above species (e.g. "Crustacea", a
 subphylum) has \code{NA} at the finer ranks, which DietView shows as the
 unidentified share of that branch. WoRMS gives no order to some polychaetes
-and lancelets and no class to Priapulida, so a few records identified to
-family or species also reach an \code{NA} node at those ranks.
+and lancelets and no class to Priapulida, so a few prey identified to family
+or species have \code{NA} at those ranks. \code{\link[=dv_prepare]{dv_prepare()}} shows those as gray
+lineage gaps such as \code{"Polychaeta (no order)"}, not as unidentified
+material; \code{gaps = "keep"} leaves them \code{NA}.
 }
 \examples{
 ices_lineage[ices_lineage$scientific_name \%in\% c("Crustacea", "Crangon crangon"), ]

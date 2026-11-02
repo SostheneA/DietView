@@ -22,7 +22,8 @@ rank label. Ignored when \code{rank} is given.}
 
 \item{unit}{Column giving the sampling unit. Defaults to the spec's stomach.}
 
-\item{rank}{Optional rank (one of \code{prep$ranks}, e.g. \code{"class"}): columns are
+\item{rank}{Optional rank (one of \code{prep$ranks}, e.g. \code{"class"};
+case-insensitive): columns are
 then the taxa at that rank, plus the unidentified column (\code{"NA"}) when
 \code{include_na = TRUE}.}
 

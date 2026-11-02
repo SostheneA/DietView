@@ -13,6 +13,7 @@ dv_prepare(
   cache_dir = tools::R_user_dir("DietView", "cache"),
   cache_max_age = 180,
   strict_covariates = TRUE,
+  gaps = c("label", "keep"),
   verbose = TRUE
 )
 }
@@ -39,6 +40,11 @@ days are fetched again (default 180). See \code{\link[=dv_taxonomy_worms]{dv_tax
 declared covariate missing from \code{data} is an error; if \code{FALSE} it is dropped
 from the returned spec with a warning.}
 
+\item{gaps}{How to show a rank that has no taxon in the lineage between two
+identified ranks: \code{"label"} (default) fills it with
+\code{"<ancestor> (no <rank>)"}, e.g. \code{"Polychaeta (no order)"}; \code{"keep"} leaves
+it \code{NA}, so its records sit under the unidentified node of that rank.}
+
 \item{verbose}{Print progress and the validation summary.}
 }
 \value{
@@ -47,6 +53,8 @@ any dropped covariates), \code{ranks}, \code{taxonomy_source} (the taxonomy path
 actually used) and \code{taxonomy_log}. When \code{taxonomy = "worms"},
 \code{taxonomy_log} is the per-prey provenance table, with the attributes
 \code{retrieved} (time of the run) and \code{worrms_version}; otherwise it is \code{NULL}.
+The attribute \code{lineage_gaps} is a named integer vector: the number of
+records whose rank was filled as a lineage gap, per rank.
 }
 \description{
 Validates the long table with \code{\link[=dv_validate]{dv_validate()}} and attaches the taxonomic
@@ -65,6 +73,18 @@ With \code{taxonomy = "worms"}, each record is keyed by its AphiaID when it has
 one and by its own prey name otherwise, so records without an AphiaID never
 share a lineage by accident. Records with neither key stay fully
 unidentified, with a warning.
+
+Some groups have no taxon at a rank in WoRMS: several polychaete families
+have no order, lancelets have no order and Priapulida have no class. A record
+identified below such a rank would otherwise sit under an \code{"NA"} node there
+and look unidentified. With \code{gaps = "label"} (the default) that empty rank is
+filled with \code{"<nearest named ancestor> (no <rank>)"}, e.g.
+\code{"Polychaeta (no order)"} above Opheliidae; the sunburst draws it gray, not
+white, and its records no longer inflate the unidentified share of that
+rank. Only ranks with an identified rank below them are filled: a record
+identified to class and no further keeps \code{NA} at order, family, genus and
+species, because it is truly unidentified there. The number of filled cells
+per rank is stored in the attribute \code{lineage_gaps}.
 
 With \code{taxonomy = "table"}, the lineage table must hold each key once (a
 duplicated key is an error), and prey keys absent from the table are reported

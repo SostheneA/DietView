@@ -47,8 +47,8 @@ dv_digestion_diagnostic <- function(prep, by = NULL) {
   wcol <- spec$weight
   if (!is.null(wcol) && !wcol %in% names(d)) wcol <- NULL
 
-  # finest resolved rank per record
-  mat <- as.data.frame(lapply(d[ranks], function(v) !is.na(v) & v != ""))
+  # finest truly resolved rank per record (a lineage gap label is not a taxon)
+  mat <- as.data.frame(lapply(d[ranks], function(v) !is.na(v) & v != "" & !.dv_is_gap(v)))
   depth <- max.col(mat * matrix(seq_along(ranks), nrow(mat), length(ranks),
                                 byrow = TRUE), ties.method = "last")
   any_hit <- rowSums(mat) > 0

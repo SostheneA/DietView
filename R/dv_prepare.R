@@ -16,6 +16,18 @@
 #' share a lineage by accident. Records with neither key stay fully
 #' unidentified, with a warning.
 #'
+#' Some groups have no taxon at a rank in WoRMS: several polychaete families
+#' have no order, lancelets have no order and Priapulida have no class. A record
+#' identified below such a rank would otherwise sit under an `"NA"` node there
+#' and look unidentified. With `gaps = "label"` (the default) that empty rank is
+#' filled with `"<nearest named ancestor> (no <rank>)"`, e.g.
+#' `"Polychaeta (no order)"` above Opheliidae; the sunburst draws it gray, not
+#' white, and its records no longer inflate the unidentified share of that
+#' rank. Only ranks with an identified rank below them are filled: a record
+#' identified to class and no further keeps `NA` at order, family, genus and
+#' species, because it is truly unidentified there. The number of filled cells
+#' per rank is stored in the attribute `lineage_gaps`.
+#'
 #' With `taxonomy = "table"`, the lineage table must hold each key once (a
 #' duplicated key is an error), and prey keys absent from the table are reported
 #' with a warning before their records are treated as fully unidentified.
@@ -34,12 +46,18 @@
 #' @param strict_covariates Passed to [dv_validate()]: if `TRUE` (default) a
 #'   declared covariate missing from `data` is an error; if `FALSE` it is dropped
 #'   from the returned spec with a warning.
+#' @param gaps How to show a rank that has no taxon in the lineage between two
+#'   identified ranks: `"label"` (default) fills it with
+#'   `"<ancestor> (no <rank>)"`, e.g. `"Polychaeta (no order)"`; `"keep"` leaves
+#'   it `NA`, so its records sit under the unidentified node of that rank.
 #' @param verbose Print progress and the validation summary.
 #' @return An object of class `dietview_prep`: a list with `data`, `spec` (minus
 #'   any dropped covariates), `ranks`, `taxonomy_source` (the taxonomy path
 #'   actually used) and `taxonomy_log`. When `taxonomy = "worms"`,
 #'   `taxonomy_log` is the per-prey provenance table, with the attributes
 #'   `retrieved` (time of the run) and `worrms_version`; otherwise it is `NULL`.
+#'   The attribute `lineage_gaps` is a named integer vector: the number of
+#'   records whose rank was filled as a lineage gap, per rank.
 #' @examples
 #' # the standard set-up: public ICES data, non-food items and nematodes dropped
 #' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
@@ -70,8 +88,10 @@ dv_prepare <- function(data, spec,
                        cache_dir = tools::R_user_dir("DietView", "cache"),
                        cache_max_age = 180,
                        strict_covariates = TRUE,
+                       gaps = c("label", "keep"),
                        verbose = TRUE) {
   taxonomy <- match.arg(taxonomy)
+  gaps <- match.arg(gaps)
   checked <- dv_validate(data, spec, strict_covariates = strict_covariates,
                          quiet = !verbose)
   spec <- attr(checked, "dv_spec")
@@ -177,10 +197,52 @@ dv_prepare <- function(data, spec,
     data[[r]] <- v
   }
 
+  n_gap <- stats::setNames(integer(length(ranks)), ranks)
+  if (gaps == "label") {
+    data <- .dv_fill_gaps(data, ranks)
+    n_gap <- attr(data, "lineage_gaps"); attr(data, "lineage_gaps") <- NULL
+    if (verbose && sum(n_gap) > 0) {
+      nz <- n_gap[n_gap > 0]
+      message("Filled ", sum(n_gap), " lineage gap(s) (rank absent in WoRMS): ",
+              paste0(names(nz), "=", nz, collapse = ", "),
+              ". They are shown as '<parent> (no <rank>)', not as unidentified.")
+    }
+  }
+
   out <- list(data = data, spec = spec, ranks = ranks,
               taxonomy_source = taxonomy, taxonomy_log = tax_log)
   class(out) <- "dietview_prep"
+  attr(out, "lineage_gaps") <- n_gap
   out
+}
+
+# Internal: fill each empty rank that has an identified rank below it with
+# "<nearest named coarser label> (no <rank>)". Trailing empty ranks stay NA.
+# The number of filled cells per rank is returned as attr "lineage_gaps".
+.dv_fill_gaps <- function(data, ranks) {
+  K <- length(ranks); n <- nrow(data)
+  n_gap <- stats::setNames(integer(K), ranks)
+  finer <- rep(FALSE, n)
+  has_finer <- vector("list", K)
+  for (j in rev(seq_len(K))) {
+    has_finer[[j]] <- finer
+    v <- as.character(data[[ranks[j]]])
+    finer <- finer | (!is.na(v) & v != "")
+  }
+  anc <- rep(NA_character_, n)
+  for (j in seq_len(K)) {
+    v <- as.character(data[[ranks[j]]])
+    fill <- (is.na(v) | v == "") & has_finer[[j]]
+    if (any(fill)) {
+      v[fill] <- .dv_gap_label(anc[fill], ranks[j])
+      data[[ranks[j]]] <- v
+      n_gap[j] <- sum(fill)
+    }
+    real <- !is.na(v) & v != "" & !.dv_is_gap(v)
+    anc[real] <- v[real]
+  }
+  attr(data, "lineage_gaps") <- n_gap
+  data
 }
 
 # Match types written by dv_taxonomy_worms(), in display order.

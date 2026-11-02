@@ -113,12 +113,19 @@ run_dietview <- function(prep, currency = c("records", "numbers"), ...) {
         shiny::tabsetPanel(
           id = "tabs",
           shiny::tabPanel("Sunburst",
+                          shiny::helpText("White wedges are records not identified at that",
+                                          "rank; gray wedges are identified material in groups",
+                                          "that have no taxon at that rank in WoRMS. Both are",
+                                          "kept, so every ring accounts for all the material",
+                                          "and its shares sum to 100%."),
                           shiny::textOutput("res_note"),
                           plotly::plotlyOutput("sunburst", height = "600px")),
           shiny::tabPanel("Rank table",
                           shiny::helpText("Shares of all records (pct_occ) and of all weight",
                                           "(pct_w) at the chosen rank; each rank sums to 100%,",
-                                          "\"NA\" rows are material not identified at that rank."),
+                                          "\"NA\" rows are material not identified at that rank;",
+                                          "\"(no <rank>)\" rows are identified material in groups",
+                                          "with no taxon at that rank in WoRMS."),
                           tbl_out("tbl")),
           shiny::tabPanel("Frequency of occurrence",
                           shiny::helpText("Share of stomachs containing each taxon at the",
@@ -207,12 +214,12 @@ run_dietview <- function(prep, currency = c("records", "numbers"), ...) {
       }
     })
     rank_tbl <- shiny::reactive(dv_rank_table(tree(), input$rank))
-    fo_tbl <- shiny::reactive(dv_fo_table(prep_sel(), rank = tolower(input$rank)))
+    fo_tbl <- shiny::reactive(dv_fo_table(prep_sel(), rank = input$rank))
     dig_tbl <- shiny::reactive(dv_digestion_diagnostic(prep_sel()))
     script <- shiny::reactive(
       dv_script(prep, predator = if (identical(input$predator, ALL_PRED)) NULL else input$predator,
                 mode = input$mode, currency = currency, aggregation = aggregation(),
-                facet = facets(), rank = tolower(input$rank))
+                facet = facets(), rank = input$rank)
     )
 
     show <- function(id, f) {

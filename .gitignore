@@ -31,3 +31,6 @@ images/
 # local-only: renv bootstrap and maintainer notes
 .Rprofile
 /dev/
+
+# pkgdown site: built by CI and served from the gh-pages branch
+docs/

@@ -248,23 +248,26 @@ shrimps inside Decapoda) means going back to WoRMS once and freezing again.
 Fewer ranks make a simpler figure, but they also merge information: without
 `"species"`, a prey named to species and one named only to its genus look the
 same. Check one more thing on your own prey list: some taxa have no entry at
-one of the requested ranks in WoRMS. Such a prey shows an unidentified node at
-that rank with named taxa beyond it, and that node then mixes prey that were
-not identified with prey that were identified but have no taxon at that rank.
-Find those nodes before you report an unidentified share:
+one of the requested ranks in WoRMS. By default `dv_prepare()` fills such a
+hole, when a finer rank is identified, with `"<ancestor> (no <rank>)"`, drawn
+light gray, so identified prey never sit under an unidentified node:
 
 ```{r na-with-children}
 tree <- dv_tree(prep)
-named_kids <- tapply(tree$label != "NA", tree$parent, any)
-holes <- tree[tree$label == "NA" & tree$id %in% names(named_kids)[named_kids], ]
+attr(prep, "lineage_gaps")
+holes <- tree[grepl("\\(no [a-z]+\\)$", tree$label), ]
 holes[, c("id", "rank", "value_occ")]
+# identified nodes under an unidentified ("NA") node: none
+sum(tree$label != "NA" & grepl("(^|\\|)NA(\\||$)", tree$parent))
 ```
 
-In the ICES data these are the polychaetes, whose unidentified order node
-holds `r holes$value_occ[grepl("Polychaeta", holes$id)]` records, some of them
-in families that WoRMS places in no order; a lancelet (Leptocardii) with a
-family but no order; and Priapulida, which have no class. Their `NA` rows in
-`dv_rank_table()` at that rank are not all unidentified prey.
+In the ICES data these are the polychaetes, with
+`r holes$value_occ[holes$label == "Polychaeta (no order)"]` records in families
+that WoRMS places in no order; a lancelet (Leptocardii) with a family but no
+order; and Priapulida, which have no class. With `gaps = "keep"` these records
+stay `NA` at that rank and sit under the unidentified node instead, which then
+mixes prey that were not identified with prey that were identified but have no
+taxon at that rank.
 
 ## 5. Colors
 

@@ -1,5 +1,12 @@
 # DietView <img src="man/figures/logo.png" align="right" height="130" alt="DietView logo" />
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/SostheneA/DietView/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SostheneA/DietView/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://github.com/SostheneA/DietView/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/SostheneA/DietView/actions/workflows/pkgdown.yaml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
+
 > Interactive, hierarchical visualization of predator stomach-content data
 
 Stomach contents are identified to uneven depth: one prey is named to species,
@@ -109,17 +116,11 @@ sunbursts you see there are real output.
 > (the API).
 >
 > **[Read it online](https://sosthenea.github.io/DietView/articles/technical-reference.html)**
+> · **[Download the PDF](https://sosthenea.github.io/DietView/DietView-technical-reference.pdf)**
 
 ## Installation
 
-DietView is distributed through [R-universe](https://r-universe.dev):
-
-```r
-install.packages("DietView",
-  repos = c("https://sosthenea.r-universe.dev", "https://cloud.r-project.org"))
-```
-
-Or install the development version from GitHub:
+Install DietView from GitHub:
 
 ```r
 # install.packages("pak")
@@ -179,7 +180,7 @@ dv_digestion_diagnostic(cod, by = "region")
 
 # 6. explore, check sampling sufficiency, aggregate, and export
 dv_summary(prep)                                  # stomachs, records, taxa per predator
-dv_prey_accumulation(cod, permutations = 50)      # cumulative prey curve
+dv_prey_accumulation(cod, permutations = 50, seed = 1)  # cumulative prey curve
 dv_fo_table(cod, rank = "class")                  # classical per-rank %FO
 
 agg  <- dv_aggregate_threshold(cod, threshold = 10)    # prey in < 10 stomachs move up a rank

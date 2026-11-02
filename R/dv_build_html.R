@@ -323,7 +323,7 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
     id = "view_home", class = "dashboard-view active",
     htmltools::tags$h1(title),
     htmltools::tags$p(
-      paste0("Click a card to open a predator's diet. Each predator shows up to three bands of sunbursts: distinct prey items, ", rec_txt, " and weight (% of total weight). White wedges are records not identified at that rank. They are kept, so every ring accounts for all the material and its shares sum to 100%.")
+      paste0("Click a card to open a predator's diet. Each predator shows up to three bands of sunbursts: distinct prey items, ", rec_txt, " and weight (% of total weight). White wedges are records not identified at that rank; gray wedges are identified material in groups that have no taxon at that rank in WoRMS. Both are kept, so every ring accounts for all the material and its shares sum to 100%.")
     ),
     htmltools::tags$div(
       class = "controls",

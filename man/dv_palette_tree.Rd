@@ -24,7 +24,9 @@ One hue per node at \code{base_rank} (for example one per phylum), lighter tints
 of that hue for its descendants, unidentified nodes white. Colors are keyed
 by node \code{id}, so a taxon keeps its color in every panel built from trees of
 the same ranks; pass the result as \code{colors} to \code{\link[=dv_sunburst]{dv_sunburst()}}. Nodes above
-\code{base_rank}, and nodes below an unidentified \code{base_rank} node, are gray.
+\code{base_rank}, and nodes below an unidentified \code{base_rank} node, are gray. A
+lineage gap node (e.g. \code{"Polychaeta (no order)"}) is light gray itself, while
+its descendants keep the tint of their \code{base_rank} ancestor.
 }
 \examples{
 # the standard set-up: public ICES data, non-food items and nematodes dropped
