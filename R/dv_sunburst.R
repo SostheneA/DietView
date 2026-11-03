@@ -26,7 +26,11 @@
 #' }
 #'
 #' @param x A `dietview_tree`, or a data.frame of records (then supply `ranks`
-#'   and `weight_col`/`count_col`).
+#'   and `weight_col`/`count_col`). Lineage gaps (a rank absent in WoRMS above
+#'   an identified taxon) are labelled `"<ancestor> (no <rank>)"` by
+#'   [dv_prepare()]; a data.frame passed here directly is used as is, so such
+#'   gaps appear as unidentified (`"NA"`) nodes. Build the tree from a
+#'   `dietview_prep`, or with [dv_tree()], to get the gap labels.
 #' @param mode One of "occurrence" (default), "weight", "count".
 #' @param ranks,weight_col,count_col Passed to [dv_build_tree()] if `x` is raw.
 #' @param colors Optional named color vector, keyed by node `id` (as from

@@ -1,12 +1,5 @@
 # DietView <img src="man/figures/logo.png" align="right" height="130" alt="DietView logo" />
 
-<!-- badges: start -->
-[![R-CMD-check](https://github.com/SostheneA/DietView/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SostheneA/DietView/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/SostheneA/DietView/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/SostheneA/DietView/actions/workflows/pkgdown.yaml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-<!-- badges: end -->
-
 > Interactive, hierarchical visualization of predator stomach-content data
 
 Stomach contents are identified to uneven depth: one prey is named to species,

@@ -24,6 +24,12 @@
 #' To build the tree from a prepared dataset with the columns of its spec, use
 #' [dv_tree()].
 #'
+#' Lineage gaps (a rank absent in WoRMS above an identified taxon) are labelled
+#' `"<ancestor> (no <rank>)"` by [dv_prepare()]; a data.frame passed here
+#' directly is used as is, so such gaps appear as unidentified (`"NA"`) nodes.
+#' Build the tree from a `dietview_prep`, or with [dv_tree()], to get the gap
+#' labels.
+#'
 #' @param df A data.frame of records with the rank columns present.
 #' @param ranks Ranks, coarse to fine.
 #' @param weight_col Name of the weight column (or `NULL` -> zero weight).

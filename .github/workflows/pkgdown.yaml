@@ -41,6 +41,7 @@ jobs:
         shell: Rscript {0}
 
       - name: Render technical reference to PDF
+        continue-on-error: true
         run: |
           # regenerated from the built article, so the PDF never drifts from the web version
           pagedown::chrome_print("docs/articles/technical-reference.html",

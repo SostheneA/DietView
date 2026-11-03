@@ -1,6 +1,6 @@
 Package: DietView
 Title: Interactive, Hierarchical Visualization of Stomach-Content Data
-Version: 0.1.0.9000
+Version: 0.1.0
 Authors@R: c(
     person(given = c("Sosthène", "A. V."), family = "Akia",
            email = "akiasosthene@gmail.com",

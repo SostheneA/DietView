@@ -51,7 +51,10 @@ denominator, and \code{\link[=dv_matrix]{dv_matrix()}} add rows for empty stomac
 long prey table holds only non-empty stomachs: \%FO is over non-empty
 stomachs and the matrix has no empty rows. Stomachs of predators absent
 from \code{data} are ignored, so the full sampling frame can be passed with a
-subset of the predators.}
+subset of the predators. Stomachs whose records were all removed before
+\code{dv_prepare()} (e.g. they held only non-food items or nematodes) are
+counted neither as empty nor as examined; to count them as examined but
+empty, flag them empty in \code{stomachs} before calling \code{dv_prepare()}.}
 
 \item{empty_col}{Optional column of \code{stomachs} flagging empty stomachs
 (logical, or 0/1). With it, a stomach without records counts as empty only

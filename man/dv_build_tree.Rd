@@ -52,6 +52,12 @@ last.
 
 To build the tree from a prepared dataset with the columns of its spec, use
 \code{\link[=dv_tree]{dv_tree()}}.
+
+Lineage gaps (a rank absent in WoRMS above an identified taxon) are labelled
+\code{"<ancestor> (no <rank>)"} by \code{\link[=dv_prepare]{dv_prepare()}}; a data.frame passed here
+directly is used as is, so such gaps appear as unidentified (\code{"NA"}) nodes.
+Build the tree from a \code{dietview_prep}, or with \code{\link[=dv_tree]{dv_tree()}}, to get the gap
+labels.
 }
 \examples{
 # the standard set-up: public ICES data, non-food items and nematodes dropped

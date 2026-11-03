@@ -18,7 +18,11 @@ dv_sunburst(
 }
 \arguments{
 \item{x}{A \code{dietview_tree}, or a data.frame of records (then supply \code{ranks}
-and \code{weight_col}/\code{count_col}).}
+and \code{weight_col}/\code{count_col}). Lineage gaps (a rank absent in WoRMS above
+an identified taxon) are labelled \code{"<ancestor> (no <rank>)"} by
+\code{\link[=dv_prepare]{dv_prepare()}}; a data.frame passed here directly is used as is, so such
+gaps appear as unidentified (\code{"NA"}) nodes. Build the tree from a
+\code{dietview_prep}, or with \code{\link[=dv_tree]{dv_tree()}}, to get the gap labels.}
 
 \item{mode}{One of "occurrence" (default), "weight", "count".}
 

@@ -2,6 +2,7 @@ cff-version: 1.2.0
 message: "If you use DietView, please cite it as below."
 title: "DietView: An R package for interactive, hierarchical visualization of predator stomach-content data"
 version: 0.1.0
+# doi: 10.5281/zenodo.XXXXXXX  (to add after the first Zenodo release)
 abstract: >-
   DietView turns a long table of stomach-content records into interactive,
   hierarchical views of predator diet. It attaches a taxonomic lineage from the

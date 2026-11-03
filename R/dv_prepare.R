@@ -55,7 +55,10 @@
 #'   long prey table holds only non-empty stomachs: %FO is over non-empty
 #'   stomachs and the matrix has no empty rows. Stomachs of predators absent
 #'   from `data` are ignored, so the full sampling frame can be passed with a
-#'   subset of the predators.
+#'   subset of the predators. Stomachs whose records were all removed before
+#'   `dv_prepare()` (e.g. they held only non-food items or nematodes) are
+#'   counted neither as empty nor as examined; to count them as examined but
+#'   empty, flag them empty in `stomachs` before calling `dv_prepare()`.
 #' @param empty_col Optional column of `stomachs` flagging empty stomachs
 #'   (logical, or 0/1). With it, a stomach without records counts as empty only
 #'   when flagged; one that is neither flagged nor in `data` has an unknown

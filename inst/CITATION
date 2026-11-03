@@ -1,5 +1,6 @@
 citHeader("To cite DietView in publications, please cite the software (and the article, once published):")
 
+# doi = "10.5281/zenodo.XXXXXXX"  (to add after the first Zenodo release)
 bibentry(
   bibtype = "Manual",
   title   = "{DietView}: An {R} package for interactive, hierarchical visualization of predator stomach-content data",
