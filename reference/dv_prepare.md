@@ -98,7 +98,11 @@ dv_prepare(
   non-empty stomachs: %FO is over non-empty stomachs and the matrix has
   no empty rows. Stomachs of predators absent from `data` are ignored,
   so the full sampling frame can be passed with a subset of the
-  predators.
+  predators. Stomachs whose records were all removed before
+  `dv_prepare()` (e.g. they held only non-food items or nematodes) are
+  counted neither as empty nor as examined; to count them as examined
+  but empty, flag them empty in `stomachs` before calling
+  `dv_prepare()`.
 
 - empty_col:
 

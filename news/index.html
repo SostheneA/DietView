@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,9 +56,11 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.0.9000" id="dietview-0109000">DietView 0.1.0.9000<a class="anchor" aria-label="anchor" href="#dietview-0109000"></a></h2>
-<div class="section level3">
-<h3 id="breaking-changes-0-1-0-9000">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-0-9000"></a></h3>
+<h2 class="pkg-version" data-toc-text="0.1.0" id="dietview-010">DietView 0.1.0<a class="anchor" aria-label="anchor" href="#dietview-010"></a></h2>
+<ul><li>Initial CRAN release.</li>
+<li>Badges removed from the README; the PDF step of the site build no longer blocks the deploy.</li>
+</ul><div class="section level3">
+<h3 id="changes-since-the-first-development-version-0-1-0">Changes since the first development version<a class="anchor" aria-label="anchor" href="#changes-since-the-first-development-version-0-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/dv_sunburst.html">dv_sunburst()</a></code> now sizes wedges by prey records by default (<code>mode = "occurrence"</code>); the choices are ordered <code>"occurrence"</code>, <code>"weight"</code>, <code>"count"</code>, as in <code><a href="../reference/run_dietview.html">run_dietview()</a></code>.</li>
 <li>
@@ -68,7 +70,7 @@
 <code><a href="../reference/dv_build_html.html">dv_build_html()</a></code>, <code><a href="../reference/run_dietview.html">run_dietview()</a></code> and <code><a href="../reference/dv_script.html">dv_script()</a></code> share one argument for missing covariate values, <code>na_strata = c("drop", "show")</code>. The default leaves records with a missing value out of that covariate’s panels (the dashboard’s behaviour); <code>"show"</code> gives them an “NA” panel (the app’s previous behaviour, now opt-in).</li>
 </ul></div>
 <div class="section level3">
-<h3 id="other-changes-0-1-0-9000">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-1-0-9000"></a></h3>
+<h3 id="other-changes-0-1-0">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-1-0"></a></h3>
 <ul><li>WoRMS lookups are batched and retried. <code><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms()</a></code> reads records and matches names in chunks (<code>getOption("DietView.worms_chunk", 50)</code>) instead of one request per prey, retries a failed request up to <code>getOption("DietView.worms_retries", 3)</code> times with backoff (1, 2, 4 s), and reads “no match” from the HTTP status when the condition carries it (worrms 0.4 only gives it in the message, which stays the fallback). An AphiaID that WoRMS does not know falls back to the prey name, logged as <code>match_type = "id_fallback_name"</code> and listed by <code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code>.</li>
 <li>
 <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> gains <code>stomachs</code> (one row per examined stomach, empty ones included, e.g. <code>ices_stomachs</code>) and <code>empty_col</code> (the empty flag), stored in <code>prep$stomachs</code>. With it, <code><a href="../reference/dv_summary.html">dv_summary()</a></code> adds <code>n_examined</code>, <code>n_empty</code> and <code>pct_vacuity</code>; <code><a href="../reference/dv_fo_table.html">dv_fo_table()</a></code> gains <code>denominator = c("nonempty", "examined")</code>; and <code><a href="../reference/dv_matrix.html">dv_matrix()</a></code> gains <code>include_empty</code> to add all-zero rows for empty stomachs. Stomachs with neither a record nor an empty flag are of unknown status and left out. Without <code>stomachs</code>, nothing changes.</li>
@@ -82,10 +84,6 @@
 <li>Rank arguments are case-insensitive and accept the column name or the display label (<code>"class"</code>, <code>"Class"</code>, <code>" CLASS "</code>) in <code><a href="../reference/dv_rank_table.html">dv_rank_table()</a></code>, <code><a href="../reference/dv_summary.html">dv_summary()</a></code>, <code><a href="../reference/dv_prey_accumulation.html">dv_prey_accumulation()</a></code>, <code><a href="../reference/dv_fo_table.html">dv_fo_table()</a></code>, <code><a href="../reference/dv_matrix.html">dv_matrix()</a></code> and <code><a href="../reference/dv_script.html">dv_script()</a></code>. <code><a href="../reference/dv_rank_table.html">dv_rank_table()</a></code> now errors on an unknown rank instead of returning an empty table.</li>
 </ul></div>
 </div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.0" id="dietview-010">DietView 0.1.0<a class="anchor" aria-label="anchor" href="#dietview-010"></a></h2>
-<ul><li>Initial release.</li>
-</ul></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

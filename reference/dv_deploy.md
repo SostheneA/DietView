@@ -58,5 +58,5 @@ prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 dv_deploy(prep_cod, file = "cod_dashboard.html", dir = tempdir(),
           strata = character(0))
-#> Deployed standalone dashboard: /tmp/Rtmp8CyDEb/cod_dashboard.html
+#> Deployed standalone dashboard: /tmp/RtmpKbCDdS/cod_dashboard.html
 ```

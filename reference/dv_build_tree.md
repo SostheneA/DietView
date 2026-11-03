@@ -69,6 +69,15 @@ To build the tree from a prepared dataset with the columns of its spec,
 use
 [`dv_tree()`](https://sosthenea.github.io/DietView/reference/dv_tree.md).
 
+Lineage gaps (a rank absent in WoRMS above an identified taxon) are
+labelled `"<ancestor> (no <rank>)"` by
+[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md);
+a data.frame passed here directly is used as is, so such gaps appear as
+unidentified (`"NA"`) nodes. Build the tree from a `dietview_prep`, or
+with
+[`dv_tree()`](https://sosthenea.github.io/DietView/reference/dv_tree.md),
+to get the gap labels.
+
 ## Examples
 
 ``` r

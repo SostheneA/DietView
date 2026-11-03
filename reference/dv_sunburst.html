@@ -23,7 +23,7 @@ dv_prepare()) form a light gray wedge, described as such in the hover text."><me
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,7 +105,11 @@ that has no taxon at that rank, such as <code>"Polychaeta (no order)"</code>; se
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>A <code>dietview_tree</code>, or a data.frame of records (then supply <code>ranks</code>
-and <code>weight_col</code>/<code>count_col</code>).</p></dd>
+and <code>weight_col</code>/<code>count_col</code>). Lineage gaps (a rank absent in WoRMS above
+an identified taxon) are labelled <code>"&lt;ancestor&gt; (no &lt;rank&gt;)"</code> by
+<code><a href="dv_prepare.html">dv_prepare()</a></code>; a data.frame passed here directly is used as is, so such
+gaps appear as unidentified (<code>"NA"</code>) nodes. Build the tree from a
+<code>dietview_prep</code>, or with <code><a href="dv_tree.html">dv_tree()</a></code>, to get the gap labels.</p></dd>
 
 
 <dt id="arg-mode">mode<a class="anchor" aria-label="anchor" href="#arg-mode"></a></dt>

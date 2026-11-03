@@ -33,7 +33,14 @@ dv_sunburst(
 - x:
 
   A `dietview_tree`, or a data.frame of records (then supply `ranks` and
-  `weight_col`/`count_col`).
+  `weight_col`/`count_col`). Lineage gaps (a rank absent in WoRMS above
+  an identified taxon) are labelled `"<ancestor> (no <rank>)"` by
+  [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md);
+  a data.frame passed here directly is used as is, so such gaps appear
+  as unidentified (`"NA"`) nodes. Build the tree from a `dietview_prep`,
+  or with
+  [`dv_tree()`](https://sosthenea.github.io/DietView/reference/dv_tree.md),
+  to get the gap labels.
 
 - mode:
 

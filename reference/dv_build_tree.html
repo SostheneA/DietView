@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -118,6 +118,11 @@ unidentified node included. Within each parent, unidentified nodes are placed
 last.</p>
 <p>To build the tree from a prepared dataset with the columns of its spec, use
 <code><a href="dv_tree.html">dv_tree()</a></code>.</p>
+<p>Lineage gaps (a rank absent in WoRMS above an identified taxon) are labelled
+<code>"&lt;ancestor&gt; (no &lt;rank&gt;)"</code> by <code><a href="dv_prepare.html">dv_prepare()</a></code>; a data.frame passed here
+directly is used as is, so such gaps appear as unidentified (<code>"NA"</code>) nodes.
+Build the tree from a <code>dietview_prep</code>, or with <code><a href="dv_tree.html">dv_tree()</a></code>, to get the gap
+labels.</p>
     </div>
 
     <div class="section level2">

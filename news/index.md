@@ -1,8 +1,12 @@
 # Changelog
 
-## DietView 0.1.0.9000
+## DietView 0.1.0
 
-### Breaking changes
+- Initial CRAN release.
+- Badges removed from the README; the PDF step of the site build no
+  longer blocks the deploy.
+
+### Changes since the first development version
 
 - [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md)
   now sizes wedges by prey records by default (`mode = "occurrence"`);
@@ -109,7 +113,3 @@
   [`dv_script()`](https://sosthenea.github.io/DietView/reference/dv_script.md).
   [`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md)
   now errors on an unknown rank instead of returning an empty table.
-
-## DietView 0.1.0
-
-- Initial release.
