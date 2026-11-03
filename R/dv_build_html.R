@@ -342,8 +342,10 @@ dv_build_html <- function(prep, output,
 #' cod <- dat[dat$predator_common == "Atlantic cod", ]
 #' prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
 #'                        verbose = FALSE)
+#' \donttest{
 #' dv_deploy(prep_cod, file = "cod_dashboard.html", dir = tempdir(),
 #'           strata = character(0))
+#' }
 #' @export
 dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
   if (missing(dir)) stop("Name the destination folder: `dir = \"my_folder\"`.",

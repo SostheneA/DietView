@@ -6,9 +6,9 @@ data.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+0 errors | 0 warnings | 1 note
 
-* On CRAN's incoming checks the NOTE "New submission" is expected.
+* This is a new submission, hence the NOTE "New submission".
 
 ## Test environments
 
@@ -16,8 +16,8 @@ To be filled in after running `devtools::check_win_devel()`,
 `devtools::check_win_release()`, `devtools::check_mac_release()` and
 `rhub::rhub_check()`:
 
-* Local: Windows 11 x64 (build 26100), R 4.5.2: 0 errors | 0 warnings | 1 note
-  ("unable to verify current time", local clock check only)
+* Local: Windows 11 x64 (build 26100), R 4.5.2, `R CMD check --as-cran`:
+  0 errors | 0 warnings | 1 note ("New submission")
 * win-builder, R-devel: _pending_
 * win-builder, R-release: _pending_
 * mac-builder, R-release: _pending_
@@ -43,6 +43,8 @@ To be filled in after running `devtools::check_win_devel()`,
   functions; cache_dir = NULL disables it.
 * The examples of dv_build_html() and dv_deploy() write their HTML file to
   tempdir().
+  The dv_deploy() call itself is wrapped in \donttest{} because writing the
+  self-contained dashboard took > 5 s elapsed (< 0.3 s CPU) on the local check.
 
 ## Reverse dependencies
 
