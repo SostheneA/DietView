@@ -80,18 +80,17 @@ mock_classification <- function(id, ...)
 test_that("the WoRMS name cache keeps marine_only = TRUE and FALSE apart", {
   skip_if_not_installed("worrms")
   skip_if_not_installed("withr")
-  local_mocked_bindings(
-    wm_classification = mock_classification,
+  local_worms(
+    classification = mock_classification,
     # the name is only known when non-marine records are allowed
-    wm_records_names = function(name, marine_only = TRUE, ...) {
+    names = function(name, marine_only = TRUE, ...) {
       if (isTRUE(marine_only)) stop("(204) No Content - AphiaRecordsByNames")
       list(data.frame(AphiaID = 999001L, scientificname = "Crangonidae",
                       status = "accepted", valid_AphiaID = 999001L,
                       valid_name = "Crangonidae"))
     },
-    wm_records_taxamatch = function(name, ...)
-      stop("(204) No Content - AphiaRecordsByMatchNames"),
-    .package = "worrms"
+    taxamatch = function(name, ...)
+      stop("(204) No Content - AphiaRecordsByMatchNames")
   )
   dir  <- withr::local_tempdir()
   keys <- data.frame(prey_id = NA_integer_, prey_name = "Crangonidae")
@@ -107,17 +106,18 @@ test_that("the WoRMS name cache keeps marine_only = TRUE and FALSE apart", {
 test_that("a failed WoRMS name lookup is reported, a genuine non-match is not", {
   skip_if_not_installed("worrms")
   calls <- 0L
-  local_mocked_bindings(
-    wm_classification = mock_classification,
-    wm_records_names = function(name, ...) {
+  local_worms(
+    classification = mock_classification,
+    names = function(name, ...) {
       calls <<- calls + 1L
       if (name == "Timeout name") stop("Timeout was reached")
       stop("(204) No Content - AphiaRecordsByNames")
     },
-    wm_records_taxamatch = function(name, ...)
-      stop("(204) No Content - AphiaRecordsByMatchNames"),
-    .package = "worrms"
+    taxamatch = function(name, ...)
+      stop("(204) No Content - AphiaRecordsByMatchNames")
   )
+  # one name per request: a timeout fails a whole batch request
+  withr::local_options(DietView.worms_chunk = 1L)
   keys <- data.frame(prey_id = c(NA_integer_, NA_integer_),
                      prey_name = c("Timeout name", "Unknown name"))
   expect_warning(

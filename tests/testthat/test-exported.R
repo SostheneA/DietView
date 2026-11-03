@@ -132,21 +132,20 @@ test_that("dv_taxonomy_report() needs a WoRMS log and returns the doubtful rows"
   expect_error(dv_taxonomy_report(example_prep()), "No taxonomy log")
 
   skip_if_not_installed("worrms")
-  local_mocked_bindings(
-    wm_record = function(id, ...) data.frame(
+  local_worms(
+    record = function(id, ...) data.frame(
       AphiaID = id, scientificname = "Pandalus borealis", status = "accepted",
       valid_AphiaID = id, valid_name = "Pandalus borealis"),
-    wm_classification = function(id, ...) data.frame(
+    classification = function(id, ...) data.frame(
       rank = c("Kingdom", "Phylum"), scientificname = c("Animalia", "Arthropoda")),
-    wm_records_names = function(name, ...) stop("(204) No Content"),
-    wm_records_taxamatch = function(name, ...) {
+    names = function(name, ...) stop("(204) No Content"),
+    taxamatch = function(name, ...) {
       if (name == "Pandalus boreallis")
         list(data.frame(AphiaID = 107649L, scientificname = "Pandalus borealis",
                         status = "accepted", valid_AphiaID = 107649L,
                         valid_name = "Pandalus borealis"))
       else stop("(204) No Content")
-    },
-    .package = "worrms"
+    }
   )
   dat <- data.frame(pred = "cod", stom = c("s1", "s2", "s3", "s4"),
                     aphia = c(107649, NA, NA, NA),

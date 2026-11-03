@@ -266,8 +266,8 @@ dv_prepare <- function(data, spec,
 }
 
 # Match types written by dv_taxonomy_worms(), in display order.
-.DV_MATCH_TYPES <- c("id", "id_synonym", "id_unchecked", "exact", "fuzzy",
-                     "unresolved")
+.DV_MATCH_TYPES <- c("id", "id_synonym", "id_unchecked", "id_fallback_name",
+                     "exact", "fuzzy", "unresolved")
 
 #' @export
 print.dietview_prep <- function(x, ...) {

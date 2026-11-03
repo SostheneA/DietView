@@ -27,7 +27,9 @@ records affected, and the resolved ranks, sorted by number of records.
 Returns the prey whose taxonomy needs a human eye: fuzzy matches (WoRMS
 TAXAMATCH proposed a close-but-not-identical name), unresolved prey (no
 match), AphiaIDs that WoRMS treats as unaccepted (\code{"id_synonym"}, followed
-to the accepted one) or whose record could not be read (\code{"id_unchecked"}),
+to the accepted one), whose record could not be read (\code{"id_unchecked"})
+or that WoRMS does not know, so the prey name was used instead
+(\code{"id_fallback_name"}),
 AphiaIDs whose stored name differs from the WoRMS name (\code{name_check = "differs"}), names with several accepted WoRMS records (\code{homonym}), and
 matches for which WoRMS returned no classification (\code{lineage_ok = FALSE},
 usually a network or server error; run again to retry). Use it to audit the

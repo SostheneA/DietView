@@ -65,13 +65,12 @@ run_worms <- function(keys, dir, ...) suppressMessages(
 test_that("an unreadable cache file is ignored with a warning and rebuilt", {
   skip_if_not_installed("worrms")
   skip_if_not_installed("withr")
-  local_mocked_bindings(
-    wm_record = function(id, ...) data.frame(
+  local_worms(
+    record = function(id, ...) data.frame(
       AphiaID = id, scientificname = "Gadus morhua", status = "accepted",
       valid_AphiaID = id, valid_name = "Gadus morhua"),
-    wm_classification = function(id, ...) data.frame(
-      rank = c("Kingdom", "Phylum"), scientificname = c("Animalia", "Chordata")),
-    .package = "worrms"
+    classification = function(id, ...) data.frame(
+      rank = c("Kingdom", "Phylum"), scientificname = c("Animalia", "Chordata"))
   )
   dir <- withr::local_tempdir()
   writeLines("this is not an rds file", cache_path(dir))
@@ -97,16 +96,15 @@ test_that("a lineage cached with fewer ranks is fetched again for more ranks", {
   skip_if_not_installed("worrms")
   skip_if_not_installed("withr")
   n_class <- 0L
-  local_mocked_bindings(
-    wm_record = function(id, ...) data.frame(
+  local_worms(
+    record = function(id, ...) data.frame(
       AphiaID = id, scientificname = "Gadus morhua", status = "accepted",
       valid_AphiaID = id, valid_name = "Gadus morhua"),
-    wm_classification = function(id, ...) {
+    classification = function(id, ...) {
       n_class <<- n_class + 1L
       data.frame(rank = c("Kingdom", "Phylum", "Class"),
                  scientificname = c("Animalia", "Chordata", "Teleostei"))
-    },
-    .package = "worrms"
+    }
   )
   dir <- withr::local_tempdir()
   keys <- data.frame(prey_id = 126436L, prey_name = "Gadus morhua")

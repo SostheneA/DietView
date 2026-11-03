@@ -35,7 +35,8 @@ fetched again (default 180). \code{Inf} trusts the cache forever.}
 }
 \value{
 \code{keys} with one column per rank plus \code{aphia_used}, \code{match_type}
-("id", "id_synonym", "id_unchecked", "exact", "fuzzy", "unresolved"),
+("id", "id_synonym", "id_unchecked", "id_fallback_name", "exact",
+"fuzzy", "unresolved"),
 \code{name_check}, \code{matched_name}, \code{n_candidates} (WoRMS records returned for a
 name), \code{homonym} (more than one accepted record for that name),
 \code{lineage_ok} (\code{TRUE}/\code{FALSE} once a classification was requested, \code{NA}
@@ -50,7 +51,10 @@ is read: an unaccepted AphiaID is followed to its accepted (valid) one
 (\code{"id_synonym"}), and the prey name stored with it is compared with the
 name WoRMS gives that AphiaID (\code{name_check}: "agrees" or "differs"). If
 the record cannot be read, the AphiaID is used as given
-(\code{"id_unchecked"});
+(\code{"id_unchecked"}). If WoRMS does not know the AphiaID at all (both its
+record and its classification come back "no content"), the prey name
+is matched instead, as below, and the match is logged as
+\code{"id_fallback_name"};
 \item \strong{exact} - the prey name matches a WoRMS name exactly;
 \item \strong{fuzzy} - (if \code{fuzzy = TRUE}) WoRMS TAXAMATCH
 (\code{\link[worrms:wm_records_taxamatch]{worrms::wm_records_taxamatch()}}) proposes the closest name, which can
@@ -67,11 +71,19 @@ homonym, and an unresolved prey keeps \code{NA} ranks and shows up as the explic
 unidentified category downstream.
 }
 \details{
-Requires the \pkg{worrms} package and internet access. Successful lookups
-are cached to disk, so re-runs and other surveys do not requery. Failed
-lookups (timeout, no network, server error, an AphiaID WoRMS does not know)
-are never cached: they are flagged with \code{lineage_ok = FALSE} and a warning,
-and are retried on the next run.
+Requires the \pkg{worrms} package and internet access. Requests are
+batched: records are read for chunks of AphiaIDs (\code{\link[worrms:wm_record]{worrms::wm_record()}}),
+names are matched in chunks (\code{\link[worrms:wm_records_names]{worrms::wm_records_names()}},
+\code{\link[worrms:wm_records_taxamatch]{worrms::wm_records_taxamatch()}}) and classifications are requested per
+chunk (\code{\link[worrms:wm_classification_]{worrms::wm_classification_()}}); the chunk size is
+\code{getOption("DietView.worms_chunk", 50)}. A failed request is retried up to
+\code{getOption("DietView.worms_retries", 3)} times, waiting 1, 2, 4 ... seconds
+between attempts; a "no match" answer from WoRMS (HTTP 204) is final and
+not retried. Successful lookups are cached to disk, so re-runs and other
+surveys do not requery. Lookups that still fail (timeout, no network,
+server error, an AphiaID WoRMS does not know) are never cached: they are
+flagged with \code{lineage_ok = FALSE} and a warning, and are retried on the next
+run.
 
 The cache is managed: entries older than \code{cache_max_age} days are removed
 from the file each time it is read (and fetched again when needed), as are

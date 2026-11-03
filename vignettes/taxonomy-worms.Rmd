@@ -93,6 +93,7 @@ Each distinct prey gets one row in the log, with a `match_type`:
 | `id` | The AphiaID is accepted in WoRMS | Nothing, unless `name_check` is `"differs"` |
 | `id_synonym` | The AphiaID is unaccepted; its accepted ID was used | Check that the accepted name is the taxon you meant |
 | `id_unchecked` | WoRMS could not be reached to check the ID | Run again later |
+| `id_fallback_name` | WoRMS does not know the AphiaID; the prey name was matched instead | Check the ID in your data, and that the name is the taxon you meant |
 | `exact` | No ID; the name matched exactly | Nothing |
 | `fuzzy` | No ID; the name was matched by TAXAMATCH, which tolerates misspellings | Check every one: a near match can be a different taxon |
 | `unresolved` | No match | Correct the name, or accept that the prey stays unidentified |

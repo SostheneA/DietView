@@ -17,6 +17,14 @@
 
 ## Other changes
 
+* WoRMS lookups are batched and retried. `dv_taxonomy_worms()` reads records
+  and matches names in chunks (`getOption("DietView.worms_chunk", 50)`)
+  instead of one request per prey, retries a failed request up to
+  `getOption("DietView.worms_retries", 3)` times with backoff (1, 2, 4 s),
+  and reads "no match" from the HTTP status when the condition carries it
+  (worrms 0.4 only gives it in the message, which stays the fallback). An
+  AphiaID that WoRMS does not know falls back to the prey name, logged as
+  `match_type = "id_fallback_name"` and listed by `dv_taxonomy_report()`.
 * `dv_prepare()` gains `stomachs` (one row per examined stomach, empty ones
   included, e.g. `ices_stomachs`) and `empty_col` (the empty flag), stored in
   `prep$stomachs`. With it, `dv_summary()` adds `n_examined`, `n_empty` and
