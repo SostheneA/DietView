@@ -16,6 +16,7 @@ dv_build_html(
   image_dir = file.path(tempdir(), "dietview-images"),
   photo_source = "none",
   licenses = c("cc0", "cc-by", "cc-by-sa"),
+  na_strata = c("drop", "show"),
   title = "DietView",
   self_contained = TRUE
 )
@@ -49,6 +50,11 @@ spec). See \code{\link[=dv_tree]{dv_tree()}}.}
 Defaults: a folder in \code{\link[=tempdir]{tempdir()}}, no network access, and only openly
 licensed iNaturalist photos (CC0, CC BY, CC BY-SA).}
 
+\item{na_strata}{\code{"drop"} (default) leaves records with a missing covariate
+value out of that covariate's panels; \code{"show"} draws them in an "NA"
+panel. The aggregated sunburst always holds every record. Same argument in
+\code{\link[=run_dietview]{run_dietview()}}.}
+
 \item{title}{Dashboard title.}
 
 \item{self_contained}{If \code{TRUE} (default), plotly.js is embedded and the
@@ -67,8 +73,10 @@ bands of sunbursts (by default prey records as \% of all records and weight
 as \% of total weight; distinct prey items on request); each band repeats the
 same structure:
 an aggregated sunburst, one row of sunbursts per declared covariate, and
-optionally crossed rows (e.g. length bins split by period). Covariate levels
-that are \code{NA} are omitted from the rows.
+optionally crossed rows (e.g. length bins split by period). Records whose
+covariate is \code{NA} are left out of that covariate's rows by default
+(\code{na_strata = "drop"}); \code{na_strata = "show"} gives them an "NA" panel, as
+in \code{\link[=run_dietview]{run_dietview()}}.
 }
 \details{
 The file stays small and opens fast: plotly.js is included once, the data of

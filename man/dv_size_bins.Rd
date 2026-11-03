@@ -34,8 +34,10 @@ length equal to the last break falls in the last bin, labelled \verb{[a, b]}
 first bin, labelled \verb{[a, b]}).
 
 Lengths outside the breaks become \code{NA}. A covariate \code{NA} is not a taxonomic
-\code{NA}: the dashboard (\code{\link[=dv_build_html]{dv_build_html()}}) omits \code{NA} strata, while the Shiny
-app (\code{\link[=run_dietview]{run_dietview()}}) shows them as an "NA" panel.
+\code{NA}: by default the dashboard (\code{\link[=dv_build_html]{dv_build_html()}}) and the Shiny app
+(\code{\link[=run_dietview]{run_dietview()}}) leave records with a missing length bin out of the
+length-bin panels (\code{na_strata = "drop"}); \code{na_strata = "show"} draws them
+in an "NA" panel. The aggregated sunburst always holds every record.
 }
 \examples{
 dv_size_bins(c(18, 26, 34, 52), breaks = c(0, 20, 30, 40, 60))

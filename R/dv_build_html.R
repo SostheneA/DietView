@@ -7,8 +7,10 @@
 #' as % of total weight; distinct prey items on request); each band repeats the
 #' same structure:
 #' an aggregated sunburst, one row of sunbursts per declared covariate, and
-#' optionally crossed rows (e.g. length bins split by period). Covariate levels
-#' that are `NA` are omitted from the rows.
+#' optionally crossed rows (e.g. length bins split by period). Records whose
+#' covariate is `NA` are left out of that covariate's rows by default
+#' (`na_strata = "drop"`); `na_strata = "show"` gives them an "NA" panel, as
+#' in [run_dietview()].
 #'
 #' The file stays small and opens fast: plotly.js is included once, the data of
 #' every sunburst (node ids, labels, parents, values and colors) is stored once
@@ -45,6 +47,10 @@
 #' @param image_dir,photo_source,licenses Passed to [dv_species_card_assets()].
 #'   Defaults: a folder in [tempdir()], no network access, and only openly
 #'   licensed iNaturalist photos (CC0, CC BY, CC BY-SA).
+#' @param na_strata `"drop"` (default) leaves records with a missing covariate
+#'   value out of that covariate's panels; `"show"` draws them in an "NA"
+#'   panel. The aggregated sunburst always holds every record. Same argument in
+#'   [run_dietview()].
 #' @param title Dashboard title.
 #' @param self_contained If `TRUE` (default), plotly.js is embedded and the
 #'   dashboard is one file. If `FALSE`, plotly.js is written once to a `lib`
@@ -86,12 +92,14 @@ dv_build_html <- function(prep, output,
                           image_dir = file.path(tempdir(), "dietview-images"),
                           photo_source = "none",
                           licenses = c("cc0", "cc-by", "cc-by-sa"),
+                          na_strata = c("drop", "show"),
                           title = "DietView", self_contained = TRUE) {
   stopifnot(inherits(prep, "dietview_prep"))
   if (missing(output)) stop("Name the output file: `output = \"my_dashboard.html\"`.",
                             call. = FALSE)
   currency <- match.arg(currency)
   bands <- match.arg(bands, c("occurrence", "weight", "count"), several.ok = TRUE)
+  na_strata <- match.arg(na_strata)
   photo_source <- match.arg(photo_source, c("none", "inaturalist", "wikipedia"),
                             several.ok = TRUE)
   spec <- prep$spec; d <- prep$data; ranks <- prep$ranks
@@ -153,9 +161,17 @@ dv_build_html <- function(prep, output,
   }
 
   nstom <- function(recs) length(unique(recs[[scol]]))
+  # covariate values as panel labels: missing values become "NA" (shown) or
+  # NA (dropped)
+  cov_val <- function(x) {
+    v <- as.character(x)
+    miss <- is.na(v) | v == "" | v == "NA"
+    v[miss] <- if (na_strata == "show") "NA" else NA_character_
+    v
+  }
   levs <- function(recs, cv) {
-    v <- sort(unique(as.character(recs[[cv]])))
-    v[!is.na(v) & v != "NA" & v != ""]
+    v <- sort(unique(cov_val(recs[[cv]])))
+    v[!is.na(v)]
   }
   rng <- function(x) {
     x <- stats::na.omit(x); if (!length(x)) return("N/A")
@@ -167,7 +183,7 @@ dv_build_html <- function(prep, output,
   band_row <- function(recs, mode, cv, view) {
     lv <- levs(recs, cv); if (!length(lv)) return(NULL)
     cells <- lapply(lv, function(l) {
-      sub <- recs[which(as.character(recs[[cv]]) == l), ]
+      sub <- recs[which(cov_val(recs[[cv]]) == l), ]
       htmltools::tags$div(
         style = cell_style(length(lv)),
         htmltools::tags$h5(paste0(cv, ": ", l)),
@@ -183,10 +199,10 @@ dv_build_html <- function(prep, output,
   band_cross <- function(recs, mode, inner, outer, view) {
     ol <- levs(recs, outer); if (!length(ol)) return(NULL)
     blocks <- lapply(ol, function(o) {
-      ro <- recs[which(as.character(recs[[outer]]) == o), ]
+      ro <- recs[which(cov_val(recs[[outer]]) == o), ]
       il <- levs(ro, inner); if (!length(il)) return(NULL)
       cells <- lapply(il, function(i) {
-        sub <- ro[which(as.character(ro[[inner]]) == i), ]
+        sub <- ro[which(cov_val(ro[[inner]]) == i), ]
         htmltools::tags$div(
           style = cell_style(length(il)),
           htmltools::tags$h5(paste0(inner, ": ", i)),

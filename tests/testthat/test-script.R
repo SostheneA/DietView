@@ -39,8 +39,9 @@ test_that("a generated script runs and rebuilds the same tree", {
   agg$data <- agg$data[agg$data$predator_common == "Whiting", ]
   ref <- dv_build_tree(agg$data, agg$ranks, weight_col = "prey_weight_g")
   expect_equal(as.data.frame(env$tree), as.data.frame(ref))
-  q <- as.character(agg$data$quarter); q[is.na(q) | q == ""] <- "NA"
-  expect_length(env$panels, length(unique(q)))
+  # na_strata = "drop" (default): records with a missing quarter have no panel
+  q <- as.character(agg$data$quarter)
+  expect_length(env$panels, length(unique(q[!is.na(q) & q != ""])))
   # the script colors by node id from the pooled tree of all predators, as the app does
   pooled <- dv_aggregate_threshold(prep, threshold = 4, scope = "per_predator")
   expect_identical(env$pal, dv_palette_tree(dv_build_tree(pooled$data, pooled$ranks)))
@@ -53,7 +54,7 @@ test_that("two facets give a grid of panels, missing values in an NA panel", {
   saveRDS(prep, file.path(dir, "my_prep.rds"))
   f <- file.path(dir, "analysis.R")
   s <- dv_script(prep, facet = c("quarter", "region2"), data_file = "my_prep.rds",
-                 file = f)
+                 na_strata = "show", file = f)
   expect_true(any(grepl("saveRDS(prep, \"my_prep.rds\")", s, fixed = TRUE)))
   env <- new.env()
   withr::with_dir(dir, utils::capture.output(sys.source(f, envir = env)))
@@ -87,4 +88,39 @@ test_that("the app exposes the three aggregation strategies and the script", {
     expect_true(abs(sum(rank_tbl()$pct_occ) - 100) < 1e-6)
     expect_true(all(c("taxon", "pct_fo") %in% names(fo_tbl())))
   })
+})
+
+test_that("na_strata drops or shows missing covariate values, the same way everywhere", {
+  prep <- ices_prep_small()
+  prep$data$zone <- ifelse(seq_len(nrow(prep$data)) %% 4 == 0, NA, "Z1")
+  prep$spec$covariates <- c(prep$spec$covariates, "zone")
+  # script
+  dir <- withr::local_tempdir()
+  saveRDS(prep, file.path(dir, "dietview_prep.rds"))
+  run_script <- function(na) {
+    f <- file.path(dir, paste0("s_", na, ".R"))
+    dv_script(prep, facet = "zone", na_strata = na, file = f)
+    env <- new.env()
+    withr::with_dir(dir, utils::capture.output(sys.source(f, envir = env)))
+    names(env$panels)
+  }
+  expect_equal(run_script("drop"), "Z1")
+  expect_setequal(run_script("show"), c("Z1", "NA"))
+  # dashboard
+  out_d <- file.path(dir, "drop.html"); out_s <- file.path(dir, "show.html")
+  dv_build_html(prep, output = out_d, strata = "zone")
+  dv_build_html(prep, output = out_s, strata = "zone", na_strata = "show")
+  html_d <- paste(readLines(out_d, warn = FALSE), collapse = "\n")
+  html_s <- paste(readLines(out_s, warn = FALSE), collapse = "\n")
+  expect_false(grepl("<h5>zone: NA</h5>", html_d, fixed = TRUE))
+  expect_true(grepl("<h5>zone: NA</h5>", html_s, fixed = TRUE))
+  expect_error(dv_build_html(prep, output = out_d, na_strata = "hide"), "should be one of")
+  # app facets
+  facet_labels <- function(na) {
+    p <- DietView:::.dv_sunburst_facets(prep$data, prep$ranks, facet_col = "zone",
+                                        na_strata = na)
+    vapply(plotly::plotly_build(p)$x$layout$annotations, function(a) a$text, "")
+  }
+  expect_equal(facet_labels("drop"), "<b>zone: Z1</b>")
+  expect_setequal(facet_labels("show"), c("<b>zone: Z1</b>", "<b>zone: NA</b>"))
 })

@@ -14,6 +14,11 @@
   `dv_palette_tree()` of the tree drawn. A taxon keeps one color across panels
   and neighbouring wedges no longer share a color. `dv_palette()` is still
   exported for label-keyed colors.
+* `dv_build_html()`, `run_dietview()` and `dv_script()` share one argument for
+  missing covariate values, `na_strata = c("drop", "show")`. The default
+  leaves records with a missing value out of that covariate's panels (the
+  dashboard's behaviour); `"show"` gives them an "NA" panel (the app's
+  previous behaviour, now opt-in).
 
 ## Other changes
 
@@ -47,7 +52,6 @@
   pandoc; `self_contained = FALSE` links plotly.js from a `lib` folder.
 * Dashboard cards are keyboard-accessible (`role = "button"`, focusable,
   opened with Enter or Space).
-
 * Install from GitHub with `pak::pak("SostheneA/DietView")`; the README no
   longer points to an R-universe repository.
 * The documentation site is built by GitHub Actions and served from the

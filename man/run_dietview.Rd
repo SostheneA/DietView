@@ -4,7 +4,12 @@
 \alias{run_dietview}
 \title{Launch the interactive DietView app}
 \usage{
-run_dietview(prep, currency = c("records", "numbers"), ...)
+run_dietview(
+  prep,
+  currency = c("records", "numbers"),
+  na_strata = c("drop", "show"),
+  ...
+)
 }
 \arguments{
 \item{prep}{A \code{dietview_prep} from \code{\link[=dv_prepare]{dv_prepare()}}.}
@@ -12,6 +17,10 @@ run_dietview(prep, currency = c("records", "numbers"), ...)
 \item{currency}{\code{"records"} (default: each record counts once) or
 \code{"numbers"} (each record counts its \code{count} column, \%N; needs \code{count} in
 the spec). See \code{\link[=dv_tree]{dv_tree()}}.}
+
+\item{na_strata}{\code{"drop"} (default) or \code{"show"}: whether records with a
+missing covariate value get an "NA" panel when faceting. Same argument in
+\code{\link[=dv_build_html]{dv_build_html()}}.}
 
 \item{...}{Passed to \code{\link[shiny:runApp]{shiny::runApp()}}.}
 }
@@ -35,8 +44,9 @@ cross-predator (a category must also span \code{min_predators} predators) and
 per predator. Pooled aggregations are computed on all predators before one
 is selected, so the categories are the same in every predator's view.
 
-The tabs show the sunburst (one panel per covariate cell when faceting,
-covariate \code{NA} values getting their own "NA" panel), the rank table, the
+The tabs show the sunburst (one panel per covariate cell when faceting;
+records with a missing covariate value are left out of the panels, or shown
+in an "NA" panel with \code{na_strata = "show"}), the rank table, the
 frequency of occurrence at the chosen rank, the digestion diagnostic (when a
 digestion column is declared) and a "Reproduce" tab. That tab shows the R
 script that rebuilds the current view with exported functions only (see

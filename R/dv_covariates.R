@@ -37,8 +37,10 @@ dv_add_period <- function(year, breaks, labels = NULL) {
 #' first bin, labelled `[a, b]`).
 #'
 #' Lengths outside the breaks become `NA`. A covariate `NA` is not a taxonomic
-#' `NA`: the dashboard ([dv_build_html()]) omits `NA` strata, while the Shiny
-#' app ([run_dietview()]) shows them as an "NA" panel.
+#' `NA`: by default the dashboard ([dv_build_html()]) and the Shiny app
+#' ([run_dietview()]) leave records with a missing length bin out of the
+#' length-bin panels (`na_strata = "drop"`); `na_strata = "show"` draws them
+#' in an "NA" panel. The aggregated sunburst always holds every record.
 #'
 #' @param length Numeric length vector.
 #' @param breaks Break edges (ascending).

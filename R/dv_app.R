@@ -14,8 +14,9 @@
 #' per predator. Pooled aggregations are computed on all predators before one
 #' is selected, so the categories are the same in every predator's view.
 #'
-#' The tabs show the sunburst (one panel per covariate cell when faceting,
-#' covariate `NA` values getting their own "NA" panel), the rank table, the
+#' The tabs show the sunburst (one panel per covariate cell when faceting;
+#' records with a missing covariate value are left out of the panels, or shown
+#' in an "NA" panel with `na_strata = "show"`), the rank table, the
 #' frequency of occurrence at the chosen rank, the digestion diagnostic (when a
 #' digestion column is declared) and a "Reproduce" tab. That tab shows the R
 #' script that rebuilds the current view with exported functions only (see
@@ -26,6 +27,9 @@
 #' @param currency `"records"` (default: each record counts once) or
 #'   `"numbers"` (each record counts its `count` column, %N; needs `count` in
 #'   the spec). See [dv_tree()].
+#' @param na_strata `"drop"` (default) or `"show"`: whether records with a
+#'   missing covariate value get an "NA" panel when faceting. Same argument in
+#'   [dv_build_html()].
 #' @param ... Passed to [shiny::runApp()].
 #' @return Called for its side effect of running the app; returns the value
 #'   of [shiny::runApp()] once the app is closed.
@@ -50,19 +54,21 @@
 #'   run_dietview(prep)
 #' }
 #' @export
-run_dietview <- function(prep, currency = c("records", "numbers"), ...) {
+run_dietview <- function(prep, currency = c("records", "numbers"),
+                         na_strata = c("drop", "show"), ...) {
   if (!requireNamespace("shiny", quietly = TRUE)) {
     stop("Install 'shiny' to run the app.", call. = FALSE)
   }
   stopifnot(inherits(prep, "dietview_prep"))
   currency <- match.arg(currency)
-  app <- .dv_app(prep, currency)
+  na_strata <- match.arg(na_strata)
+  app <- .dv_app(prep, currency, na_strata)
   shiny::runApp(shiny::shinyApp(app$ui, app$server), ...)
 }
 
 # Internal: UI and server of the app, separated from runApp() so they can be
 # tested with shiny::testServer().
-.dv_app <- function(prep, currency = "records") {
+.dv_app <- function(prep, currency = "records", na_strata = "drop") {
   spec <- prep$spec; d <- prep$data; ranks <- prep$ranks
   ccol <- .dv_count_col(spec, d, currency)
   rec_lab <- if (currency == "numbers") "Individuals (% of all individuals)"
@@ -205,7 +211,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"), ...) {
         .dv_sunburst_facets(
           recs(), ranks = ranks,
           weight_col = spec$weight, count_col = ccol,
-          facet_col = fc, mode = input$mode, colors = colors(),
+          facet_col = fc, mode = input$mode, colors = colors(), na_strata = na_strata,
           title = paste0(input$predator, " - ",
                          if (length(fc) == 2L)
                            paste(fc[1], "by", fc[2])
@@ -219,7 +225,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"), ...) {
     script <- shiny::reactive(
       dv_script(prep, predator = if (identical(input$predator, ALL_PRED)) NULL else input$predator,
                 mode = input$mode, currency = currency, aggregation = aggregation(),
-                facet = facets(), rank = input$rank)
+                facet = facets(), rank = input$rank, na_strata = na_strata)
     )
 
     show <- function(id, f) {

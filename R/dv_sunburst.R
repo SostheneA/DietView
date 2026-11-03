@@ -149,10 +149,18 @@ dv_sunburst <- function(x,
 # facet_col: one covariate (levels laid out in a grid), or two as
 # c(inner, outer) -> one row per `outer` level, one column per `inner` level,
 # matching the `cross = list(c(inner, outer))` convention of dv_build_html().
+# na_strata = "drop" leaves records with a missing facet value out; "show"
+# gives them an "NA" panel.
 .dv_sunburst_facets <- function(records, ranks, weight_col = NULL,
                                 count_col = NULL, facet_col,
                                 mode = "occurrence", colors = NULL,
-                                rotation = 90, title = "") {
+                                rotation = 90, title = "", na_strata = "drop") {
+  if (na_strata == "drop") {
+    for (fc in facet_col) {
+      v <- as.character(records[[fc]])
+      records <- records[!(is.na(v) | v == "" | v == "NA"), , drop = FALSE]
+    }
+  }
   crossed <- length(facet_col) >= 2L
   if (crossed) {
     inner <- facet_col[1]; outer <- facet_col[2]

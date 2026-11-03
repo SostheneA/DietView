@@ -12,6 +12,7 @@ dv_script(
   aggregation = NULL,
   facet = NULL,
   rank = NULL,
+  na_strata = c("drop", "show"),
   data_file = "dietview_prep.rds",
   file = NULL
 )
@@ -34,11 +35,15 @@ every rank) or a list with \code{threshold} and, optionally, \code{scope} and
 \item{facet}{Up to two covariates to draw one panel per level (or per
 combination of levels), or \code{NULL}. With two, \code{c(inner, outer)} as in the
 app: \code{panels} is then a list over the levels of \code{outer}, each a list over
-the levels of \code{inner}. Missing covariate values get their own \code{"NA"} panel.}
+the levels of \code{inner}.}
 
 \item{rank}{Rank for the rank table and the frequency-of-occurrence table,
 by column name or display label, case-insensitive. Defaults to the third
 rank of \code{prep}.}
+
+\item{na_strata}{\code{"drop"} (default) leaves records with a missing covariate
+value out of the panels; \code{"show"} gives them an \code{"NA"} panel. As in
+\code{\link[=run_dietview]{run_dietview()}} and \code{\link[=dv_build_html]{dv_build_html()}}.}
 
 \item{data_file}{File name the script reads \code{prep} from.}
 

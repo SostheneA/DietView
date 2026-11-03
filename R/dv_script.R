@@ -24,7 +24,10 @@
 #' @param facet Up to two covariates to draw one panel per level (or per
 #'   combination of levels), or `NULL`. With two, `c(inner, outer)` as in the
 #'   app: `panels` is then a list over the levels of `outer`, each a list over
-#'   the levels of `inner`. Missing covariate values get their own `"NA"` panel.
+#'   the levels of `inner`.
+#' @param na_strata `"drop"` (default) leaves records with a missing covariate
+#'   value out of the panels; `"show"` gives them an `"NA"` panel. As in
+#'   [run_dietview()] and [dv_build_html()].
 #' @param rank Rank for the rank table and the frequency-of-occurrence table,
 #'   by column name or display label, case-insensitive. Defaults to the third
 #'   rank of `prep`.
@@ -47,10 +50,12 @@ dv_script <- function(prep, predator = NULL,
                       mode = c("occurrence", "weight", "count"),
                       currency = c("records", "numbers"),
                       aggregation = NULL, facet = NULL, rank = NULL,
+                      na_strata = c("drop", "show"),
                       data_file = "dietview_prep.rds", file = NULL) {
   stopifnot(inherits(prep, "dietview_prep"))
   mode <- match.arg(mode)
   currency <- match.arg(currency)
+  na_strata <- match.arg(na_strata)
   spec <- prep$spec
   if (is.null(rank)) rank <- prep$ranks[min(3L, length(prep$ranks))]
   rank <- .dv_match_rank(rank, prep$ranks)
@@ -116,7 +121,6 @@ dv_script <- function(prep, predator = NULL,
   L <- c(L, "",
     "## 3. Colors: one hue per phylum, from the pooled tree of all predators, so a",
     "## taxon keeps its color in every view (unidentified material is white)",
-    "fill_na <- function(x) { x <- as.character(x); x[is.na(x) | x == \"\"] <- \"NA\"; x }",
     "pal <- dv_palette_tree(dv_build_tree(prep$data, prep$ranks))")
   if (!is.null(predator)) {
     L <- c(L, "",
@@ -132,13 +136,18 @@ dv_script <- function(prep, predator = NULL,
             dq(mode), dq(predator %||% "All predators")))
   if (length(facet)) {
     L <- c(L, "",
-      "## 6. One panel per covariate level (missing values get their own \"NA\" panel)",
+      if (na_strata == "show")
+        "## 6. One panel per covariate level (missing values get their own \"NA\" panel)"
+      else "## 6. One panel per covariate level (records with a missing value are left out)",
+      if (na_strata == "show")
+        "strata_of <- function(x) { x <- as.character(x); x[is.na(x) | x %in% c(\"\", \"NA\")] <- \"NA\"; x }"
+      else "strata_of <- function(x) { x <- as.character(x); x[x %in% c(\"\", \"NA\")] <- NA; x }",
       "panel <- function(d, title)",
       sprintf("  dv_sunburst(d, mode = %s, ranks = prep$ranks, weight_col = %s,", dq(mode), wt),
       sprintf("              count_col = %s, colors = pal, title = title)", cnt))
     if (length(facet) == 1L) {
       L <- c(L,
-        sprintf("cells <- split(prep$data, fill_na(prep$data[[%s]]))", dq(facet)),
+        sprintf("cells <- split(prep$data, strata_of(prep$data[[%s]]))", dq(facet)),
         sprintf("panels <- lapply(names(cells), function(l) panel(cells[[l]], paste0(%s, l)))",
                 dq(paste0(facet, ": "))),
         "names(panels) <- names(cells)",
@@ -147,9 +156,9 @@ dv_script <- function(prep, predator = NULL,
       L <- c(L,
         sprintf("## rows: levels of %s; columns: levels of %s (the grid of the app)",
                 facet[2], facet[1]),
-        sprintf("rows <- split(prep$data, fill_na(prep$data[[%s]]))", dq(facet[2])),
+        sprintf("rows <- split(prep$data, strata_of(prep$data[[%s]]))", dq(facet[2])),
         "panels <- lapply(names(rows), function(o) {",
-        sprintf("  cells <- split(rows[[o]], fill_na(rows[[o]][[%s]]))", dq(facet[1])),
+        sprintf("  cells <- split(rows[[o]], strata_of(rows[[o]][[%s]]))", dq(facet[1])),
         "  stats::setNames(lapply(names(cells), function(i)",
         sprintf("    panel(cells[[i]], paste0(%s, o, %s, i))),",
                 dq(paste0(facet[2], ": ")), dq(paste0(" | ", facet[1], ": "))),
