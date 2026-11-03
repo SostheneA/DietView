@@ -28,6 +28,12 @@
 #' @param na_strata `"drop"` (default) leaves records with a missing covariate
 #'   value out of the panels; `"show"` gives them an `"NA"` panel. As in
 #'   [run_dietview()] and [dv_build_html()].
+#' @param min_stomachs Minimum number of stomachs for a facet panel to be
+#'   drawn (default 0: every panel is drawn). In the script, a panel with fewer
+#'   stomachs is replaced by a line giving its title, "Stomachs (n) = k" and
+#'   "Too few stomachs to show (minimum: ...)"; e.g. with `min_stomachs = 10` a
+#'   year with 4 stomachs is not drawn, while a year with 522 is. The unfaceted
+#'   sunburst is always drawn. As in [run_dietview()] and [dv_build_html()].
 #' @param rank Rank for the rank table and the frequency-of-occurrence table,
 #'   by column name or display label, case-insensitive. Defaults to the third
 #'   rank of `prep`.
@@ -50,12 +56,14 @@ dv_script <- function(prep, predator = NULL,
                       mode = c("occurrence", "weight", "count"),
                       currency = c("records", "numbers"),
                       aggregation = NULL, facet = NULL, rank = NULL,
-                      na_strata = c("drop", "show"),
+                      na_strata = c("drop", "show"), min_stomachs = 0,
                       data_file = "dietview_prep.rds", file = NULL) {
   stopifnot(inherits(prep, "dietview_prep"))
   mode <- match.arg(mode)
   currency <- match.arg(currency)
   na_strata <- match.arg(na_strata)
+  .dv_check_min_stomachs(min_stomachs)
+  few <- min_stomachs > 0
   spec <- prep$spec
   if (is.null(rank)) rank <- prep$ranks[min(3L, length(prep$ranks))]
   rank <- .dv_match_rank(rank, prep$ranks)
@@ -142,9 +150,18 @@ dv_script <- function(prep, predator = NULL,
       if (na_strata == "show")
         "strata_of <- function(x) { x <- as.character(x); x[is.na(x) | x %in% c(\"\", \"NA\")] <- \"NA\"; x }"
       else "strata_of <- function(x) { x <- as.character(x); x[x %in% c(\"\", \"NA\")] <- NA; x }",
-      "panel <- function(d, title)",
+      if (few) c(
+        sprintf("min_stomachs <- %s", format(min_stomachs)),
+        "## a panel with fewer stomachs is not drawn",
+        "panel <- function(d, title) {",
+        "  n <- length(unique(d[[spec$stomach]]))",
+        "  if (n < min_stomachs)",
+        "    return(sprintf(\"%s: Stomachs (n) = %d. Too few stomachs to show (minimum: %s)\",",
+        "                   title, n, format(min_stomachs)))")
+      else "panel <- function(d, title)",
       sprintf("  dv_sunburst(d, mode = %s, ranks = prep$ranks, weight_col = %s,", dq(mode), wt),
-      sprintf("              count_col = %s, colors = pal, title = title)", cnt))
+      sprintf("              count_col = %s, colors = pal, title = title)", cnt),
+      if (few) "}")
     if (length(facet) == 1L) {
       L <- c(L,
         sprintf("cells <- split(prep$data, strata_of(prep$data[[%s]]))", dq(facet)),

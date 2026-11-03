@@ -58,7 +58,11 @@
 #'   subset of the predators. Stomachs whose records were all removed before
 #'   `dv_prepare()` (e.g. they held only non-food items or nematodes) are
 #'   counted neither as empty nor as examined; to count them as examined but
-#'   empty, flag them empty in `stomachs` before calling `dv_prepare()`.
+#'   empty, flag them empty in `stomachs` before calling `dv_prepare()`. Two
+#'   checks warn once, with a count and up to three example ids: stomachs that
+#'   have prey records but are absent from `stomachs` (counted as examined and
+#'   non-empty), and stomachs whose predator in `stomachs` differs from the
+#'   predator of their records (the predator of the records is used).
 #' @param empty_col Optional column of `stomachs` flagging empty stomachs
 #'   (logical, or 0/1). With it, a stomach without records counts as empty only
 #'   when flagged; one that is neither flagged nor in `data` has an unknown
@@ -317,12 +321,32 @@ print.dietview_prep <- function(x, ...) {
   if (length(dup))
     stop("`stomachs` must have one row per stomach; duplicated: ",
          paste(utils::head(dup, 3), collapse = ", "), call. = FALSE)
+  ex3 <- function(x) paste(utils::head(x, 3), collapse = ", ")
+  d_ids <- as.character(data[[sid]])
+  absent <- setdiff(unique(d_ids[!is.na(d_ids)]), ids)
+  if (length(absent))
+    warning(length(absent), " stomach(s) have prey records but are absent from ",
+            "`stomachs` (e.g. ", ex3(absent), "); they are counted as examined and ",
+            "non-empty.", call. = FALSE)
   if (is.null(spec$predator) || !spec$predator %in% names(st))
     warning("`stomachs` has no predator column `", spec$predator, "`: stomachs ",
             "without records cannot be assigned to a predator.", call. = FALSE)
   keep <- intersect(c(sid, spec$predator, spec$covariates), names(st))
   out <- st[, keep, drop = FALSE]
   out[[sid]] <- ids
+  pcol <- spec$predator
+  if (!is.null(pcol) && pcol %in% names(st) && pcol %in% names(data)) {
+    rec_pred <- as.character(data[[pcol]])[match(ids, d_ids)]
+    st_pred <- as.character(out[[pcol]])
+    mism <- !is.na(rec_pred) & !is.na(st_pred) & rec_pred != st_pred
+    if (any(mism)) {
+      warning(sum(mism), " stomach(s) have a different predator in `stomachs` than ",
+              "in the records (e.g. ", ex3(ids[mism]), "); the predator of the ",
+              "records is used.", call. = FALSE)
+      st_pred[mism] <- rec_pred[mism]
+      out[[pcol]] <- st_pred
+    }
+  }
   if (is.null(empty_col)) {
     out$empty_flag <- NA
   } else {

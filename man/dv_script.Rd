@@ -13,6 +13,7 @@ dv_script(
   facet = NULL,
   rank = NULL,
   na_strata = c("drop", "show"),
+  min_stomachs = 0,
   data_file = "dietview_prep.rds",
   file = NULL
 )
@@ -44,6 +45,13 @@ rank of \code{prep}.}
 \item{na_strata}{\code{"drop"} (default) leaves records with a missing covariate
 value out of the panels; \code{"show"} gives them an \code{"NA"} panel. As in
 \code{\link[=run_dietview]{run_dietview()}} and \code{\link[=dv_build_html]{dv_build_html()}}.}
+
+\item{min_stomachs}{Minimum number of stomachs for a facet panel to be
+drawn (default 0: every panel is drawn). In the script, a panel with fewer
+stomachs is replaced by a line giving its title, "Stomachs (n) = k" and
+"Too few stomachs to show (minimum: ...)"; e.g. with \code{min_stomachs = 10} a
+year with 4 stomachs is not drawn, while a year with 522 is. The unfaceted
+sunburst is always drawn. As in \code{\link[=run_dietview]{run_dietview()}} and \code{\link[=dv_build_html]{dv_build_html()}}.}
 
 \item{data_file}{File name the script reads \code{prep} from.}
 

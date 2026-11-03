@@ -8,9 +8,9 @@ data.
 
 0 errors | 0 warnings | 1 note
 
-* This is a new submission, hence the NOTE "New submission". win-builder
-  also flags "WoRMS" as possibly misspelled; it is the acronym of the World
-  Register of Marine Species (see below).
+* This is a new submission.
+* "WoRMS" is flagged as a possibly misspelled word in DESCRIPTION. It is the
+  acronym of the World Register of Marine Species, cited with its DOI.
 
 ## Test environments
 

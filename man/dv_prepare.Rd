@@ -54,7 +54,11 @@ from \code{data} are ignored, so the full sampling frame can be passed with a
 subset of the predators. Stomachs whose records were all removed before
 \code{dv_prepare()} (e.g. they held only non-food items or nematodes) are
 counted neither as empty nor as examined; to count them as examined but
-empty, flag them empty in \code{stomachs} before calling \code{dv_prepare()}.}
+empty, flag them empty in \code{stomachs} before calling \code{dv_prepare()}. Two
+checks warn once, with a count and up to three example ids: stomachs that
+have prey records but are absent from \code{stomachs} (counted as examined and
+non-empty), and stomachs whose predator in \code{stomachs} differs from the
+predator of their records (the predator of the records is used).}
 
 \item{empty_col}{Optional column of \code{stomachs} flagging empty stomachs
 (logical, or 0/1). With it, a stomach without records counts as empty only

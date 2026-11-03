@@ -51,6 +51,13 @@
 #'   value out of that covariate's panels; `"show"` draws them in an "NA"
 #'   panel. The aggregated sunburst always holds every record. Same argument in
 #'   [run_dietview()].
+#' @param min_stomachs Minimum number of stomachs for a covariate panel to be
+#'   drawn (default 0: every panel is drawn). A panel with fewer stomachs keeps
+#'   its header and its "Stomachs (n) = k" line, followed by "Too few stomachs
+#'   to show (minimum: ...)" in place of the sunburst. For example, with
+#'   `min_stomachs = 10` a year with 4 stomachs is not drawn, while the year
+#'   next to it with 522 stomachs is. The aggregated sunburst is always drawn.
+#'   Same argument in [run_dietview()] and [dv_script()].
 #' @param title Dashboard title.
 #' @param self_contained If `TRUE` (default), plotly.js is embedded and the
 #'   dashboard is one file. If `FALSE`, plotly.js is written once to a `lib`
@@ -92,7 +99,7 @@ dv_build_html <- function(prep, output,
                           image_dir = file.path(tempdir(), "dietview-images"),
                           photo_source = "none",
                           licenses = c("cc0", "cc-by", "cc-by-sa"),
-                          na_strata = c("drop", "show"),
+                          na_strata = c("drop", "show"), min_stomachs = 0,
                           title = "DietView", self_contained = TRUE) {
   stopifnot(inherits(prep, "dietview_prep"))
   if (missing(output)) stop("Name the output file: `output = \"my_dashboard.html\"`.",
@@ -100,6 +107,7 @@ dv_build_html <- function(prep, output,
   currency <- match.arg(currency)
   bands <- match.arg(bands, c("occurrence", "weight", "count"), several.ok = TRUE)
   na_strata <- match.arg(na_strata)
+  .dv_check_min_stomachs(min_stomachs)
   photo_source <- match.arg(photo_source, c("none", "inaturalist", "wikipedia"),
                             several.ok = TRUE)
   spec <- prep$spec; d <- prep$data; ranks <- prep$ranks
@@ -117,6 +125,7 @@ dv_build_html <- function(prep, output,
     parent = match(pooled$parent, pooled$id) - 1L,   # 0-based index, -1 = root
     rank   = pooled$rank,
     taxon  = .dv_taxon_display(pooled$label),
+    text   = .dv_wedge_text(pooled$label),
     color  = unname(colors[pooled$id]))
   nodes$parent[is.na(nodes$parent)] <- -1L
 
@@ -161,6 +170,13 @@ dv_build_html <- function(prep, output,
   }
 
   nstom <- function(recs) length(unique(recs[[scol]]))
+  # a covariate cell below min_stomachs keeps its header and stomach count but
+  # no sunburst (and no data in the JSON)
+  cell_panel <- function(sub, mode, view, key) {
+    if (nstom(sub) < min_stomachs)
+      htmltools::tags$p(class = "dv-few", .dv_few_msg(min_stomachs))
+    else panel(sub, mode, view, key)
+  }
   # covariate values as panel labels: missing values become "NA" (shown) or
   # NA (dropped)
   cov_val <- function(x) {
@@ -188,7 +204,7 @@ dv_build_html <- function(prep, output,
         style = cell_style(length(lv)),
         htmltools::tags$h5(paste0(cv, ": ", l)),
         htmltools::tags$h6(paste("Stomachs (n) =", nstom(sub))),
-        panel(sub, mode, view, paste(view, cv, l, sep = "\r")))
+        cell_panel(sub, mode, view, paste(view, cv, l, sep = "\r")))
     })
     htmltools::tagList(
       htmltools::tags$hr(style = "clear:both;margin-top:25px;"),
@@ -207,7 +223,7 @@ dv_build_html <- function(prep, output,
           style = cell_style(length(il)),
           htmltools::tags$h5(paste0(inner, ": ", i)),
           htmltools::tags$h6(paste("Stomachs (n) =", nstom(sub))),
-          panel(sub, mode, view, paste(view, inner, i, outer, o, sep = "\r")))
+          cell_panel(sub, mode, view, paste(view, inner, i, outer, o, sep = "\r")))
       })
       htmltools::tagList(
         htmltools::tags$h5(paste0(outer, ": ", o),
@@ -379,6 +395,7 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
       .photo-credit a{color:#777}
       .desc-credit{display:block;font-size:.65rem;font-style:normal;color:#999;margin-top:2px}
       .diet-band{margin-bottom:25px}
+      .dv-few{color:#777;font-style:italic;padding:20px 0}
       .dv-sb{width:100%;height:400px}
       .btn-back{padding:10px 20px;background:#1f77b4;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:bold;margin-bottom:20px}
       .controls{display:flex;gap:15px;align-items:center;flex-wrap:wrap;margin:15px 0}
@@ -386,6 +403,7 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
 "
 
 # Draws the sunbursts of a tab from the JSON block the first time it is shown.
+# Wedge text is N.text (blank for unidentified "NA" nodes, as in .dv_sb_prep()).
 # The hover text follows .dv_sb_prep(): rank, taxon, value and, except for
 # distinct items, the share of the ring.
 .dv_js <- "
@@ -399,20 +417,20 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
           if (N.parent[k] >= 0) isParent[N.parent[k]] = true;
           rankSum[N.rank[k]] = (rankSum[N.rank[k]] || 0) + val[j];
         });
-        var t = {type:'sunburst', ids:[], labels:[], parents:[], values:[], text:[],
-                 branchvalues:'remainder', sort:false, rotation:90, textinfo:'label',
-                 hovertemplate:'%{text}<extra></extra>',
+        var t = {type:'sunburst', ids:[], labels:[], parents:[], values:[], text:[], hovertext:[],
+                 branchvalues:'remainder', sort:false, rotation:90, textinfo:'text',
+                 hovertemplate:'%{hovertext}<extra></extra>',
                  marker:{colors:[], line:{color:'#8C8C8C', width:0.5}}};
         S.n.forEach(function(k, j){
           var v = val[j], den = rankSum[N.rank[k]];
-          t.ids.push(N.id[k]); t.labels.push(N.label[k]);
+          t.ids.push(N.id[k]); t.labels.push(N.label[k]); t.text.push(N.text[k]);
           t.parents.push(N.parent[k] < 0 ? '' : N.id[N.parent[k]]);
           t.values.push(isParent[k] ? 0 : v); t.marker.colors.push(N.color[k]);
           var h = '<b>Rank:</b> ' + N.rank[k] + '<br><b>Taxon:</b> ' + N.taxon[k] +
                   '<br><b>' + B.value + ':</b> ' + (B.digits != null ? v.toFixed(B.digits) : v);
           if (B.share != null)
             h += '<br><b>' + B.share + ':</b> ' + (den > 0 ? (100 * v / den).toFixed(1) + '%' : 'n/a');
-          t.text.push(h);
+          t.hovertext.push(h);
         });
         return t;
       }
@@ -481,6 +499,17 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
     htmltools::tags$div(id = "cards_container", class = "species-grid", cards)
   )
 }
+
+# Internal: `min_stomachs` of dv_build_html(), run_dietview() and dv_script().
+.dv_check_min_stomachs <- function(x) {
+  if (!is.numeric(x) || length(x) != 1L || is.na(x) || x < 0)
+    stop("`min_stomachs` must be a single number >= 0.", call. = FALSE)
+  invisible(x)
+}
+
+# Internal: the line shown in place of a covariate panel with too few stomachs.
+.dv_few_msg <- function(min_stomachs)
+  paste0("Too few stomachs to show (minimum: ", format(min_stomachs), ")")
 
 # Internal: the plotly.js bundle shipped with the plotly R package.
 .dv_plotly_js <- function() {

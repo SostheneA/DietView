@@ -30,6 +30,12 @@
 #' @param na_strata `"drop"` (default) or `"show"`: whether records with a
 #'   missing covariate value get an "NA" panel when faceting. Same argument in
 #'   [dv_build_html()].
+#' @param min_stomachs Minimum number of stomachs for a facet panel to be
+#'   drawn (default 0: every panel is drawn). A panel with fewer stomachs shows
+#'   its header, "Stomachs (n) = k" and "Too few stomachs to show (minimum:
+#'   ...)" instead of a sunburst; e.g. with `min_stomachs = 10` a year with 4
+#'   stomachs is not drawn, while a year with 522 is. The unfaceted sunburst is
+#'   always drawn. Same argument in [dv_build_html()] and [dv_script()].
 #' @param ... Passed to [shiny::runApp()].
 #' @return Called for its side effect of running the app; returns the value
 #'   of [shiny::runApp()] once the app is closed.
@@ -55,20 +61,22 @@
 #' }
 #' @export
 run_dietview <- function(prep, currency = c("records", "numbers"),
-                         na_strata = c("drop", "show"), ...) {
+                         na_strata = c("drop", "show"), min_stomachs = 0, ...) {
   if (!requireNamespace("shiny", quietly = TRUE)) {
     stop("Install 'shiny' to run the app.", call. = FALSE)
   }
   stopifnot(inherits(prep, "dietview_prep"))
   currency <- match.arg(currency)
   na_strata <- match.arg(na_strata)
-  app <- .dv_app(prep, currency, na_strata)
+  .dv_check_min_stomachs(min_stomachs)
+  app <- .dv_app(prep, currency, na_strata, min_stomachs)
   shiny::runApp(shiny::shinyApp(app$ui, app$server), ...)
 }
 
 # Internal: UI and server of the app, separated from runApp() so they can be
 # tested with shiny::testServer().
-.dv_app <- function(prep, currency = "records", na_strata = "drop") {
+.dv_app <- function(prep, currency = "records", na_strata = "drop",
+                    min_stomachs = 0) {
   spec <- prep$spec; d <- prep$data; ranks <- prep$ranks
   ccol <- .dv_count_col(spec, d, currency)
   rec_lab <- if (currency == "numbers") "Individuals (% of all individuals)"
@@ -212,6 +220,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
           recs(), ranks = ranks,
           weight_col = spec$weight, count_col = ccol,
           facet_col = fc, mode = input$mode, colors = colors(), na_strata = na_strata,
+          stomach_col = spec$stomach, min_stomachs = min_stomachs,
           title = paste0(input$predator, " - ",
                          if (length(fc) == 2L)
                            paste(fc[1], "by", fc[2])
@@ -225,7 +234,8 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
     script <- shiny::reactive(
       dv_script(prep, predator = if (identical(input$predator, ALL_PRED)) NULL else input$predator,
                 mode = input$mode, currency = currency, aggregation = aggregation(),
-                facet = facets(), rank = input$rank, na_strata = na_strata)
+                facet = facets(), rank = input$rank, na_strata = na_strata,
+                min_stomachs = min_stomachs)
     )
 
     show <- function(id, f) {

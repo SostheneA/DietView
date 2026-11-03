@@ -48,7 +48,8 @@ and the reading order stay the same across covariate cells. Angular
 positions are not fixed: a taxon absent from one cell shifts every wedge
 after it, so compare cells by color, not by angle. Records not identified at
 a rank form a white wedge with a thin gray outline, shown as "Not identified
-at this rank" in the hover text. Lineage gaps (identified material in a group
+at this rank" in the hover text; no text is drawn on it (its label stays
+\code{"NA"} in the data). Lineage gaps (identified material in a group
 that has no taxon at that rank, such as \code{"Polychaeta (no order)"}; see
 \code{\link[=dv_prepare]{dv_prepare()}}) form a light gray wedge, described as such in the hover text.
 }

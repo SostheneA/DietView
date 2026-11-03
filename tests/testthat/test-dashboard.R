@@ -1,11 +1,5 @@
 # The dashboard: one JSON block, plotly.js once, sunbursts drawn on demand.
 
-dash_data <- function(path) {
-  html <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
-  json <- sub(".*<script type=\"application/json\" id=\"dv-data\">(.*?)</script>.*", "\\1", html)
-  list(html = html, data = jsonlite::fromJSON(json, simplifyVector = FALSE))
-}
-
 test_that("the dashboard stores each sunburst as data, not as a widget", {
   prep <- example_prep()
   out <- tempfile(fileext = ".html"); on.exit(unlink(out), add = TRUE)

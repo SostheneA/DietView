@@ -17,6 +17,7 @@ dv_build_html(
   photo_source = "none",
   licenses = c("cc0", "cc-by", "cc-by-sa"),
   na_strata = c("drop", "show"),
+  min_stomachs = 0,
   title = "DietView",
   self_contained = TRUE
 )
@@ -54,6 +55,14 @@ licensed iNaturalist photos (CC0, CC BY, CC BY-SA).}
 value out of that covariate's panels; \code{"show"} draws them in an "NA"
 panel. The aggregated sunburst always holds every record. Same argument in
 \code{\link[=run_dietview]{run_dietview()}}.}
+
+\item{min_stomachs}{Minimum number of stomachs for a covariate panel to be
+drawn (default 0: every panel is drawn). A panel with fewer stomachs keeps
+its header and its "Stomachs (n) = k" line, followed by "Too few stomachs
+to show (minimum: ...)" in place of the sunburst. For example, with
+\code{min_stomachs = 10} a year with 4 stomachs is not drawn, while the year
+next to it with 522 stomachs is. The aggregated sunburst is always drawn.
+Same argument in \code{\link[=run_dietview]{run_dietview()}} and \code{\link[=dv_script]{dv_script()}}.}
 
 \item{title}{Dashboard title.}
 

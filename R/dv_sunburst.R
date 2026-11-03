@@ -6,7 +6,8 @@
 #' positions are not fixed: a taxon absent from one cell shifts every wedge
 #' after it, so compare cells by color, not by angle. Records not identified at
 #' a rank form a white wedge with a thin gray outline, shown as "Not identified
-#' at this rank" in the hover text. Lineage gaps (identified material in a group
+#' at this rank" in the hover text; no text is drawn on it (its label stays
+#' `"NA"` in the data). Lineage gaps (identified material in a group
 #' that has no taxon at that rank, such as `"Polychaeta (no order)"`; see
 #' [dv_prepare()]) form a light gray wedge, described as such in the hover text.
 #'
@@ -96,9 +97,10 @@ dv_sunburst <- function(x,
       branchvalues = "remainder",
       sort = FALSE,
       rotation = rotation,
-      textinfo = "label",
-      text = ~hovertext,
-      hovertemplate = "%{text}<extra></extra>",
+      textinfo = "text",
+      text = ~text,
+      hovertext = ~hovertext,
+      hovertemplate = "%{hovertext}<extra></extra>",
       marker = list(colors = ~color, line = list(color = "#8C8C8C", width = 0.5))
     ),
     title = list(
@@ -126,6 +128,9 @@ dv_sunburst <- function(x,
                 occurrence = tree$value_occ, weight = tree$value_w)
   size_vals <- ifelse(is_leaf, raw, 0)
 
+  # wedge text: unidentified ("NA") wedges stay blank; the label and the hover
+  # text keep "NA" / "Not identified at this rank"
+  tree$text <- .dv_wedge_text(tree$label)
   taxon <- .dv_taxon_display(tree$label)
   head  <- paste0("<b>Rank:</b> ", tree$rank, "<br><b>Taxon:</b> ", taxon)
   tree$hovertext <- switch(
@@ -154,11 +159,14 @@ dv_sunburst <- function(x,
 # c(inner, outer) -> one row per `outer` level, one column per `inner` level,
 # matching the `cross = list(c(inner, outer))` convention of dv_build_html().
 # na_strata = "drop" leaves records with a missing facet value out; "show"
-# gives them an "NA" panel.
+# gives them an "NA" panel. A cell with fewer than `min_stomachs` stomachs
+# (distinct `stomach_col`) gets its title, its stomach count and a note, no
+# sunburst.
 .dv_sunburst_facets <- function(records, ranks, weight_col = NULL,
                                 count_col = NULL, facet_col,
                                 mode = "occurrence", colors = NULL,
-                                rotation = 90, title = "", na_strata = "drop") {
+                                rotation = 90, title = "", na_strata = "drop",
+                                stomach_col = NULL, min_stomachs = 0) {
   if (na_strata == "drop") {
     for (fc in facet_col) {
       v <- as.character(records[[fc]])
@@ -194,7 +202,9 @@ dv_sunburst <- function(x,
   anns <- list()
   for (k in seq_along(cells)) {
     ce <- cells[[k]]
-    if (nrow(ce$sub) > 0L) {
+    n_st <- if (!is.null(stomach_col)) length(unique(ce$sub[[stomach_col]])) else NA
+    few <- nrow(ce$sub) > 0L && !is.na(n_st) && n_st < min_stomachs
+    if (nrow(ce$sub) > 0L && !few) {
       tr <- dv_build_tree(ce$sub, ranks = ranks,
                           weight_col = weight_col, count_col = count_col)
       pp <- .dv_sb_prep(tr, mode, colors)
@@ -202,8 +212,8 @@ dv_sunburst <- function(x,
         fig,
         ids = pp$tree$id, labels = pp$tree$label, parents = pp$tree$parent,
         values = pp$size, type = "sunburst", branchvalues = "remainder",
-        sort = FALSE, rotation = rotation, textinfo = "label",
-        text = pp$tree$hovertext, hovertemplate = "%{text}<extra></extra>",
+        sort = FALSE, rotation = rotation, textinfo = "text", text = pp$tree$text,
+        hovertext = pp$tree$hovertext, hovertemplate = "%{hovertext}<extra></extra>",
         marker = list(colors = pp$tree$color,
                       line = list(color = "#8C8C8C", width = 0.5)),
         domain = list(row = ce$row, column = ce$col)
@@ -211,7 +221,10 @@ dv_sunburst <- function(x,
     }
     anns[[k]] <- list(
       text = paste0("<b>", ce$lab, "</b>",
-                    if (nrow(ce$sub) == 0L) "<br><i>no records</i>" else ""),
+                    if (nrow(ce$sub) == 0L) "<br><i>no records</i>"
+                    else if (few) paste0("<br>Stomachs (n) = ", n_st,
+                                         "<br><i>", .dv_few_msg(min_stomachs), "</i>")
+                    else ""),
       x = (ce$col + 0.5) / n_col, y = 1 - ce$row / n_row,
       xref = "paper", yref = "paper",
       xanchor = "center", yanchor = "top",
@@ -225,6 +238,13 @@ dv_sunburst <- function(x,
     annotations = anns,
     margin = list(t = 70)
   )
+}
+
+# Internal: the text drawn on a wedge: the label, blank for unidentified
+# ("NA") nodes. Lineage gaps "(no <rank>)" keep their text.
+.dv_wedge_text <- function(label) {
+  label <- as.character(label)
+  ifelse(!is.na(label) & label == "NA", "", label)
 }
 
 # Internal: the taxon as shown in hover text: unidentified and lineage-gap
