@@ -1027,7 +1027,7 @@ dv_build_html(prep4, output = out,
 c(MB = round(file.size(out) / 1e6, 1),
   seconds = round(as.numeric(Sys.time() - t0, units = "secs")))
 #>      MB seconds 
-#>     3.9     4.0
+#>     3.9     3.0
 ```
 
 The file is written to
@@ -1103,4 +1103,4 @@ The limits are those of the data, and they bound every sentence above:
   and take percentile intervals of `pct_occ` and `pct_w`), or over hauls
   when fish from one haul share a meal.
 
-*This article ran in about 17 seconds.*
+*This article ran in about 15 seconds.*
