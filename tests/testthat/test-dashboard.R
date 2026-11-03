@@ -58,4 +58,3 @@ test_that("self_contained = FALSE links plotly.js from a lib folder", {
                "<script src=\"lib/plotlyjs/plotly-latest.min.js\">", fixed = TRUE)
   expect_lt(file.size(out), 1e6)
 })
-
