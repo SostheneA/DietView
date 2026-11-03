@@ -102,7 +102,11 @@ dv_prepare(
   `dv_prepare()` (e.g. they held only non-food items or nematodes) are
   counted neither as empty nor as examined; to count them as examined
   but empty, flag them empty in `stomachs` before calling
-  `dv_prepare()`.
+  `dv_prepare()`. Two checks warn once, with a count and up to three
+  example ids: stomachs that have prey records but are absent from
+  `stomachs` (counted as examined and non-empty), and stomachs whose
+  predator in `stomachs` differs from the predator of their records (the
+  predator of the records is used).
 
 - empty_col:
 

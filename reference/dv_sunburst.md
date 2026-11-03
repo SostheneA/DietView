@@ -6,7 +6,8 @@ start angle and the reading order stay the same across covariate cells.
 Angular positions are not fixed: a taxon absent from one cell shifts
 every wedge after it, so compare cells by color, not by angle. Records
 not identified at a rank form a white wedge with a thin gray outline,
-shown as "Not identified at this rank" in the hover text. Lineage gaps
+shown as "Not identified at this rank" in the hover text; no text is
+drawn on it (its label stays `"NA"` in the data). Lineage gaps
 (identified material in a group that has no taxon at that rank, such as
 `"Polychaeta (no order)"`; see
 [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md))

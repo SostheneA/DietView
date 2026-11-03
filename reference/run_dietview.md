@@ -14,6 +14,7 @@ run_dietview(
   prep,
   currency = c("records", "numbers"),
   na_strata = c("drop", "show"),
+  min_stomachs = 0,
   ...
 )
 ```
@@ -36,6 +37,18 @@ run_dietview(
   `"drop"` (default) or `"show"`: whether records with a missing
   covariate value get an "NA" panel when faceting. Same argument in
   [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md).
+
+- min_stomachs:
+
+  Minimum number of stomachs for a facet panel to be drawn (default 0:
+  every panel is drawn). A panel with fewer stomachs shows its header,
+  "Stomachs (n) = k" and "Too few stomachs to show (minimum: ...)"
+  instead of a sunburst; e.g. with `min_stomachs = 10` a year with 4
+  stomachs is not drawn, while a year with 522 is. The unfaceted
+  sunburst is always drawn. Same argument in
+  [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md)
+  and
+  [`dv_script()`](https://sosthenea.github.io/DietView/reference/dv_script.md).
 
 - ...:
 

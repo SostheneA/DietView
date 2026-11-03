@@ -153,7 +153,11 @@ from <code>data</code> are ignored, so the full sampling frame can be passed wit
 subset of the predators. Stomachs whose records were all removed before
 <code>dv_prepare()</code> (e.g. they held only non-food items or nematodes) are
 counted neither as empty nor as examined; to count them as examined but
-empty, flag them empty in <code>stomachs</code> before calling <code>dv_prepare()</code>.</p></dd>
+empty, flag them empty in <code>stomachs</code> before calling <code>dv_prepare()</code>. Two
+checks warn once, with a count and up to three example ids: stomachs that
+have prey records but are absent from <code>stomachs</code> (counted as examined and
+non-empty), and stomachs whose predator in <code>stomachs</code> differs from the
+predator of their records (the predator of the records is used).</p></dd>
 
 
 <dt id="arg-empty-col">empty_col<a class="anchor" aria-label="anchor" href="#arg-empty-col"></a></dt>

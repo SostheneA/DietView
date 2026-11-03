@@ -83,6 +83,7 @@ interactively can be archived and rerun without the application.</p>
 <span>  facet <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rank <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  na_strata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"drop"</span>, <span class="st">"show"</span><span class="op">)</span>,</span>
+<span>  min_stomachs <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  data_file <span class="op">=</span> <span class="st">"dietview_prep.rds"</span>,</span>
 <span>  file <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -135,6 +136,15 @@ value out of the panels; <code>"show"</code> gives them an <code>"NA"</code> pan
 <code><a href="run_dietview.html">run_dietview()</a></code> and <code><a href="dv_build_html.html">dv_build_html()</a></code>.</p></dd>
 
 
+<dt id="arg-min-stomachs">min_stomachs<a class="anchor" aria-label="anchor" href="#arg-min-stomachs"></a></dt>
+<dd><p>Minimum number of stomachs for a facet panel to be
+drawn (default 0: every panel is drawn). In the script, a panel with fewer
+stomachs is replaced by a line giving its title, "Stomachs (n) = k" and
+"Too few stomachs to show (minimum: ...)"; e.g. with <code>min_stomachs = 10</code> a
+year with 4 stomachs is not drawn, while a year with 522 is. The unfaceted
+sunburst is always drawn. As in <code><a href="run_dietview.html">run_dietview()</a></code> and <code><a href="dv_build_html.html">dv_build_html()</a></code>.</p></dd>
+
+
 <dt id="arg-data-file">data_file<a class="anchor" aria-label="anchor" href="#arg-data-file"></a></dt>
 <dd><p>File name the script reads <code>prep</code> from.</p></dd>
 
@@ -169,7 +179,7 @@ lineage came from WoRMS) and the column specification.</p>
 <span class="r-in"><span>               aggregation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>threshold <span class="op">=</span> <span class="fl">10</span>, scope <span class="op">=</span> <span class="st">"pooled"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">s</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ## DietView analysis script</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ## Generated 2026-11-03 06:30 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ## Generated 2026-11-03 11:48 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ## Predator: all predators | wedges: weight | currency: records</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ## Reporting resolution: threshold 10 stomachs, scope = pooled, min_predators = 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> # Taxonomy source: table</span>

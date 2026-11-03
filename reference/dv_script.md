@@ -20,6 +20,7 @@ dv_script(
   facet = NULL,
   rank = NULL,
   na_strata = c("drop", "show"),
+  min_stomachs = 0,
   data_file = "dietview_prep.rds",
   file = NULL
 )
@@ -76,6 +77,18 @@ dv_script(
   and
   [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md).
 
+- min_stomachs:
+
+  Minimum number of stomachs for a facet panel to be drawn (default 0:
+  every panel is drawn). In the script, a panel with fewer stomachs is
+  replaced by a line giving its title, "Stomachs (n) = k" and "Too few
+  stomachs to show (minimum: ...)"; e.g. with `min_stomachs = 10` a year
+  with 4 stomachs is not drawn, while a year with 522 is. The unfaceted
+  sunburst is always drawn. As in
+  [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md)
+  and
+  [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md).
+
 - data_file:
 
   File name the script reads `prep` from.
@@ -110,7 +123,7 @@ s <- dv_script(prep, mode = "weight",
                aggregation = list(threshold = 10, scope = "pooled"))
 s
 #> ## DietView analysis script
-#> ## Generated 2026-11-03 06:30 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).
+#> ## Generated 2026-11-03 11:48 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).
 #> ## Predator: all predators | wedges: weight | currency: records
 #> ## Reporting resolution: threshold 10 stomachs, scope = pooled, min_predators = 1
 #> # Taxonomy source: table
