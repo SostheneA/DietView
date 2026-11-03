@@ -8,22 +8,21 @@ data.
 
 0 errors | 0 warnings | 1 note
 
-* This is a new submission, hence the NOTE "New submission".
+* This is a new submission, hence the NOTE "New submission". win-builder
+  also flags "WoRMS" as possibly misspelled; it is the acronym of the World
+  Register of Marine Species (see below).
 
 ## Test environments
 
-To be filled in after running `devtools::check_win_devel()`,
-`devtools::check_win_release()`, `devtools::check_mac_release()` and
-`rhub::rhub_check()`:
-
 * Local: Windows 11 x64 (build 26100), R 4.5.2, `R CMD check --as-cran`:
   0 errors | 0 warnings | 1 note ("New submission")
-* win-builder, R-devel: _pending_
-* win-builder, R-release: _pending_
-* mac-builder, R-release: _pending_
-* R-hub, ubuntu-latest (R-devel): _pending_
-* R-hub, windows-latest (R-devel): _pending_
-* R-hub, macos-latest (R-devel): _pending_
+* win-builder, R-devel (2026-11-02 r90827 ucrt): 0 errors | 0 warnings | 1 note
+* win-builder, R-release (4.6.2): 0 errors | 0 warnings | 1 note
+* mac-builder, R-release: not run (service returned HTTP 502 on repeated attempts)
+* R-hub, linux (Ubuntu 26.04, R-devel r90825): 0 errors | 0 warnings | 0 notes
+* R-hub, windows (Windows Server 2022, R-devel r90825): 0 errors | 0 warnings | 0 notes
+* R-hub, macos-arm64 (R-devel r90825): 0 errors | 0 warnings | 0 notes
+* R-hub, macos x86_64 (R-devel r90827): 0 errors | 0 warnings | 0 notes
 
 ## Notes for the CRAN team
 
