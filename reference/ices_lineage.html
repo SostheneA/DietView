@@ -5,15 +5,19 @@ its key column, prey_aphia_id, has the same name as the prey key of
 ices_diet. A taxon that is itself above species (e.g. &quot;Crustacea&quot;, a
 subphylum) has NA at the finer ranks, which DietView shows as the
 unidentified share of that branch. WoRMS gives no order to some polychaetes
-and lancelets and no class to Priapulida, so a few records identified to
-family or species also reach an NA node at those ranks."><meta property="og:description" content="The taxonomic lineage (kingdom to species) of every AphiaID in ices_diet,
+and lancelets and no class to Priapulida, so a few prey identified to family
+or species have NA at those ranks. dv_prepare() shows those as gray
+lineage gaps such as &quot;Polychaeta (no order)&quot;, not as unidentified
+material; gaps = &quot;keep&quot; leaves them NA."><meta property="og:description" content="The taxonomic lineage (kingdom to species) of every AphiaID in ices_diet,
 as resolved in WoRMS. Pass it to dv_prepare() with taxonomy = &quot;table&quot;:
 its key column, prey_aphia_id, has the same name as the prey key of
 ices_diet. A taxon that is itself above species (e.g. &quot;Crustacea&quot;, a
 subphylum) has NA at the finer ranks, which DietView shows as the
 unidentified share of that branch. WoRMS gives no order to some polychaetes
-and lancelets and no class to Priapulida, so a few records identified to
-family or species also reach an NA node at those ranks."><meta property="og:image" content="https://sosthenea.github.io/DietView/logo.png"></head><body>
+and lancelets and no class to Priapulida, so a few prey identified to family
+or species have NA at those ranks. dv_prepare() shows those as gray
+lineage gaps such as &quot;Polychaeta (no order)&quot;, not as unidentified
+material; gaps = &quot;keep&quot; leaves them NA."><meta property="og:image" content="https://sosthenea.github.io/DietView/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -21,7 +25,7 @@ family or species also reach an NA node at those ranks."><meta property="og:imag
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -77,8 +81,10 @@ its key column, <code>prey_aphia_id</code>, has the same name as the prey key of
 <a href="ices_diet.html">ices_diet</a>. A taxon that is itself above species (e.g. "Crustacea", a
 subphylum) has <code>NA</code> at the finer ranks, which DietView shows as the
 unidentified share of that branch. WoRMS gives no order to some polychaetes
-and lancelets and no class to Priapulida, so a few records identified to
-family or species also reach an <code>NA</code> node at those ranks.</p>
+and lancelets and no class to Priapulida, so a few prey identified to family
+or species have <code>NA</code> at those ranks. <code><a href="dv_prepare.html">dv_prepare()</a></code> shows those as gray
+lineage gaps such as <code>"Polychaeta (no order)"</code>, not as unidentified
+material; <code>gaps = "keep"</code> leaves them <code>NA</code>.</p>
     </div>
 
     <div class="section level2">
@@ -97,7 +103,13 @@ seven ranks <code>kingdom</code>, <code>phylum</code>, <code>class</code>, <code
     <h2 id="source">Source<a class="anchor" aria-label="anchor" href="#source"></a></h2>
     <p>World Register of Marine Species (WoRMS, <a href="https://www.marinespecies.org" class="external-link">https://www.marinespecies.org</a>),
 as compiled in the R package stomachr (Lindmark 2026); kingdom and species
-columns derived from the WoRMS phylum and the name's rank.</p>
+columns derived from the WoRMS phylum and the name's rank.
+Three AphiaIDs reported in the ICES data are unaccepted in WoRMS (231869
+<em>Aphrodite aculeata</em>, 400596 <em>Trisopterus esmarki</em>, 298205 <em>Lumpenus
+lampetraeformis</em>). They keep their key here but carry the lineage of their
+accepted record (129840, 126444 and 154675), so each species is one node of
+the tree. The table as built from the reported AphiaIDs is
+<a href="ices_lineage_raw.html">ices_lineage_raw</a>.</p>
     </div>
 
     <div class="section level2">
@@ -109,6 +121,8 @@ columns derived from the WoRMS phylum and the name's rank.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       order      family   genus         species</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 48 Decapoda Crangonidae Crangon Crangon crangon</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 77     &lt;NA&gt;        &lt;NA&gt;    &lt;NA&gt;            &lt;NA&gt;</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu"><a href="dv_lineage_check.html">dv_lineage_check</a></span><span class="op">(</span><span class="va">ices_lineage</span><span class="op">)</span><span class="op">)</span>   <span class="co"># no spelling variants</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

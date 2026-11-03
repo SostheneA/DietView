@@ -121,18 +121,12 @@ you see there are real output.
 >
 > **[Read it
 > online](https://sosthenea.github.io/DietView/articles/technical-reference.html)**
+> · **[Download the
+> PDF](https://sosthenea.github.io/DietView/DietView-technical-reference.pdf)**
 
 ## Installation
 
-DietView is distributed through [R-universe](https://r-universe.dev):
-
-``` r
-
-install.packages("DietView",
-  repos = c("https://sosthenea.r-universe.dev", "https://cloud.r-project.org"))
-```
-
-Or install the development version from GitHub:
+Install DietView from GitHub:
 
 ``` r
 
@@ -140,12 +134,13 @@ Or install the development version from GitHub:
 pak::pak("SostheneA/DietView")
 ```
 
-Optional features need a few more packages: `worrms` (WoRMS taxonomy),
-`shiny` + `DT` (interactive app), `rmarkdown` (self-contained HTML).
+Optional features need a few more packages: `worrms` (WoRMS taxonomy)
+and `shiny` + `DT` (interactive app). The HTML dashboard needs neither
+`rmarkdown` nor pandoc.
 
 ``` r
 
-install.packages(c("worrms", "shiny", "DT", "rmarkdown"))
+install.packages(c("worrms", "shiny", "DT"))
 ```
 
 ## Basic use
@@ -195,7 +190,7 @@ dv_digestion_diagnostic(cod, by = "region")
 
 # 6. explore, check sampling sufficiency, aggregate, and export
 dv_summary(prep)                                  # stomachs, records, taxa per predator
-dv_prey_accumulation(cod, permutations = 50)      # cumulative prey curve
+dv_prey_accumulation(cod, permutations = 50, seed = 1)  # cumulative prey curve
 dv_fo_table(cod, rank = "class")                  # classical per-rank %FO
 
 agg  <- dv_aggregate_threshold(cod, threshold = 10)    # prey in < 10 stomachs move up a rank

@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -204,17 +204,24 @@ warns that they have no key, which is what you want):</p>
 <td>Run again later</td>
 </tr>
 <tr class="even">
+<td><code>id_fallback_name</code></td>
+<td>WoRMS does not know the AphiaID; the prey name was matched
+instead</td>
+<td>Check the ID in your data, and that the name is the taxon you
+meant</td>
+</tr>
+<tr class="odd">
 <td><code>exact</code></td>
 <td>No ID; the name matched exactly</td>
 <td>Nothing</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>fuzzy</code></td>
 <td>No ID; the name was matched by TAXAMATCH, which tolerates
 misspellings</td>
 <td>Check every one: a near match can be a different taxon</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>unresolved</code></td>
 <td>No match</td>
 <td>Correct the name, or accept that the prey stays unidentified</td>
@@ -227,69 +234,96 @@ misspellings</td>
 </h3>
 <p>Every ICES prey record carries an AphiaID, so a lookup on these data
 runs almost entirely through the first two rows of the table. Most IDs
-are accepted (<code>id</code>). Some are not. The frozen lineage shows
-two pairs of names that differ by one letter:</p>
+are accepted (<code>id</code>). Some are not. The package ships the
+lineage twice: <code>ices_lineage_raw</code> as the stomachr lookup
+built it, from the AphiaIDs as reported, and <code>ices_lineage</code>,
+where unaccepted AphiaIDs carry the lineage of their accepted record.
+<code><a href="../reference/dv_lineage_check.html">dv_lineage_check()</a></code> finds the spelling variants in the raw
+table without going online:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pairs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Aphrodita aculeata"</span>, <span class="st">"Aphrodite aculeata"</span>,</span>
-<span>           <span class="st">"Trisopterus esmarkii"</span>, <span class="st">"Trisopterus esmarki"</span><span class="op">)</span></span>
-<span><span class="va">lin_pairs</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">[</span><span class="va">ices_lineage</span><span class="op">$</span><span class="va">scientific_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span>,</span>
-<span>                          <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"prey_aphia_id"</span>, <span class="st">"scientific_name"</span>, <span class="st">"family"</span>, <span class="st">"species"</span><span class="op">)</span><span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/dv_lineage_check.html">dv_lineage_check</a></span><span class="op">(</span><span class="va">ices_lineage_raw</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"check"</span>, <span class="st">"rank"</span>, <span class="st">"parent"</span>, <span class="st">"label"</span>, <span class="st">"variant"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;            check    rank       parent                    label</span></span>
+<span><span class="co">#&gt; 1 near_duplicate   genus Aphroditidae                Aphrodita</span></span>
+<span><span class="co">#&gt; 2 near_duplicate species  Trisopterus      Trisopterus esmarki</span></span>
+<span><span class="co">#&gt; 3 near_duplicate species     Lumpenus Lumpenus lampetraeformis</span></span>
+<span><span class="co">#&gt;                    variant</span></span>
+<span><span class="co">#&gt; 1                Aphrodite</span></span>
+<span><span class="co">#&gt; 2     Trisopterus esmarkii</span></span>
+<span><span class="co">#&gt; 3 Lumpenus lampretaeformis</span></span>
+<span><span class="va">pairs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Aphrodita aculeata"</span>, <span class="st">"Aphrodite aculeata"</span>,</span>
+<span>           <span class="st">"Trisopterus esmarkii"</span>, <span class="st">"Trisopterus esmarki"</span>,</span>
+<span>           <span class="st">"Lumpenus lampretaeformis"</span>, <span class="st">"Lumpenus lampetraeformis"</span><span class="op">)</span></span>
+<span><span class="va">lin_pairs</span> <span class="op">&lt;-</span> <span class="va">ices_lineage_raw</span><span class="op">[</span><span class="va">ices_lineage_raw</span><span class="op">$</span><span class="va">scientific_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span>,</span>
+<span>                              <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"prey_aphia_id"</span>, <span class="st">"scientific_name"</span>, <span class="st">"family"</span>, <span class="st">"species"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">lin_pairs</span><span class="op">$</span><span class="va">n_records</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">lin_pairs</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">lin_pairs</span></span>
-<span><span class="co">#&gt;     prey_aphia_id      scientific_name       family              species</span></span>
-<span><span class="co">#&gt; 24         126444 Trisopterus esmarkii      Gadidae Trisopterus esmarkii</span></span>
-<span><span class="co">#&gt; 139        129840   Aphrodita aculeata Aphroditidae   Aphrodita aculeata</span></span>
-<span><span class="co">#&gt; 310        231869   Aphrodite aculeata Aphroditidae   Aphrodite aculeata</span></span>
-<span><span class="co">#&gt; 311        400596  Trisopterus esmarki      Gadidae  Trisopterus esmarki</span></span>
-<span><span class="co">#&gt;     n_records</span></span>
-<span><span class="co">#&gt; 24         35</span></span>
-<span><span class="co">#&gt; 139        47</span></span>
-<span><span class="co">#&gt; 310        31</span></span>
-<span><span class="co">#&gt; 311        73</span></span>
+<span><span class="co">#&gt;     prey_aphia_id          scientific_name       family</span></span>
+<span><span class="co">#&gt; 24         126444     Trisopterus esmarkii      Gadidae</span></span>
+<span><span class="co">#&gt; 139        129840       Aphrodita aculeata Aphroditidae</span></span>
+<span><span class="co">#&gt; 190        154675 Lumpenus lampretaeformis   Lumpenidae</span></span>
+<span><span class="co">#&gt; 310        231869       Aphrodite aculeata Aphroditidae</span></span>
+<span><span class="co">#&gt; 311        400596      Trisopterus esmarki      Gadidae</span></span>
+<span><span class="co">#&gt; 317        298205 Lumpenus lampetraeformis   Lumpenidae</span></span>
+<span><span class="co">#&gt;                      species n_records</span></span>
+<span><span class="co">#&gt; 24      Trisopterus esmarkii        35</span></span>
+<span><span class="co">#&gt; 139       Aphrodita aculeata        47</span></span>
+<span><span class="co">#&gt; 190 Lumpenus lampretaeformis        NA</span></span>
+<span><span class="co">#&gt; 310       Aphrodite aculeata        31</span></span>
+<span><span class="co">#&gt; 311      Trisopterus esmarki        73</span></span>
+<span><span class="co">#&gt; 317 Lumpenus lampetraeformis         1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_name</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span><span class="op">]</span>, <span class="va">dat</span><span class="op">$</span><span class="va">country</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">prey_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                       </span></span>
-<span><span class="co">#&gt;                        DE DK NL NO SE</span></span>
-<span><span class="co">#&gt;   Aphrodita aculeata    8  0 12  0 27</span></span>
-<span><span class="co">#&gt;   Aphrodite aculeata    0 31  0  0  0</span></span>
-<span><span class="co">#&gt;   Trisopterus esmarki   0 73  0  0  0</span></span>
-<span><span class="co">#&gt;   Trisopterus esmarkii  9  0 21  1  4</span></span></code></pre></div>
-<p>Each pair is one species (a sea mouse and Norway pout) under two
-AphiaIDs, and one spelling of each comes from a single country. WoRMS
-keeps variant spellings like these as unaccepted names with AphiaIDs of
-their own. A live lookup reads each AphiaID’s record; when it is
-unaccepted, it follows it to the accepted AphiaID, logs it as
-<code>id_synonym</code> and gives both spellings the same lineage. The
-frozen <code>ices_lineage</code> was built from the AphiaIDs as
-reported, so it keeps them apart, and the species ring counts each
-species twice. It matters for any species-level statement:</p>
+<span><span class="co">#&gt;                           </span></span>
+<span><span class="co">#&gt;                            DE DK NL NO SE</span></span>
+<span><span class="co">#&gt;   Aphrodita aculeata        8  0 12  0 27</span></span>
+<span><span class="co">#&gt;   Aphrodite aculeata        0 31  0  0  0</span></span>
+<span><span class="co">#&gt;   Lumpenus lampetraeformis  0  1  0  0  0</span></span>
+<span><span class="co">#&gt;   Trisopterus esmarki       0 73  0  0  0</span></span>
+<span><span class="co">#&gt;   Trisopterus esmarkii      9  0 21  1  4</span></span></code></pre></div>
+<p>Each pair is one species (a sea mouse, Norway pout and the snake
+blenny) under two AphiaIDs, and the variant spellings come from few
+countries. WoRMS keeps spellings like these as unaccepted names with
+AphiaIDs of their own. A live lookup reads each AphiaID’s record; when
+it is unaccepted, it follows it to the accepted AphiaID, logs it as
+<code>id_synonym</code> and gives both spellings the same lineage. A
+lineage frozen from the AphiaIDs as reported keeps them apart, and the
+species ring counts each species twice. It matters for any species-level
+statement:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cod</span> <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">[</span><span class="va">dat</span><span class="op">$</span><span class="va">predator_common</span> <span class="op">==</span> <span class="st">"Atlantic cod"</span>, <span class="op">]</span></span>
-<span><span class="va">prep_cod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
+<span><span class="va">prep_raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage_raw</span>,</span>
 <span>                       verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">fo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_fo_table.html">dv_fo_table</a></span><span class="op">(</span><span class="va">prep_cod</span>, rank <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span>
-<span><span class="va">fo</span><span class="op">[</span><span class="va">fo</span><span class="op">$</span><span class="va">taxon</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span>, <span class="op">]</span></span>
-<span><span class="co">#&gt;       rank                taxon n_stomachs n_total pct_fo</span></span>
-<span><span class="co">#&gt; 5  species   Aphrodita aculeata         42     991   4.24</span></span>
-<span><span class="co">#&gt; 6  species   Aphrodite aculeata         25     991   2.52</span></span>
-<span><span class="co">#&gt; 9  species  Trisopterus esmarki         21     991   2.12</span></span>
-<span><span class="co">#&gt; 14 species Trisopterus esmarkii         15     991   1.51</span></span></code></pre></div>
-<p>When you work offline, the same correction is one line per pair, made
-on your copy of the data before <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code>. Keep it in
-the script, so the change is visible:</p>
+<span><span class="va">fo_split</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_fo_table.html">dv_fo_table</a></span><span class="op">(</span><span class="va">prep_raw</span>, rank <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span>
+<span><span class="va">fo_split</span><span class="op">[</span><span class="va">fo_split</span><span class="op">$</span><span class="va">taxon</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span>, <span class="op">]</span></span>
+<span><span class="co">#&gt;       rank                    taxon n_stomachs n_total pct_fo</span></span>
+<span><span class="co">#&gt; 5  species       Aphrodita aculeata         42     991   4.24</span></span>
+<span><span class="co">#&gt; 6  species       Aphrodite aculeata         25     991   2.52</span></span>
+<span><span class="co">#&gt; 9  species      Trisopterus esmarki         21     991   2.12</span></span>
+<span><span class="co">#&gt; 14 species     Trisopterus esmarkii         15     991   1.51</span></span>
+<span><span class="co">#&gt; 57 species Lumpenus lampetraeformis          1     991   0.10</span></span></code></pre></div>
+<p><code>ices_lineage</code> was corrected once, in
+<code>data-raw/ices_data.R</code>, by giving each unaccepted AphiaID the
+lineage of its accepted record; the keys are unchanged, so the same
+records join to the accepted name and the check is clean:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">accepted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"231869"</span> <span class="op">=</span> <span class="fl">129840L</span>,   <span class="co"># Aphrodite aculeata  -&gt; Aphrodita aculeata</span></span>
-<span>              <span class="st">"400596"</span> <span class="op">=</span> <span class="fl">126444L</span><span class="op">)</span>   <span class="co"># Trisopterus esmarki -&gt; Trisopterus esmarkii</span></span>
-<span><span class="va">fix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">cod</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">accepted</span><span class="op">)</span></span>
-<span><span class="va">cod</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">[</span><span class="va">fix</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">accepted</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">cod</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">[</span><span class="va">fix</span><span class="op">]</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="va">cod</span><span class="op">$</span><span class="va">prey_name</span><span class="op">[</span><span class="va">fix</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">ices_lineage</span><span class="op">$</span><span class="va">scientific_name</span><span class="op">[</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">cod</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">[</span><span class="va">fix</span><span class="op">]</span>, <span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span><span class="op">)</span><span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu"><a href="../reference/dv_lineage_check.html">dv_lineage_check</a></span><span class="op">(</span><span class="va">ices_lineage</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0</span></span>
+<span><span class="va">ices_lineage</span><span class="op">[</span><span class="va">ices_lineage</span><span class="op">$</span><span class="va">prey_aphia_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">231869</span>, <span class="fl">400596</span>, <span class="fl">298205</span><span class="op">)</span>,</span>
+<span>             <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"prey_aphia_id"</span>, <span class="st">"scientific_name"</span>, <span class="st">"species"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;     prey_aphia_id          scientific_name                  species</span></span>
+<span><span class="co">#&gt; 310        231869       Aphrodita aculeata       Aphrodita aculeata</span></span>
+<span><span class="co">#&gt; 311        400596     Trisopterus esmarkii     Trisopterus esmarkii</span></span>
+<span><span class="co">#&gt; 317        298205 Lumpenus lampretaeformis Lumpenus lampretaeformis</span></span>
 <span><span class="va">prep_cod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
 <span>                       verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_fo_table.html">dv_fo_table</a></span><span class="op">(</span><span class="va">prep_cod</span>, rank <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span>
 <span><span class="va">fo</span><span class="op">[</span><span class="va">fo</span><span class="op">$</span><span class="va">taxon</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">pairs</span>, <span class="op">]</span></span>
-<span><span class="co">#&gt;      rank                taxon n_stomachs n_total pct_fo</span></span>
-<span><span class="co">#&gt; 3 species   Aphrodita aculeata         67     991   6.76</span></span>
-<span><span class="co">#&gt; 6 species Trisopterus esmarkii         36     991   3.63</span></span></code></pre></div>
+<span><span class="co">#&gt;       rank                    taxon n_stomachs n_total pct_fo</span></span>
+<span><span class="co">#&gt; 3  species       Aphrodita aculeata         67     991   6.76</span></span>
+<span><span class="co">#&gt; 6  species     Trisopterus esmarkii         36     991   3.63</span></span>
+<span><span class="co">#&gt; 55 species Lumpenus lampretaeformis          1     991   0.10</span></span></code></pre></div>
+<p>With your own frozen table, make the same correction in the script
+that builds it, one line per pair, and keep the comment, so the change
+is visible.</p>
 <p>Merged, the sea mouse is found in 67 cod stomachs (6.76%) and ranks
 number 2 among the named species of the cod diet by frequency of
 occurrence; split, its more common spelling ranked number 4.</p>

@@ -129,9 +129,9 @@ tree <- dv_build_tree(agg$data, agg$ranks, weight_col = spec$weight)
 head(dv_rank_table(tree, "Class"))
 #>           label value_item value_occ   pct_occ  value_w      pct_w
 #> 13 Malacostraca         17       999 43.359375 2286.830 22.3616241
-#> 15    Teleostei         16       624 27.083333 7045.949 68.8983695
+#> 15    Teleostei         15       624 27.083333 7045.949 68.8983695
 #> 22           NA          1       192  8.333333  123.520  1.2078326
 #> 16           NA          1       154  6.684028  249.377  2.4385174
-#> 12   Polychaeta          5       144  6.250000  380.515  3.7208421
+#> 12   Polychaeta          4       144  6.250000  380.515  3.7208421
 #> 14           NA          1        68  2.951389   55.395  0.5416765
 ```

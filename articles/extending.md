@@ -290,7 +290,7 @@ prep5 <- dv_prepare(dat, spec5, taxonomy = "table", lineage = ices_lineage,
                     verbose = FALSE)
 c(seven_ranks = nrow(dv_tree(prep)), five_ranks = nrow(dv_tree(prep5)))
 #> seven_ranks  five_ranks 
-#>         702         458
+#>         701         459
 ```
 
 Rank names are WoRMS rank names in lower case, so on the WoRMS path
@@ -303,30 +303,35 @@ once and freezing again.
 Fewer ranks make a simpler figure, but they also merge information:
 without `"species"`, a prey named to species and one named only to its
 genus look the same. Check one more thing on your own prey list: some
-taxa have no entry at one of the requested ranks in WoRMS. Such a prey
-shows an unidentified node at that rank with named taxa beyond it, and
-that node then mixes prey that were not identified with prey that were
-identified but have no taxon at that rank. Find those nodes before you
-report an unidentified share:
+taxa have no entry at one of the requested ranks in WoRMS. By default
+[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)
+fills such a hole, when a finer rank is identified, with
+`"<ancestor> (no <rank>)"`, drawn light gray, so identified prey never
+sit under an unidentified node:
 
 ``` r
 
 tree <- dv_tree(prep)
-named_kids <- tapply(tree$label != "NA", tree$parent, any)
-holes <- tree[tree$label == "NA" & tree$id %in% names(named_kids)[named_kids], ]
+attr(prep, "lineage_gaps")
+#> kingdom  phylum   class   order  family   genus species 
+#>       0       0       1      27       0       0       0
+holes <- tree[grepl("\\(no [a-z]+\\)$", tree$label), ]
 holes[, c("id", "rank", "value_occ")]
-#>                                  id  rank value_occ
-#> 45           Animalia|Priapulida|NA Class         7
-#> 55  Animalia|Annelida|Polychaeta|NA Order       470
-#> 69 Animalia|Chordata|Leptocardii|NA Order         1
+#>                                                      id  rank value_occ
+#> 45            Animalia|Priapulida|Priapulida (no class) Class         1
+#> 55   Animalia|Annelida|Polychaeta|Polychaeta (no order) Order        26
+#> 71 Animalia|Chordata|Leptocardii|Leptocardii (no order) Order         1
+# identified nodes under an unidentified ("NA") node: none
+sum(tree$label != "NA" & grepl("(^|\\|)NA(\\||$)", tree$parent))
+#> [1] 0
 ```
 
-In the ICES data these are the polychaetes, whose unidentified order
-node holds 470 records, some of them in families that WoRMS places in no
-order; a lancelet (Leptocardii) with a family but no order; and
-Priapulida, which have no class. Their `NA` rows in
-[`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md)
-at that rank are not all unidentified prey.
+In the ICES data these are the polychaetes, with 26 records in families
+that WoRMS places in no order; a lancelet (Leptocardii) with a family
+but no order; and Priapulida, which have no class. With `gaps = "keep"`
+these records stay `NA` at that rank and sit under the unidentified node
+instead, which then mixes prey that were not identified with prey that
+were identified but have no taxon at that rank.
 
 ## 5. Colors
 
@@ -338,7 +343,7 @@ names in your own data rather than typing them:
 
 pal <- dv_palette(prep$data$class)
 length(pal)
-#> [1] 21
+#> [1] 22
 head(pal, 6)
 #> Malacostraca    Teleostei     Bivalvia  Cephalopoda   Polychaeta Phaeophyceae 
 #>    "#1f77b4"    "#aec7e8"    "#ff7f0e"    "#ffbb78"    "#2ca02c"    "#98df8a"

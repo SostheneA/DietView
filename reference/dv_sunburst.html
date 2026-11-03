@@ -5,13 +5,17 @@ and the reading order stay the same across covariate cells. Angular
 positions are not fixed: a taxon absent from one cell shifts every wedge
 after it, so compare cells by color, not by angle. Records not identified at
 a rank form a white wedge with a thin gray outline, shown as &quot;Not identified
-at this rank&quot; in the hover text."><meta property="og:description" content="Draws the multi-rank sunburst for one set of records (or a prebuilt tree).
+at this rank&quot; in the hover text. Lineage gaps (identified material in a group
+that has no taxon at that rank, such as &quot;Polychaeta (no order)&quot;; see
+dv_prepare()) form a light gray wedge, described as such in the hover text."><meta property="og:description" content="Draws the multi-rank sunburst for one set of records (or a prebuilt tree).
 Orientation is fixed (sort = FALSE, fixed rotation), so the start angle
 and the reading order stay the same across covariate cells. Angular
 positions are not fixed: a taxon absent from one cell shifts every wedge
 after it, so compare cells by color, not by angle. Records not identified at
 a rank form a white wedge with a thin gray outline, shown as &quot;Not identified
-at this rank&quot; in the hover text."><meta property="og:image" content="https://sosthenea.github.io/DietView/logo.png"></head><body>
+at this rank&quot; in the hover text. Lineage gaps (identified material in a group
+that has no taxon at that rank, such as &quot;Polychaeta (no order)&quot;; see
+dv_prepare()) form a light gray wedge, described as such in the hover text."><meta property="og:image" content="https://sosthenea.github.io/DietView/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -19,7 +23,7 @@ at this rank&quot; in the hover text."><meta property="og:image" content="https:
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,14 +79,16 @@ and the reading order stay the same across covariate cells. Angular
 positions are not fixed: a taxon absent from one cell shifts every wedge
 after it, so compare cells by color, not by angle. Records not identified at
 a rank form a white wedge with a thin gray outline, shown as "Not identified
-at this rank" in the hover text.</p>
+at this rank" in the hover text. Lineage gaps (identified material in a group
+that has no taxon at that rank, such as <code>"Polychaeta (no order)"</code>; see
+<code><a href="dv_prepare.html">dv_prepare()</a></code>) form a light gray wedge, described as such in the hover text.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">dv_sunburst</span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
-<span>  mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"count"</span>, <span class="st">"occurrence"</span>, <span class="st">"weight"</span><span class="op">)</span>,</span>
+<span>  mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"occurrence"</span>, <span class="st">"weight"</span>, <span class="st">"count"</span><span class="op">)</span>,</span>
 <span>  ranks <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  weight_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  count_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -103,7 +109,7 @@ and <code>weight_col</code>/<code>count_col</code>).</p></dd>
 
 
 <dt id="arg-mode">mode<a class="anchor" aria-label="anchor" href="#arg-mode"></a></dt>
-<dd><p>One of "count", "occurrence", "weight".</p></dd>
+<dd><p>One of "occurrence" (default), "weight", "count".</p></dd>
 
 
 <dt id="arg-ranks-weight-col-count-col">ranks, weight_col, count_col<a class="anchor" aria-label="anchor" href="#arg-ranks-weight-col-count-col"></a></dt>
@@ -113,7 +119,9 @@ and <code>weight_col</code>/<code>count_col</code>).</p></dd>
 <dt id="arg-colors">colors<a class="anchor" aria-label="anchor" href="#arg-colors"></a></dt>
 <dd><p>Optional named color vector, keyed by node <code>id</code> (as from
 <code><a href="dv_palette_tree.html">dv_palette_tree()</a></code>) or by taxon label (as from <code><a href="dv_palette.html">dv_palette()</a></code>); ids are
-looked up first. Default from <code><a href="dv_palette.html">dv_palette()</a></code>.</p></dd>
+looked up first. Default: <code><a href="dv_palette_tree.html">dv_palette_tree()</a></code> of the tree drawn, one hue
+per phylum with lighter tints below it. To keep colors identical across
+panels, build one palette from the pooled tree and pass it to each.</p></dd>
 
 
 <dt id="arg-rotation">rotation<a class="anchor" aria-label="anchor" href="#arg-rotation"></a></dt>
@@ -133,12 +141,12 @@ looked up first. Default from <code><a href="dv_palette.html">dv_palette()</a></
     <p>Wedges are sized from the raw values of the leaves (<code>branchvalues = "remainder"</code>), and plotly sums them upward, so a parent always equals the sum
 of its children. Because every rank has the same denominator, the angles are
 the within-rank shares shown in the hover text.</p>
-<p>Three modes:</p><ul><li><p><code>count</code>: sized by the number of distinct prey items.</p></li>
-<li><p><code>occurrence</code>: sized by prey records (or by individuals, if the tree
-was built with a count column); hover shows the number and the share of all
-records at that rank.</p></li>
+<p>Three modes:</p><ul><li><p><code>occurrence</code> (default): sized by prey records (or by individuals, if
+the tree was built with a count column); hover shows the number and the
+share of all records at that rank.</p></li>
 <li><p><code>weight</code>: sized by weight; hover shows the weight and the weight share
 at that rank.</p></li>
+<li><p><code>count</code>: sized by the number of distinct prey items.</p></li>
 </ul></div>
 
     <div class="section level2">
@@ -162,8 +170,8 @@ at that rank.</p></li>
 <span class="r-in"><span><span class="va">prep_cod</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span></span>
 <span class="r-in"><span>                       verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_tree.html">dv_tree</a></span><span class="op">(</span><span class="va">prep_cod</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">dv_sunburst</span><span class="op">(</span><span class="va">tree</span>, title <span class="op">=</span> <span class="st">"Atlantic cod"</span><span class="op">)</span>   <span class="co"># mode = "count"</span></span></span>
-<span class="r-in"><span><span class="va">p_occ</span> <span class="op">&lt;-</span> <span class="fu">dv_sunburst</span><span class="op">(</span><span class="va">tree</span>, mode <span class="op">=</span> <span class="st">"occurrence"</span>, title <span class="op">=</span> <span class="st">"Atlantic cod"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">dv_sunburst</span><span class="op">(</span><span class="va">tree</span>, title <span class="op">=</span> <span class="st">"Atlantic cod"</span><span class="op">)</span>   <span class="co"># mode = "occurrence"</span></span></span>
+<span class="r-in"><span><span class="va">p_w</span> <span class="op">&lt;-</span> <span class="fu">dv_sunburst</span><span class="op">(</span><span class="va">tree</span>, mode <span class="op">=</span> <span class="st">"weight"</span>, title <span class="op">=</span> <span class="st">"Atlantic cod"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># print(p)  # opens the interactive plotly sunburst</span></span></span>
 </code></pre></div>
     </div>

@@ -3,11 +3,15 @@
 of that hue for its descendants, unidentified nodes white. Colors are keyed
 by node id, so a taxon keeps its color in every panel built from trees of
 the same ranks; pass the result as colors to dv_sunburst(). Nodes above
-base_rank, and nodes below an unidentified base_rank node, are gray."><meta property="og:description" content="One hue per node at base_rank (for example one per phylum), lighter tints
+base_rank, and nodes below an unidentified base_rank node, are gray. A
+lineage gap node (e.g. &quot;Polychaeta (no order)&quot;) is light gray itself, while
+its descendants keep the tint of their base_rank ancestor."><meta property="og:description" content="One hue per node at base_rank (for example one per phylum), lighter tints
 of that hue for its descendants, unidentified nodes white. Colors are keyed
 by node id, so a taxon keeps its color in every panel built from trees of
 the same ranks; pass the result as colors to dv_sunburst(). Nodes above
-base_rank, and nodes below an unidentified base_rank node, are gray."><meta property="og:image" content="https://sosthenea.github.io/DietView/logo.png"></head><body>
+base_rank, and nodes below an unidentified base_rank node, are gray. A
+lineage gap node (e.g. &quot;Polychaeta (no order)&quot;) is light gray itself, while
+its descendants keep the tint of their base_rank ancestor."><meta property="og:image" content="https://sosthenea.github.io/DietView/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -15,7 +19,7 @@ base_rank, and nodes below an unidentified base_rank node, are gray."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +73,9 @@ base_rank, and nodes below an unidentified base_rank node, are gray."><meta prop
 of that hue for its descendants, unidentified nodes white. Colors are keyed
 by node <code>id</code>, so a taxon keeps its color in every panel built from trees of
 the same ranks; pass the result as <code>colors</code> to <code><a href="dv_sunburst.html">dv_sunburst()</a></code>. Nodes above
-<code>base_rank</code>, and nodes below an unidentified <code>base_rank</code> node, are gray.</p>
+<code>base_rank</code>, and nodes below an unidentified <code>base_rank</code> node, are gray. A
+lineage gap node (e.g. <code>"Polychaeta (no order)"</code>) is light gray itself, while
+its descendants keep the tint of their <code>base_rank</code> ancestor.</p>
     </div>
 
     <div class="section level2">

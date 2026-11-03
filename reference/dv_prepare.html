@@ -21,7 +21,7 @@ unidentified category below the deepest identified rank – never dropped."><met
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,6 +91,9 @@ unidentified category below the deepest identified rank – never dropped.</p>
 <span>  cache_dir <span class="op">=</span> <span class="fu">tools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/tools/userdir.html" class="external-link">R_user_dir</a></span><span class="op">(</span><span class="st">"DietView"</span>, <span class="st">"cache"</span><span class="op">)</span>,</span>
 <span>  cache_max_age <span class="op">=</span> <span class="fl">180</span>,</span>
 <span>  strict_covariates <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  stomachs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  empty_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  gaps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"label"</span>, <span class="st">"keep"</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -137,6 +140,34 @@ declared covariate missing from <code>data</code> is an error; if <code>FALSE</c
 from the returned spec with a warning.</p></dd>
 
 
+<dt id="arg-stomachs">stomachs<a class="anchor" aria-label="anchor" href="#arg-stomachs"></a></dt>
+<dd><p>Optional data.frame with one row per examined stomach, empty
+ones included (e.g. <a href="ices_stomachs.html">ices_stomachs</a>): the stomach column of the spec, plus
+optionally the predator and covariate columns and an empty flag (see
+<code>empty_col</code>). It is stored as <code>prep$stomachs</code> and lets <code><a href="dv_summary.html">dv_summary()</a></code>
+report vacuity, <code><a href="dv_fo_table.html">dv_fo_table()</a></code> use all examined stomachs as the
+denominator, and <code><a href="dv_matrix.html">dv_matrix()</a></code> add rows for empty stomachs. Without it, a
+long prey table holds only non-empty stomachs: %FO is over non-empty
+stomachs and the matrix has no empty rows. Stomachs of predators absent
+from <code>data</code> are ignored, so the full sampling frame can be passed with a
+subset of the predators.</p></dd>
+
+
+<dt id="arg-empty-col">empty_col<a class="anchor" aria-label="anchor" href="#arg-empty-col"></a></dt>
+<dd><p>Optional column of <code>stomachs</code> flagging empty stomachs
+(logical, or 0/1). With it, a stomach without records counts as empty only
+when flagged; one that is neither flagged nor in <code>data</code> has an unknown
+status and is left out of every count. Without it, every stomach of
+<code>stomachs</code> without a record in <code>data</code> counts as empty.</p></dd>
+
+
+<dt id="arg-gaps">gaps<a class="anchor" aria-label="anchor" href="#arg-gaps"></a></dt>
+<dd><p>How to show a rank that has no taxon in the lineage between two
+identified ranks: <code>"label"</code> (default) fills it with
+<code>"&lt;ancestor&gt; (no &lt;rank&gt;)"</code>, e.g. <code>"Polychaeta (no order)"</code>; <code>"keep"</code> leaves
+it <code>NA</code>, so its records sit under the unidentified node of that rank.</p></dd>
+
+
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Print progress and the validation summary.</p></dd>
 
@@ -147,7 +178,11 @@ from the returned spec with a warning.</p></dd>
 any dropped covariates), <code>ranks</code>, <code>taxonomy_source</code> (the taxonomy path
 actually used) and <code>taxonomy_log</code>. When <code>taxonomy = "worms"</code>,
 <code>taxonomy_log</code> is the per-prey provenance table, with the attributes
-<code>retrieved</code> (time of the run) and <code>worrms_version</code>; otherwise it is <code>NULL</code>.</p>
+<code>retrieved</code> (time of the run) and <code>worrms_version</code>; otherwise it is <code>NULL</code>.
+The attribute <code>lineage_gaps</code> is a named integer vector: the number of
+records whose rank was filled as a lineage gap, per rank. With <code>stomachs</code>,
+the list also holds <code>stomachs</code>: the examined stomachs, with their stomach,
+predator and covariate columns and a logical <code>empty_flag</code> column.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -155,6 +190,17 @@ actually used) and <code>taxonomy_log</code>. When <code>taxonomy = "worms"</cod
 one and by its own prey name otherwise, so records without an AphiaID never
 share a lineage by accident. Records with neither key stay fully
 unidentified, with a warning.</p>
+<p>Some groups have no taxon at a rank in WoRMS: several polychaete families
+have no order, lancelets have no order and Priapulida have no class. A record
+identified below such a rank would otherwise sit under an <code>"NA"</code> node there
+and look unidentified. With <code>gaps = "label"</code> (the default) that empty rank is
+filled with <code>"&lt;nearest named ancestor&gt; (no &lt;rank&gt;)"</code>, e.g.
+<code>"Polychaeta (no order)"</code> above Opheliidae; the sunburst draws it gray, not
+white, and its records no longer inflate the unidentified share of that
+rank. Only ranks with an identified rank below them are filled: a record
+identified to class and no further keeps <code>NA</code> at order, family, genus and
+species, because it is truly unidentified there. The number of filled cells
+per rank is stored in the attribute <code>lineage_gaps</code>.</p>
 <p>With <code>taxonomy = "table"</code>, the lineage table must hold each key once (a
 duplicated key is an error), and prey keys absent from the table are reported
 with a warning before their records are treated as fully unidentified.</p>

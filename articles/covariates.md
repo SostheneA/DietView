@@ -203,7 +203,7 @@ gives one hue per phylum and lighter tints to the taxa below it:
 tree_all <- dv_tree(prep)
 pal <- dv_palette_tree(tree_all)
 length(pal)
-#> [1] 653
+#> [1] 652
 ```
 
 The palette is keyed by node, so it works for any tree built from a
@@ -257,12 +257,12 @@ side_by_side <- function(ta, tb, names, rank = "Class") {
   m[order(-m[[2]]), ][1:5, ]
 }
 side_by_side(t22, t34, c("2022", "2023_24"))
-#>          label pct_occ_2022 pct_w_2022 pct_occ_2023_24 pct_w_2023_24
-#> 5 Malacostraca         57.7       68.6            38.4          18.1
-#> 9    Teleostei         19.5       22.4            29.6          73.2
-#> 8   Polychaeta          8.2        4.4             5.6           3.7
-#> 7  Ophiuroidea          4.8        1.9             1.3           0.1
-#> 1     Bivalvia          2.0        0.1             1.0           0.1
+#>           label pct_occ_2022 pct_w_2022 pct_occ_2023_24 pct_w_2023_24
+#> 5  Malacostraca         57.7       68.6            38.4          18.1
+#> 10    Teleostei         19.5       22.4            29.6          73.2
+#> 8    Polychaeta          8.2        4.4             5.6           3.7
+#> 7   Ophiuroidea          4.8        1.9             1.3           0.1
+#> 1      Bivalvia          2.0        0.1             1.0           0.1
 ```
 
 By weight, crustaceans fall from 68.6% of the cod diet in 2022 to 18.1%
@@ -437,7 +437,7 @@ It has nothing to do with the covariates:
 c(period_na_records    = sum(is.na(d$period)),
   class_na_records_cod = sum(is.na(cod$class)))
 #>    period_na_records class_na_records_cod 
-#>                   30                  424
+#>                   30                  423
 ```
 
 Report the first as a sample size (“13 cod records from 2021 were not

@@ -30,6 +30,9 @@ dv_prepare(
   cache_dir = tools::R_user_dir("DietView", "cache"),
   cache_max_age = 180,
   strict_covariates = TRUE,
+  stomachs = NULL,
+  empty_col = NULL,
+  gaps = c("label", "keep"),
   verbose = TRUE
 )
 ```
@@ -78,6 +81,41 @@ dv_prepare(
   if `TRUE` (default) a declared covariate missing from `data` is an
   error; if `FALSE` it is dropped from the returned spec with a warning.
 
+- stomachs:
+
+  Optional data.frame with one row per examined stomach, empty ones
+  included (e.g.
+  [ices_stomachs](https://sosthenea.github.io/DietView/reference/ices_stomachs.md)):
+  the stomach column of the spec, plus optionally the predator and
+  covariate columns and an empty flag (see `empty_col`). It is stored as
+  `prep$stomachs` and lets
+  [`dv_summary()`](https://sosthenea.github.io/DietView/reference/dv_summary.md)
+  report vacuity,
+  [`dv_fo_table()`](https://sosthenea.github.io/DietView/reference/dv_fo_table.md)
+  use all examined stomachs as the denominator, and
+  [`dv_matrix()`](https://sosthenea.github.io/DietView/reference/dv_matrix.md)
+  add rows for empty stomachs. Without it, a long prey table holds only
+  non-empty stomachs: %FO is over non-empty stomachs and the matrix has
+  no empty rows. Stomachs of predators absent from `data` are ignored,
+  so the full sampling frame can be passed with a subset of the
+  predators.
+
+- empty_col:
+
+  Optional column of `stomachs` flagging empty stomachs (logical, or
+  0/1). With it, a stomach without records counts as empty only when
+  flagged; one that is neither flagged nor in `data` has an unknown
+  status and is left out of every count. Without it, every stomach of
+  `stomachs` without a record in `data` counts as empty.
+
+- gaps:
+
+  How to show a rank that has no taxon in the lineage between two
+  identified ranks: `"label"` (default) fills it with
+  `"<ancestor> (no <rank>)"`, e.g. `"Polychaeta (no order)"`; `"keep"`
+  leaves it `NA`, so its records sit under the unidentified node of that
+  rank.
+
 - verbose:
 
   Print progress and the validation summary.
@@ -89,7 +127,11 @@ any dropped covariates), `ranks`, `taxonomy_source` (the taxonomy path
 actually used) and `taxonomy_log`. When `taxonomy = "worms"`,
 `taxonomy_log` is the per-prey provenance table, with the attributes
 `retrieved` (time of the run) and `worrms_version`; otherwise it is
-`NULL`.
+`NULL`. The attribute `lineage_gaps` is a named integer vector: the
+number of records whose rank was filled as a lineage gap, per rank. With
+`stomachs`, the list also holds `stomachs`: the examined stomachs, with
+their stomach, predator and covariate columns and a logical `empty_flag`
+column.
 
 ## Details
 
@@ -97,6 +139,19 @@ With `taxonomy = "worms"`, each record is keyed by its AphiaID when it
 has one and by its own prey name otherwise, so records without an
 AphiaID never share a lineage by accident. Records with neither key stay
 fully unidentified, with a warning.
+
+Some groups have no taxon at a rank in WoRMS: several polychaete
+families have no order, lancelets have no order and Priapulida have no
+class. A record identified below such a rank would otherwise sit under
+an `"NA"` node there and look unidentified. With `gaps = "label"` (the
+default) that empty rank is filled with
+`"<nearest named ancestor> (no <rank>)"`, e.g. `"Polychaeta (no order)"`
+above Opheliidae; the sunburst draws it gray, not white, and its records
+no longer inflate the unidentified share of that rank. Only ranks with
+an identified rank below them are filled: a record identified to class
+and no further keeps `NA` at order, family, genus and species, because
+it is truly unidentified there. The number of filled cells per rank is
+stored in the attribute `lineage_gaps`.
 
 With `taxonomy = "table"`, the lineage table must hold each key once (a
 duplicated key is an error), and prey keys absent from the table are

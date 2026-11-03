@@ -165,9 +165,9 @@ cls  <- dv_rank_table(tree, "Class")
 head(cls, 8)
 #>           label value_item value_occ   pct_occ    value_w     pct_w
 #> 23 Malacostraca         92      2085 24.443142  2948.8905 13.466316
-#> 29    Teleostei         64      1614 18.921454 14366.4605 65.605452
-#> 47           NA          1      1553 18.206331  1115.2120  5.092694
-#> 20   Polychaeta         30       758  8.886284   584.2752  2.668134
+#> 29    Teleostei         63      1614 18.921454 14366.4605 65.605452
+#> 48           NA          1      1553 18.206331  1115.2120  5.092694
+#> 20   Polychaeta         29       758  8.886284   584.2752  2.668134
 #> 30           NA          1       713  8.358734  1328.6695  6.067463
 #> 25           NA          1       662  7.760844   501.2407  2.288951
 #> 36  Ophiuroidea          4       493  5.779601   526.9670  2.406432
@@ -190,7 +190,7 @@ The tree says which:
 na_cls <- tree[tree$rank == "Class" & tree$label == "NA", c("parent", "value_occ", "pct_occ")]
 head(na_cls[order(-na_cls$value_occ), ], 3)
 #>                 parent value_occ   pct_occ
-#> 47               NA|NA      1553 18.206331
+#> 48               NA|NA      1553 18.206331
 #> 30   Animalia|Chordata       713  8.358734
 #> 25 Animalia|Arthropoda       662  7.760844
 ```
@@ -226,7 +226,7 @@ head(fo_cod, 4)
 #>    rank        taxon n_stomachs n_total pct_fo
 #> 1 class Malacostraca        618     991  62.36
 #> 2 class    Teleostei        332     991  33.50
-#> 3 class           NA        323     991  32.59
+#> 3 class           NA        322     991  32.49
 #> 4 class   Polychaeta        136     991  13.72
 ```
 
@@ -246,7 +246,7 @@ na_share <- sapply(prep$ranks, function(r) {
 })
 na_share
 #> kingdom  phylum   class   order  family   genus species 
-#>    18.2    18.2    35.7    52.0    64.2    76.3    81.6
+#>    18.2    18.2    35.7    51.6    64.2    76.3    81.6
 ```
 
 18.2% of the records are unidentified even at kingdom: that is the

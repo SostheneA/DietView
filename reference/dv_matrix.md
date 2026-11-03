@@ -16,7 +16,8 @@ dv_matrix(
   unit = NULL,
   rank = NULL,
   currency = c("weight", "occurrence", "fo"),
-  include_na = TRUE
+  include_na = TRUE,
+  include_empty = FALSE
 )
 ```
 
@@ -40,9 +41,9 @@ dv_matrix(
 
 - rank:
 
-  Optional rank (one of `prep$ranks`, e.g. `"class"`): columns are then
-  the taxa at that rank, plus the unidentified column (`"NA"`) when
-  `include_na = TRUE`.
+  Optional rank (one of `prep$ranks`, e.g. `"class"`; case-insensitive):
+  columns are then the taxa at that rank, plus the unidentified column
+  (`"NA"`) when `include_na = TRUE`.
 
 - currency:
 
@@ -52,6 +53,14 @@ dv_matrix(
 - include_na:
 
   Keep an explicit unidentified column.
+
+- include_empty:
+
+  Add an all-zero row for every empty stomach (default `FALSE`). Needs a
+  stomach table in `prep` (see
+  [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md))
+  and `unit` to be the stomach column. Without a stomach table the
+  matrix holds only stomachs with records.
 
 ## Value
 
@@ -80,7 +89,7 @@ prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 m <- dv_matrix(prep_cod, currency = "occurrence")
 dim(m)
-#> [1] 991 145
+#> [1] 991 143
 m_class <- dv_matrix(prep_cod, rank = "class", currency = "weight")
 m_class[1:5, 1:4]
 #>         Bivalvia Cephalopoda Gastropoda Gephyrea

@@ -62,9 +62,12 @@ run_dietview(dv_prepare(cod, spec_cod, taxonomy = "table",
                         lineage = ices_lineage, verbose = FALSE))
 ```
 
-Records from 2020 and 2021 have no period; the app shows them in a
-separate “NA” panel when you facet by `period`. That `NA` is a missing
-stratum, not an unidentified prey.
+Records from 2020 and 2021 have no period. By default the app leaves
+them out of the panels when you facet by `period` (they stay in the
+unfaceted view); `run_dietview(prep, na_strata = "show")` draws them in
+a separate “NA” panel instead, as `dv_build_html(na_strata = "show")`
+does in the dashboard. That `NA` is a missing stratum, not an
+unidentified prey.
 
 `run_dietview(prep, currency = "numbers")` sizes the record view by the
 number of individuals (`prey_count`) instead of the number of records.

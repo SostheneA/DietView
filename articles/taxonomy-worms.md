@@ -103,6 +103,7 @@ Each distinct prey gets one row in the log, with a `match_type`:
 | `id` | The AphiaID is accepted in WoRMS | Nothing, unless `name_check` is `"differs"` |
 | `id_synonym` | The AphiaID is unaccepted; its accepted ID was used | Check that the accepted name is the taxon you meant |
 | `id_unchecked` | WoRMS could not be reached to check the ID | Run again later |
+| `id_fallback_name` | WoRMS does not know the AphiaID; the prey name was matched instead | Check the ID in your data, and that the name is the taxon you meant |
 | `exact` | No ID; the name matched exactly | Nothing |
 | `fuzzy` | No ID; the name was matched by TAXAMATCH, which tolerates misspellings | Check every one: a near match can be a different taxon |
 | `unresolved` | No match | Correct the name, or accept that the prey stays unidentified |
@@ -111,81 +112,107 @@ Each distinct prey gets one row in the log, with a `match_type`:
 
 Every ICES prey record carries an AphiaID, so a lookup on these data
 runs almost entirely through the first two rows of the table. Most IDs
-are accepted (`id`). Some are not. The frozen lineage shows two pairs of
-names that differ by one letter:
+are accepted (`id`). Some are not. The package ships the lineage twice:
+`ices_lineage_raw` as the stomachr lookup built it, from the AphiaIDs as
+reported, and `ices_lineage`, where unaccepted AphiaIDs carry the
+lineage of their accepted record.
+[`dv_lineage_check()`](https://sosthenea.github.io/DietView/reference/dv_lineage_check.md)
+finds the spelling variants in the raw table without going online:
 
 ``` r
 
+dv_lineage_check(ices_lineage_raw)[, c("check", "rank", "parent", "label", "variant")]
+#>            check    rank       parent                    label
+#> 1 near_duplicate   genus Aphroditidae                Aphrodita
+#> 2 near_duplicate species  Trisopterus      Trisopterus esmarki
+#> 3 near_duplicate species     Lumpenus Lumpenus lampetraeformis
+#>                    variant
+#> 1                Aphrodite
+#> 2     Trisopterus esmarkii
+#> 3 Lumpenus lampretaeformis
 pairs <- c("Aphrodita aculeata", "Aphrodite aculeata",
-           "Trisopterus esmarkii", "Trisopterus esmarki")
-lin_pairs <- ices_lineage[ices_lineage$scientific_name %in% pairs,
-                          c("prey_aphia_id", "scientific_name", "family", "species")]
+           "Trisopterus esmarkii", "Trisopterus esmarki",
+           "Lumpenus lampretaeformis", "Lumpenus lampetraeformis")
+lin_pairs <- ices_lineage_raw[ices_lineage_raw$scientific_name %in% pairs,
+                              c("prey_aphia_id", "scientific_name", "family", "species")]
 lin_pairs$n_records <- as.vector(table(dat$prey_aphia_id)[as.character(lin_pairs$prey_aphia_id)])
 lin_pairs
-#>     prey_aphia_id      scientific_name       family              species
-#> 24         126444 Trisopterus esmarkii      Gadidae Trisopterus esmarkii
-#> 139        129840   Aphrodita aculeata Aphroditidae   Aphrodita aculeata
-#> 310        231869   Aphrodite aculeata Aphroditidae   Aphrodite aculeata
-#> 311        400596  Trisopterus esmarki      Gadidae  Trisopterus esmarki
-#>     n_records
-#> 24         35
-#> 139        47
-#> 310        31
-#> 311        73
+#>     prey_aphia_id          scientific_name       family
+#> 24         126444     Trisopterus esmarkii      Gadidae
+#> 139        129840       Aphrodita aculeata Aphroditidae
+#> 190        154675 Lumpenus lampretaeformis   Lumpenidae
+#> 310        231869       Aphrodite aculeata Aphroditidae
+#> 311        400596      Trisopterus esmarki      Gadidae
+#> 317        298205 Lumpenus lampetraeformis   Lumpenidae
+#>                      species n_records
+#> 24      Trisopterus esmarkii        35
+#> 139       Aphrodita aculeata        47
+#> 190 Lumpenus lampretaeformis        NA
+#> 310       Aphrodite aculeata        31
+#> 311      Trisopterus esmarki        73
+#> 317 Lumpenus lampetraeformis         1
 table(dat$prey_name[dat$prey_name %in% pairs], dat$country[dat$prey_name %in% pairs])
-#>                       
-#>                        DE DK NL NO SE
-#>   Aphrodita aculeata    8  0 12  0 27
-#>   Aphrodite aculeata    0 31  0  0  0
-#>   Trisopterus esmarki   0 73  0  0  0
-#>   Trisopterus esmarkii  9  0 21  1  4
+#>                           
+#>                            DE DK NL NO SE
+#>   Aphrodita aculeata        8  0 12  0 27
+#>   Aphrodite aculeata        0 31  0  0  0
+#>   Lumpenus lampetraeformis  0  1  0  0  0
+#>   Trisopterus esmarki       0 73  0  0  0
+#>   Trisopterus esmarkii      9  0 21  1  4
 ```
 
-Each pair is one species (a sea mouse and Norway pout) under two
-AphiaIDs, and one spelling of each comes from a single country. WoRMS
-keeps variant spellings like these as unaccepted names with AphiaIDs of
+Each pair is one species (a sea mouse, Norway pout and the snake blenny)
+under two AphiaIDs, and the variant spellings come from few countries.
+WoRMS keeps spellings like these as unaccepted names with AphiaIDs of
 their own. A live lookup reads each AphiaID’s record; when it is
 unaccepted, it follows it to the accepted AphiaID, logs it as
-`id_synonym` and gives both spellings the same lineage. The frozen
-`ices_lineage` was built from the AphiaIDs as reported, so it keeps them
-apart, and the species ring counts each species twice. It matters for
-any species-level statement:
+`id_synonym` and gives both spellings the same lineage. A lineage frozen
+from the AphiaIDs as reported keeps them apart, and the species ring
+counts each species twice. It matters for any species-level statement:
 
 ``` r
 
 cod <- dat[dat$predator_common == "Atlantic cod", ]
-prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+prep_raw <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage_raw,
                        verbose = FALSE)
-fo <- dv_fo_table(prep_cod, rank = "species")
-fo[fo$taxon %in% pairs, ]
-#>       rank                taxon n_stomachs n_total pct_fo
-#> 5  species   Aphrodita aculeata         42     991   4.24
-#> 6  species   Aphrodite aculeata         25     991   2.52
-#> 9  species  Trisopterus esmarki         21     991   2.12
-#> 14 species Trisopterus esmarkii         15     991   1.51
+fo_split <- dv_fo_table(prep_raw, rank = "species")
+fo_split[fo_split$taxon %in% pairs, ]
+#>       rank                    taxon n_stomachs n_total pct_fo
+#> 5  species       Aphrodita aculeata         42     991   4.24
+#> 6  species       Aphrodite aculeata         25     991   2.52
+#> 9  species      Trisopterus esmarki         21     991   2.12
+#> 14 species     Trisopterus esmarkii         15     991   1.51
+#> 57 species Lumpenus lampetraeformis          1     991   0.10
 ```
 
-When you work offline, the same correction is one line per pair, made on
-your copy of the data before
-[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md).
-Keep it in the script, so the change is visible:
+`ices_lineage` was corrected once, in `data-raw/ices_data.R`, by giving
+each unaccepted AphiaID the lineage of its accepted record; the keys are
+unchanged, so the same records join to the accepted name and the check
+is clean:
 
 ``` r
 
-accepted <- c("231869" = 129840L,   # Aphrodite aculeata  -> Aphrodita aculeata
-              "400596" = 126444L)   # Trisopterus esmarki -> Trisopterus esmarkii
-fix <- as.character(cod$prey_aphia_id) %in% names(accepted)
-cod$prey_aphia_id[fix] <- accepted[as.character(cod$prey_aphia_id[fix])]
-cod$prey_name[fix] <- ices_lineage$scientific_name[
-  match(cod$prey_aphia_id[fix], ices_lineage$prey_aphia_id)]
+nrow(dv_lineage_check(ices_lineage))
+#> [1] 0
+ices_lineage[ices_lineage$prey_aphia_id %in% c(231869, 400596, 298205),
+             c("prey_aphia_id", "scientific_name", "species")]
+#>     prey_aphia_id          scientific_name                  species
+#> 310        231869       Aphrodita aculeata       Aphrodita aculeata
+#> 311        400596     Trisopterus esmarkii     Trisopterus esmarkii
+#> 317        298205 Lumpenus lampretaeformis Lumpenus lampretaeformis
 prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 fo <- dv_fo_table(prep_cod, rank = "species")
 fo[fo$taxon %in% pairs, ]
-#>      rank                taxon n_stomachs n_total pct_fo
-#> 3 species   Aphrodita aculeata         67     991   6.76
-#> 6 species Trisopterus esmarkii         36     991   3.63
+#>       rank                    taxon n_stomachs n_total pct_fo
+#> 3  species       Aphrodita aculeata         67     991   6.76
+#> 6  species     Trisopterus esmarkii         36     991   3.63
+#> 55 species Lumpenus lampretaeformis          1     991   0.10
 ```
+
+With your own frozen table, make the same correction in the script that
+builds it, one line per pair, and keep the comment, so the change is
+visible.
 
 Merged, the sea mouse is found in 67 cod stomachs (6.76%) and ranks
 number 2 among the named species of the cod diet by frequency of

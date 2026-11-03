@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,11 +95,12 @@
 per predator, modeled on the diet dashboard built for the southern Gulf
 of St. Lawrence. The landing page shows one card per predator, with its
 stomach count and, if you give a length column, its length range. Each
-predator page shows the diet in up to three bands: distinct prey items,
-prey records (% of all records) and weight (% of total weight). Every
-band has the same layout: one sunburst for all the predator’s records,
-one row of sunbursts per covariate you choose, and, if you ask for them,
-crossed rows.</p>
+predator page shows the diet in bands of sunbursts: by default prey
+records (% of all records) and weight (% of total weight); add
+<code>bands = "count"</code> for distinct prey items. Every band has the
+same layout: one sunburst for all the predator’s records, one row of
+sunbursts per covariate you choose, and, if you ask for them, crossed
+rows.</p>
 <p>The data are the public ICES stomach-content extract that ships with
 the package (ICES Stomach Content Database, ICES, Copenhagen; extract
 distributed with the R package stomachr, Lindmark 2026; see
@@ -268,9 +269,13 @@ panels: five cod length classes in three regions give up to fifteen
 sunbursts per band, and some of them rest on few stomachs (see
 <code>stom</code> above). Each panel prints its stomach count; read it
 before the sunburst. With these four predators and this crossing, the
-file holds several hundred sunbursts: it took about a minute to build
-and weighs about 20 MB. Drop a band or the crossing for a lighter
-file.</p>
+file holds several hundred sunbursts. They are stored as data and drawn
+the first time a predator’s tab is opened, so the file stays small: the
+full ICES dashboard (22 predators, three strata, two bands) weighs about
+4 MB, most of it the plotly.js library, and builds in seconds. With
+<code>self_contained = FALSE</code>, plotly.js goes to a
+<code>lib</code> folder next to the file instead, and the HTML itself is
+a few hundred kB.</p>
 <p>To show individuals (%N) rather than records in the second band, add
 <code>currency = "numbers"</code>. Records without a count, which here
 include almost all the unidentified material, then contribute nothing to

@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -141,9 +141,13 @@ covariates:</p>
 <span>                    covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"quarter"</span>, <span class="st">"period"</span>, <span class="st">"size_bin"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/run_dietview.html">run_dietview</a></span><span class="op">(</span><span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec_cod</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>,</span>
 <span>                        lineage <span class="op">=</span> <span class="va">ices_lineage</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Records from 2020 and 2021 have no period; the app shows them in a
-separate “NA” panel when you facet by <code>period</code>. That
-<code>NA</code> is a missing stratum, not an unidentified prey.</p>
+<p>Records from 2020 and 2021 have no period. By default the app leaves
+them out of the panels when you facet by <code>period</code> (they stay
+in the unfaceted view);
+<code>run_dietview(prep, na_strata = "show")</code> draws them in a
+separate “NA” panel instead, as
+<code>dv_build_html(na_strata = "show")</code> does in the dashboard.
+That <code>NA</code> is a missing stratum, not an unidentified prey.</p>
 <p><code>run_dietview(prep, currency = "numbers")</code> sizes the
 record view by the number of individuals (<code>prey_count</code>)
 instead of the number of records. In the ICES data almost all the

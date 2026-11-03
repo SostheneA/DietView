@@ -29,7 +29,9 @@ spec <- dv_spec(
   digestion      = "digestion_label",
   covariates     = c("region", "year", "quarter")
 )
+# ices_stomachs lists every examined stomach, empty ones included
 prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+                   stomachs = ices_stomachs, empty_col = "stomach_empty",
                    verbose = FALSE)
 ```
 
@@ -47,11 +49,11 @@ s$total_weight <- round(s$total_weight)
 s
 #>            predator_common n_stomachs n_records n_taxa records_per_stomach
 #> 1        Atlantic mackerel       1048      1593     10                1.52
-#> 2             Atlantic cod        991      2304    144                2.32
-#> 3                  Whiting        892      1605    101                1.80
+#> 2             Atlantic cod        991      2304    142                2.32
+#> 3                  Whiting        892      1605     99                1.80
 #> 4          European plaice        729      1890     69                2.59
 #> 5  Atlantic horse mackerel        135       245     24                1.81
-#> 6            European hake        106       154     23                1.45
+#> 6            European hake        106       154     22                1.45
 #> 7              Tub gurnard         90       187     37                2.08
 #> 8             Thorny skate         48       184     27                3.83
 #> 9                   Turbot         47        87     21                1.85
@@ -68,29 +70,29 @@ s
 #> 20              Blonde ray          2         3      2                1.50
 #> 21           Smooth-hounds          1         1      1                1.00
 #> 22     Starry smooth-hound          1         3      2                3.00
-#>    total_weight
-#> 1          2064
-#> 2         10227
-#> 3          2028
-#> 4          1021
-#> 5           105
-#> 6          1863
-#> 7           711
-#> 8           117
-#> 9           766
-#> 10          201
-#> 11         1699
-#> 12           20
-#> 13           41
-#> 14           32
-#> 15          146
-#> 16          102
-#> 17          367
-#> 18          226
-#> 19          126
-#> 20            1
-#> 21           12
-#> 22           24
+#>    total_weight n_examined n_empty pct_vacuity
+#> 1          2064       1051       3         0.3
+#> 2         10227       1059      68         6.4
+#> 3          2028       1186     294        24.8
+#> 4          1021       1367     638        46.7
+#> 5           105        196      61        31.1
+#> 6          1863        138      32        23.2
+#> 7           711        112      22        19.6
+#> 8           117         53       5         9.4
+#> 9           766         81      34        42.0
+#> 10          201         37      11        29.7
+#> 11         1699         25       5        20.0
+#> 12           20         21       1         4.8
+#> 13           41         17       2        11.8
+#> 14           32         17       4        23.5
+#> 15          146         13       1         7.7
+#> 16          102         21      10        47.6
+#> 17          367          9       0         0.0
+#> 18          226          6       2        33.3
+#> 19          126          3       1        33.3
+#> 20            1          4       2        50.0
+#> 21           12          1       0         0.0
+#> 22           24          1       0         0.0
 ```
 
 The sample is very uneven: four predators (mackerel, cod, whiting and
@@ -113,23 +115,30 @@ head(dv_summary(prep, rank = "family")[, c("predator_common", "n_stomachs", "n_t
 #> 4   European plaice        729     37
 ```
 
-Cod has 144 distinct prey names but 67 families. Mackerel, with the
+Cod has 142 distinct prey names but 67 families. Mackerel, with the
 largest number of stomachs, has only 10 prey names: most of its records
 are “Unidentified material”, “Crustacea”, “Pisces” or sandeels
 (Ammodytidae).
 
 A table of prey records holds only stomachs that contained something, so
-it cannot give the share of empty stomachs. That has to come from the
-full list of stomachs examined, which the package ships as
-`ices_stomachs`:
+it cannot give the share of empty stomachs. That comes from the full
+list of stomachs examined, `ices_stomachs`, passed to
+[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)
+above with `stomachs` and `empty_col`.
+[`dv_summary()`](https://sosthenea.github.io/DietView/reference/dv_summary.md)
+then adds the number of stomachs examined, the number found empty and
+the vacuity (percentage empty). A stomach with neither a record nor an
+“empty” flag has an unknown status and is left out of the three:
 
 ``` r
 
-# % of sampled stomachs flagged empty
-e <- tapply(ices_stomachs$stomach_empty %in% 1, ices_stomachs$predator_common, mean)
-round(100 * e[c("Atlantic cod", "Atlantic mackerel", "European plaice", "Whiting")], 1)
-#>      Atlantic cod Atlantic mackerel   European plaice           Whiting 
-#>               3.3               0.3              30.1              12.3
+s[s$predator_common %in% c("Atlantic cod", "Atlantic mackerel", "European plaice", "Whiting"),
+  c("predator_common", "n_stomachs", "n_examined", "n_empty", "pct_vacuity")]
+#>     predator_common n_stomachs n_examined n_empty pct_vacuity
+#> 1 Atlantic mackerel       1048       1051       3         0.3
+#> 2      Atlantic cod        991       1059      68         6.4
+#> 3           Whiting        892       1186     294        24.8
+#> 4   European plaice        729       1367     638        46.7
 ```
 
 ## 2. Is the diet adequately sampled?
@@ -203,7 +212,7 @@ head(fo[fo$predator_common == "Atlantic cod", ], 6)
 #>    predator_common  rank        taxon n_stomachs n_total pct_fo
 #> 11    Atlantic cod class Malacostraca        618     991  62.36
 #> 12    Atlantic cod class    Teleostei        332     991  33.50
-#> 13    Atlantic cod class           NA        323     991  32.59
+#> 13    Atlantic cod class           NA        322     991  32.49
 #> 14    Atlantic cod class   Polychaeta        136     991  13.72
 #> 15    Atlantic cod class  Ophiuroidea         49     991   4.94
 #> 16    Atlantic cod class     Bivalvia         28     991   2.83
@@ -214,7 +223,22 @@ and fish (Teleostei) in 33.5%. The same classes are 43.4% and 27.1% of
 the cod’s prey records. The two quantities answer different questions
 (how many fish ate it, and how much of the recorded material it is) and
 should be reported under their own names. The column `n_total` is the
-number of non-empty stomachs in the group: the denominator of %FO.
+number of non-empty stomachs in the group: the denominator of %FO. Some
+studies divide by every stomach examined, empty ones included; with a
+stomach table in `prep`, ask for it explicitly:
+
+``` r
+
+fo_ex <- dv_fo_table(prep, rank = "class", by = spec$predator, denominator = "examined")
+head(fo_ex[fo_ex$predator_common == "Atlantic cod", ], 3)
+#>    predator_common  rank        taxon n_stomachs n_total pct_fo
+#> 11    Atlantic cod class Malacostraca        618    1059  58.36
+#> 12    Atlantic cod class    Teleostei        332    1059  31.35
+#> 13    Atlantic cod class           NA        322    1059  30.41
+```
+
+State which denominator you used: for a predator with many empty
+stomachs, such as plaice here, the two differ a lot.
 
 %FO does not add up across ranks: a parent’s %FO is computed from the
 stomachs that contain it, not summed from its children, and the `NA` row
@@ -244,18 +268,18 @@ species:
 sw <- dv_threshold_sweep(prep, thresholds = c(5, 10, 20, 30, 50, 100))
 sw
 #>   threshold n_categories pct_coarser
-#> 1         5          112       83.28
-#> 2        10           82       84.29
-#> 3        20           57       86.17
-#> 4        30           42       88.19
-#> 5        50           32       89.60
+#> 1         5          110       83.28
+#> 2        10           80       84.29
+#> 3        20           55       86.17
+#> 4        30           40       87.42
+#> 5        50           32       87.42
 #> 6       100           23       94.19
 ```
 
 The share of records above species is high whatever the threshold
 (83.28% at 5 stomachs), because most records were never identified to
 species. Raising the threshold from 5 to 20 stomachs halves the number
-of categories (112 to 57) and moves only 2.9 more percent of the records
+of categories (110 to 55) and moves only 2.9 more percent of the records
 to a coarser rank; beyond 50 the categories become broad groups. We use
 20 stomachs here: about 0.5% of the 4,222 stomachs, enough for a
 category to be compared between the main predators, and a point where
@@ -270,7 +294,7 @@ one.
 
 agg <- dv_aggregate_threshold(prep, threshold = 20)
 attr(agg, "aggregation")$n_categories
-#> [1] 57
+#> [1] 55
 head(sort(table(agg$data$prey_category), decreasing = TRUE), 12)
 #> 
 #>     Decapoda (other)     Chordata (other)   Arthropoda (other) 
@@ -330,11 +354,11 @@ the same threshold:
 
 dv_threshold_sweep(prep, thresholds = c(5, 10, 20, 30, 50), scope = "per_predator")
 #>   threshold n_categories pct_coarser
-#> 1         5          120       84.83
-#> 2        10           86       86.81
-#> 3        20           58       90.33
-#> 4        30           40       93.93
-#> 5        50           32       94.42
+#> 1         5          118       84.81
+#> 2        10           84       86.79
+#> 3        20           56       90.11
+#> 4        30           40       92.65
+#> 5        50           32       93.60
 ```
 
 DietView stops at the aggregation. If you summarize a statistic across
@@ -352,7 +376,7 @@ the matrix at one rank instead.
 
 m <- dv_matrix(agg, currency = "weight")
 dim(m)
-#> [1] 4222   58
+#> [1] 4222   56
 m[1:3, c("Crangon crangon", "Decapoda (other)", "Chordata (other)", "NA")]
 #>         Crangon crangon Decapoda (other) Chordata (other) NA
 #> S107497               0                0            1.394  0
@@ -360,9 +384,9 @@ m[1:3, c("Crangon crangon", "Decapoda (other)", "Chordata (other)", "NA")]
 #> S107499               0                0            0.000  0
 ```
 
-One row per stomach (4,222), one column per category (58, the `NA`
+One row per stomach (4,222), one column per category (56, the `NA`
 column included), summed prey weight in each cell. The matrix is very
-sparse: 97.2% of its cells are zero, which is typical of stomach data
+sparse: 97.1% of its cells are zero, which is typical of stomach data
 and matters for the choice of distance in the analysis that follows.
 
 `currency` is `"weight"` (summed weight), `"occurrence"` (number of

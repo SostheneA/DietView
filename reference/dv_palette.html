@@ -4,12 +4,16 @@ color in every panel built from one dictionary. The palette cycles after 20
 colors, so in a large survey several taxa share a color; see
 dv_palette_tree() for colors that follow the hierarchy. The unidentified
 (&quot;NA&quot;) category is always white; the sunburst draws a gray outline around
-every wedge so white wedges stay visible."><meta property="og:description" content="Every distinct taxon label gets a color, and the same label gets the same
+every wedge so white wedges stay visible. Lineage gaps (labels such as
+&quot;Polychaeta (no order)&quot;, see the gaps argument of dv_prepare()) are
+light gray."><meta property="og:description" content="Every distinct taxon label gets a color, and the same label gets the same
 color in every panel built from one dictionary. The palette cycles after 20
 colors, so in a large survey several taxa share a color; see
 dv_palette_tree() for colors that follow the hierarchy. The unidentified
 (&quot;NA&quot;) category is always white; the sunburst draws a gray outline around
-every wedge so white wedges stay visible."><meta property="og:image" content="https://sosthenea.github.io/DietView/logo.png"></head><body>
+every wedge so white wedges stay visible. Lineage gaps (labels such as
+&quot;Polychaeta (no order)&quot;, see the gaps argument of dv_prepare()) are
+light gray."><meta property="og:image" content="https://sosthenea.github.io/DietView/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -17,7 +21,7 @@ every wedge so white wedges stay visible."><meta property="og:image" content="ht
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,7 +76,9 @@ color in every panel built from one dictionary. The palette cycles after 20
 colors, so in a large survey several taxa share a color; see
 <code><a href="dv_palette_tree.html">dv_palette_tree()</a></code> for colors that follow the hierarchy. The unidentified
 (<code>"NA"</code>) category is always white; the sunburst draws a gray outline around
-every wedge so white wedges stay visible.</p>
+every wedge so white wedges stay visible. Lineage gaps (labels such as
+<code>"Polychaeta (no order)"</code>, see the <code>gaps</code> argument of <code><a href="dv_prepare.html">dv_prepare()</a></code>) are
+light gray.</p>
     </div>
 
     <div class="section level2">

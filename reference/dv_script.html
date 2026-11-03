@@ -15,7 +15,7 @@ interactively can be archived and rerun without the application."><meta property
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,7 @@ interactively can be archived and rerun without the application.</p>
 <span>  aggregation <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  facet <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rank <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  na_strata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"drop"</span>, <span class="st">"show"</span><span class="op">)</span>,</span>
 <span>  data_file <span class="op">=</span> <span class="st">"dietview_prep.rds"</span>,</span>
 <span>  file <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -119,12 +120,19 @@ every rank) or a list with <code>threshold</code> and, optionally, <code>scope</
 <dd><p>Up to two covariates to draw one panel per level (or per
 combination of levels), or <code>NULL</code>. With two, <code>c(inner, outer)</code> as in the
 app: <code>panels</code> is then a list over the levels of <code>outer</code>, each a list over
-the levels of <code>inner</code>. Missing covariate values get their own <code>"NA"</code> panel.</p></dd>
+the levels of <code>inner</code>.</p></dd>
 
 
 <dt id="arg-rank">rank<a class="anchor" aria-label="anchor" href="#arg-rank"></a></dt>
-<dd><p>Rank for the rank table and the frequency-of-occurrence table.
-Defaults to the third rank of <code>prep</code>.</p></dd>
+<dd><p>Rank for the rank table and the frequency-of-occurrence table,
+by column name or display label, case-insensitive. Defaults to the third
+rank of <code>prep</code>.</p></dd>
+
+
+<dt id="arg-na-strata">na_strata<a class="anchor" aria-label="anchor" href="#arg-na-strata"></a></dt>
+<dd><p><code>"drop"</code> (default) leaves records with a missing covariate
+value out of the panels; <code>"show"</code> gives them an <code>"NA"</code> panel. As in
+<code><a href="run_dietview.html">run_dietview()</a></code> and <code><a href="dv_build_html.html">dv_build_html()</a></code>.</p></dd>
 
 
 <dt id="arg-data-file">data_file<a class="anchor" aria-label="anchor" href="#arg-data-file"></a></dt>
@@ -161,7 +169,7 @@ lineage came from WoRMS) and the column specification.</p>
 <span class="r-in"><span>               aggregation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>threshold <span class="op">=</span> <span class="fl">10</span>, scope <span class="op">=</span> <span class="st">"pooled"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">s</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ## DietView analysis script</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ## Generated 2026-11-02 18:19 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ## Generated 2026-11-03 00:36 UTC with DietView 0.1.0.9000 and R version 4.6.2 (2026-10-29).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ## Predator: all predators | wedges: weight | currency: records</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ## Reporting resolution: threshold 10 stomachs, scope = pooled, min_predators = 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> # Taxonomy source: table</span>
@@ -186,10 +194,9 @@ lineage came from WoRMS) and the column specification.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> prep &lt;- dv_aggregate_threshold(prep, threshold = 10, scope = "pooled", min_predators = 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> attr(prep, "aggregation")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ## 3. Colors: one per taxon label, from all predators, so a taxon keeps its</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ## color in every view (unidentified material is the white "NA" category)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> fill_na &lt;- function(x) { x &lt;- as.character(x); x[is.na(x) | x == ""] &lt;- "NA"; x }</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> pal &lt;- dv_palette(unlist(lapply(prep$ranks, function(r) fill_na(prep$data[[r]]))))</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ## 3. Colors: one hue per phylum, from the pooled tree of all predators, so a</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ## taxon keeps its color in every view (unidentified material is white)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> pal &lt;- dv_palette_tree(dv_build_tree(prep$data, prep$ranks))</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ## 5. Multi-rank tree and sunburst</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> tree &lt;- dv_build_tree(prep$data, prep$ranks, weight_col = "prey_weight_g", count_col = NULL)</span>

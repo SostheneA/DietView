@@ -91,11 +91,11 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
 tree <- dv_build_tree(prep$data, prep$ranks, weight_col = spec$weight)
 head(tree)
 #>                    id      label   parent    rank value_item value_occ
-#> 1            Animalia   Animalia          Kingdom        237      6975
+#> 1            Animalia   Animalia          Kingdom        235      6975
 #> 2           Chromista  Chromista          Kingdom          1         1
 #> 3             Plantae    Plantae          Kingdom          1         1
 #> 4                  NA         NA          Kingdom          1      1553
-#> 5   Animalia|Annelida   Annelida Animalia  Phylum         33       785
+#> 5   Animalia|Annelida   Annelida Animalia  Phylum         32       785
 #> 6 Animalia|Arthropoda Arthropoda Animalia  Phylum         97      2779
 #>      value_w     pct_occ        pct_w
 #> 1 20782.9124 81.77022274 9.490663e+01

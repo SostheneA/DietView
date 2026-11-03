@@ -64,8 +64,6 @@ the corrected table with the results.
 ``` r
 chk <- dv_lineage_check(ices_lineage)
 chk[, c("check", "rank", "label", "variant")]
-#>            check    rank                    label                  variant
-#> 1 near_duplicate   genus                Aphrodita                Aphrodite
-#> 2 near_duplicate species      Trisopterus esmarki     Trisopterus esmarkii
-#> 3 near_duplicate species Lumpenus lampetraeformis Lumpenus lampretaeformis
+#> [1] check   rank    label   variant
+#> <0 rows> (or 0-length row.names)
 ```

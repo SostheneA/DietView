@@ -159,22 +159,22 @@ na_rows <- tree[tree$rank == "Order" & tree$label == "NA",
 na_rows$pct_occ <- round(na_rows$pct_occ, 2)
 na_rows[order(-na_rows$value_occ), ]
 #>                                parent value_occ pct_occ
-#> 68                           NA|NA|NA       192    8.33
-#> 42               Animalia|Chordata|NA       153    6.64
-#> 40             Animalia|Arthropoda|NA        68    2.95
-#> 33       Animalia|Annelida|Polychaeta        44    1.91
-#> 55 Animalia|Echinodermata|Ophiuroidea        22    0.95
-#> 60         Animalia|Mollusca|Bivalvia        21    0.91
-#> 64       Animalia|Mollusca|Gastropoda        18    0.78
-#> 53          Animalia|Echinodermata|NA         5    0.22
-#> 62      Animalia|Mollusca|Cephalopoda         5    0.22
-#> 65               Animalia|Mollusca|NA         3    0.13
+#> 69                           NA|NA|NA       192    8.33
+#> 43               Animalia|Chordata|NA       153    6.64
+#> 41             Animalia|Arthropoda|NA        68    2.95
+#> 34       Animalia|Annelida|Polychaeta        43    1.87
+#> 56 Animalia|Echinodermata|Ophiuroidea        22    0.95
+#> 61         Animalia|Mollusca|Bivalvia        21    0.91
+#> 65       Animalia|Mollusca|Gastropoda        18    0.78
+#> 54          Animalia|Echinodermata|NA         5    0.22
+#> 63      Animalia|Mollusca|Cephalopoda         5    0.22
+#> 66               Animalia|Mollusca|NA         3    0.13
 #> 28         Animalia|Annelida|Gephyrea         2    0.09
 #> 29               Animalia|Annelida|NA         2    0.09
-#> 41           Animalia|Chordata|Myxini         1    0.04
-#> 66 Animalia|Platyhelminthes|Trematoda         1    0.04
+#> 42           Animalia|Chordata|Myxini         1    0.04
+#> 67 Animalia|Platyhelminthes|Trematoda         1    0.04
 sum(ord$pct_occ[ord$label == "NA"])
-#> [1] 23.30729
+#> [1] 23.26389
 ```
 
 Here 23.3% of the records are unidentified at order. The largest parts
@@ -198,32 +198,68 @@ sapply(rings, function(r) round(sum(tree$pct_occ[tree$rank == r & tree$label == 
 
 ## An unidentified node with named children
 
-Most `NA` nodes have only `NA` below them. A few do not, because WoRMS
-gives no taxon at one rank to some groups. In the ICES lineage, several
-polychaete families have no order, and Priapulida have no class:
+WoRMS gives no taxon at one rank to some groups: in the ICES lineage
+several polychaete families have no order, lancelets have no order, and
+Priapulida have no class. A record identified to family in such a group
+has nothing at order, yet it is not unidentified there. Left as `NA`, it
+would sit in the unidentified order node under Polychaeta, drawn white,
+and inflate the unidentified share of that ring.
+
+By default
+[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)
+(argument `gaps = "label"`) fills such a rank with
+`"<nearest named ancestor> (no <rank>)"`, for example
+`"Polychaeta (no order)"`, drawn light gray. Only ranks with an
+identified rank below them are filled; a polychaete identified to class
+and no further stays `NA` at order, because it is truly unidentified
+there. The number of filled records per rank is stored with the prepared
+data:
 
 ``` r
 
-kid_named <- tapply(tree$label != "NA", tree$parent, any)
-na_with_kids <- tree[tree$label == "NA" & tree$id %in% names(kid_named)[kid_named], ]
-na_with_kids[, c("id", "rank", "value_occ")]
-#>                                 id  rank value_occ
-#> 26          Animalia|Priapulida|NA Class         1
-#> 33 Animalia|Annelida|Polychaeta|NA Order        44
-tree[tree$parent %in% na_with_kids$id & tree$label != "NA", c("parent", "label", "value_occ")]
-#>                             parent          label value_occ
-#> 67          Animalia|Priapulida|NA Priapulomorpha         1
-#> 72 Animalia|Annelida|Polychaeta|NA   Arenicolidae         1
+attr(prep, "lineage_gaps")
+#> kingdom  phylum   class   order  family   genus species 
+#>       0       0       1       1       0       0       0
+gap_nodes <- tree[grepl("\\(no [a-z]+\\)$", tree$label), c("id", "rank", "value_occ")]
+gap_nodes
+#>                                                    id  rank value_occ
+#> 26          Animalia|Priapulida|Priapulida (no class) Class         1
+#> 32 Animalia|Annelida|Polychaeta|Polychaeta (no order) Order         1
+tree[tree$parent %in% gap_nodes$id, c("parent", "label", "value_occ")]
+#>                                                parent          label value_occ
+#> 68          Animalia|Priapulida|Priapulida (no class) Priapulomorpha         1
+#> 79 Animalia|Annelida|Polychaeta|Polychaeta (no order)   Arenicolidae         1
+# identified nodes sitting under an unidentified ("NA") node: none
+sum(tree$label != "NA" & grepl("(^|\\|)NA(\\||$)", tree$parent))
+#> [1] 0
 ```
 
-Such a node mixes two things. The 44 cod records in the unidentified
-order node under Polychaeta are 43 polychaetes not identified beyond
-class and one lugworm (Arenicolidae), a family to which WoRMS gives no
-order: identified to family, it still appears unidentified at order. The
-effect is one record here, but on another predator or survey it can be
-large. Before you report an unidentified share at that rank, check these
-rows; the article “Adapting DietView to your own survey” comes back to
-it.
+`gaps = "keep"` gives the older behaviour, where those records sit under
+the unidentified node of the empty rank. Compare the unidentified share
+at order:
+
+``` r
+
+prep_keep <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
+                        gaps = "keep", verbose = FALSE)
+tree_keep <- dv_tree(prep_keep)
+na_share <- function(t) round(sum(t$pct_occ[t$rank == "Order" & t$label == "NA"]), 2)
+c(gaps_label = na_share(tree), gaps_keep = na_share(tree_keep))
+#> gaps_label  gaps_keep 
+#>      23.26      23.31
+sum(tree_keep$label != "NA" & grepl("(^|\\|)NA(\\||$)", tree_keep$parent))
+#> [1] 7
+```
+
+In cod the difference is small, 1 record(s) at order, but on another
+predator or survey it can be large. A gap is not a taxon: threshold
+aggregation
+([`dv_aggregate_threshold()`](https://sosthenea.github.io/DietView/reference/dv_aggregate_threshold.md))
+skips it and never reports it as a category, and richness counts
+([`dv_summary()`](https://sosthenea.github.io/DietView/reference/dv_summary.md),
+[`dv_prey_accumulation()`](https://sosthenea.github.io/DietView/reference/dv_prey_accumulation.md))
+use the finest real taxon of each record, so they are the same with
+either setting.
 
 ## The figures
 
@@ -242,8 +278,10 @@ dv_sunburst(tree, mode = "weight", title = "Atlantic cod",
             subtitle = "share of prey weight")
 ```
 
-White wedges with gray edges are records not identified at that rank.
-Hovering over a wedge shows its count and its share of the ring.
+White wedges with gray edges are records not identified at that rank;
+light gray wedges are lineage gaps, identified material in a group with
+no taxon at that rank. Hovering over a wedge shows its count and its
+share of the ring.
 
 ## Colors
 
@@ -256,7 +294,7 @@ compare, so the same taxon has the same color everywhere:
 
 pal <- dv_palette(tree$label)
 length(pal)
-#> [1] 260
+#> [1] 259
 head(pal)
 #>      Animalia      Annelida    Arthropoda      Chordata Echinodermata 
 #>     "#1f77b4"     "#aec7e8"     "#ff7f0e"     "#ffbb78"     "#2ca02c" 
@@ -265,7 +303,7 @@ head(pal)
 ```
 
 The palette has 20 colors and reuses them when there are more taxa. The
-cod tree alone has 259 taxon names, so every color stands for about 13
+cod tree alone has 258 taxon names, so every color stands for about 13
 of them. Check the hover labels before you read a color as a taxon.
 
 [`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)

@@ -6,14 +6,18 @@ start angle and the reading order stay the same across covariate cells.
 Angular positions are not fixed: a taxon absent from one cell shifts
 every wedge after it, so compare cells by color, not by angle. Records
 not identified at a rank form a white wedge with a thin gray outline,
-shown as "Not identified at this rank" in the hover text.
+shown as "Not identified at this rank" in the hover text. Lineage gaps
+(identified material in a group that has no taxon at that rank, such as
+`"Polychaeta (no order)"`; see
+[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md))
+form a light gray wedge, described as such in the hover text.
 
 ## Usage
 
 ``` r
 dv_sunburst(
   x,
-  mode = c("count", "occurrence", "weight"),
+  mode = c("occurrence", "weight", "count"),
   ranks = NULL,
   weight_col = NULL,
   count_col = NULL,
@@ -33,7 +37,7 @@ dv_sunburst(
 
 - mode:
 
-  One of "count", "occurrence", "weight".
+  One of "occurrence" (default), "weight", "count".
 
 - ranks, weight_col, count_col:
 
@@ -47,8 +51,11 @@ dv_sunburst(
   [`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md))
   or by taxon label (as from
   [`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md));
-  ids are looked up first. Default from
-  [`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md).
+  ids are looked up first. Default:
+  [`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)
+  of the tree drawn, one hue per phylum with lighter tints below it. To
+  keep colors identical across panels, build one palette from the pooled
+  tree and pass it to each.
 
 - rotation:
 
@@ -72,14 +79,14 @@ text.
 
 Three modes:
 
-- `count`: sized by the number of distinct prey items.
-
-- `occurrence`: sized by prey records (or by individuals, if the tree
-  was built with a count column); hover shows the number and the share
-  of all records at that rank.
+- `occurrence` (default): sized by prey records (or by individuals, if
+  the tree was built with a count column); hover shows the number and
+  the share of all records at that rank.
 
 - `weight`: sized by weight; hover shows the weight and the weight share
   at that rank.
+
+- `count`: sized by the number of distinct prey items.
 
 ## Examples
 
@@ -103,7 +110,7 @@ cod <- dat[dat$predator_common == "Atlantic cod", ]
 prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 tree <- dv_tree(prep_cod)
-p <- dv_sunburst(tree, title = "Atlantic cod")   # mode = "count"
-p_occ <- dv_sunburst(tree, mode = "occurrence", title = "Atlantic cod")
+p <- dv_sunburst(tree, title = "Atlantic cod")   # mode = "occurrence"
+p_w <- dv_sunburst(tree, mode = "weight", title = "Atlantic cod")
 # print(p)  # opens the interactive plotly sunburst
 ```

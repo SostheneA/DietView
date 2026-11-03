@@ -352,10 +352,10 @@ tree <- dv_build_tree(
 )
 
 nrow(tree)
-#> [1] 702
+#> [1] 701
 head(tree, 4)
 #>          id     label parent    rank value_item value_occ   value_w     pct_occ
-#> 1  Animalia  Animalia        Kingdom        237      6975 20782.912 81.77022274
+#> 1  Animalia  Animalia        Kingdom        235      6975 20782.912 81.77022274
 #> 2 Chromista Chromista        Kingdom          1         1     0.000  0.01172333
 #> 3   Plantae   Plantae        Kingdom          1         1     0.148  0.01172333
 #> 4        NA        NA        Kingdom          1      1553  1115.212 18.20633060
@@ -367,7 +367,7 @@ head(tree, 4)
 ```
 
 **What you get back.** A `dietview_tree` data frame with `id`, `label`,
-`parent`, `rank`, the three values and the two shares; here 702 nodes
+`parent`, `rank`, the three values and the two shares; here 701 nodes
 over seven rings.
 
 Every record has one place in every ring: under the taxon it was
@@ -441,9 +441,9 @@ cls <- dv_rank_table(tree, "Class")
 head(cls, 10)
 #>           label value_item value_occ    pct_occ    value_w      pct_w
 #> 23 Malacostraca         92      2085 24.4431419  2948.8905 13.4663157
-#> 29    Teleostei         64      1614 18.9214537 14366.4605 65.6054516
-#> 47           NA          1      1553 18.2063306  1115.2120  5.0926940
-#> 20   Polychaeta         30       758  8.8862837   584.2752  2.6681338
+#> 29    Teleostei         63      1614 18.9214537 14366.4605 65.6054516
+#> 48           NA          1      1553 18.2063306  1115.2120  5.0926940
+#> 20   Polychaeta         29       758  8.8862837   584.2752  2.6681338
 #> 30           NA          1       713  8.3587339  1328.6695  6.0674627
 #> 25           NA          1       662  7.7608441   501.2407  2.2889509
 #> 36  Ophiuroidea          4       493  5.7796014   526.9670  2.4064318
@@ -469,9 +469,9 @@ tree[tree$rank == "Class" & tree$label == "NA", c("parent", "value_occ", "pct_oc
 #> 37   Animalia|Echinodermata        67  0.78546307
 #> 41        Animalia|Mollusca        10  0.11723329
 #> 44 Animalia|Platyhelminthes         4  0.04689332
-#> 45      Animalia|Priapulida         7  0.08206331
-#> 47                    NA|NA      1553 18.20633060
-#> 48      Plantae|Chlorophyta         1  0.01172333
+#> 46      Animalia|Priapulida         6  0.07033998
+#> 48                    NA|NA      1553 18.20633060
+#> 49      Plantae|Chlorophyta         1  0.01172333
 ```
 
 The parent `NA|NA` is the material placed nowhere; `Animalia|Chordata`
@@ -859,7 +859,7 @@ na_share <- function(tr) {
 }
 rbind(pooled = na_share(tree), cod = na_share(tree_cod))
 #>        Kingdom Phylum Class Order Family Genus Species
-#> pooled    18.2   18.2  35.7  52.0   64.2  76.3    81.6
+#> pooled    18.2   18.2  35.7  51.6   64.2  76.3    81.6
 #> cod        8.3    8.3  18.4  23.3   39.4  52.5    60.9
 ```
 

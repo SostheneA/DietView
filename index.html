@@ -32,7 +32,7 @@
 
     <a class="navbar-brand me-2" href="index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,6 +87,8 @@
 <img src="logo.png" class="logo" alt=""><h1 id="dietview-">DietView <a class="anchor" aria-label="anchor" href="#dietview-"></a>
 </h1>
 </div>
+<!-- badges: start -->
+
 <blockquote>
 <p>Interactive, hierarchical visualization of predator stomach-content data</p>
 </blockquote>
@@ -257,29 +259,25 @@
 <blockquote>
 <h3 id="blue_book-technical-reference-the-package-companion">📘 Technical reference: the package companion</h3>
 <p>The full narrative of <strong>what DietView contains and why</strong>: design principles, architecture, data structures, and every function with its internal logic. Distinct from the journal article (which argues <em>why</em> the package matters) and from the <a href="https://sosthenea.github.io/DietView/reference/index.html">function reference</a> (the API).</p>
-<p><strong><a href="https://sosthenea.github.io/DietView/articles/technical-reference.html">Read it online</a></strong></p>
+<p><strong><a href="https://sosthenea.github.io/DietView/articles/technical-reference.html">Read it online</a></strong> · <strong><a href="https://sosthenea.github.io/DietView/DietView-technical-reference.pdf">Download the PDF</a></strong></p>
 </blockquote>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>DietView is distributed through <a href="https://r-universe.dev" class="external-link">R-universe</a>:</p>
+<p>Install DietView from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"DietView"</span>,</span>
-<span>  repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"https://sosthenea.r-universe.dev"</span>, <span class="st">"https://cloud.r-project.org"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Or install the development version from GitHub:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"SostheneA/DietView"</span><span class="op">)</span></span></code></pre></div>
-<p>Optional features need a few more packages: <code>worrms</code> (WoRMS taxonomy), <code>shiny</code> + <code>DT</code> (interactive app), <code>rmarkdown</code> (self-contained HTML).</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"worrms"</span>, <span class="st">"shiny"</span>, <span class="st">"DT"</span>, <span class="st">"rmarkdown"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Optional features need a few more packages: <code>worrms</code> (WoRMS taxonomy) and <code>shiny</code> + <code>DT</code> (interactive app). The HTML dashboard needs neither <code>rmarkdown</code> nor pandoc.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"worrms"</span>, <span class="st">"shiny"</span>, <span class="st">"DT"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="basic-use">Basic use<a class="anchor" aria-label="anchor" href="#basic-use"></a>
 </h2>
 <p>A minimal, fully offline workflow on the bundled ICES stomach data (a long table of prey records plus a frozen lineage lookup, so no internet is required):</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SostheneA/DietView" class="external-link">DietView</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 1. base long table: one row per prey record, NO taxonomy columns</span></span>
@@ -319,7 +317,7 @@
 <span></span>
 <span><span class="co"># 6. explore, check sampling sufficiency, aggregate, and export</span></span>
 <span><span class="fu"><a href="reference/dv_summary.html">dv_summary</a></span><span class="op">(</span><span class="va">prep</span><span class="op">)</span>                                  <span class="co"># stomachs, records, taxa per predator</span></span>
-<span><span class="fu"><a href="reference/dv_prey_accumulation.html">dv_prey_accumulation</a></span><span class="op">(</span><span class="va">cod</span>, permutations <span class="op">=</span> <span class="fl">50</span><span class="op">)</span>      <span class="co"># cumulative prey curve</span></span>
+<span><span class="fu"><a href="reference/dv_prey_accumulation.html">dv_prey_accumulation</a></span><span class="op">(</span><span class="va">cod</span>, permutations <span class="op">=</span> <span class="fl">50</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>  <span class="co"># cumulative prey curve</span></span>
 <span><span class="fu"><a href="reference/dv_fo_table.html">dv_fo_table</a></span><span class="op">(</span><span class="va">cod</span>, rank <span class="op">=</span> <span class="st">"class"</span><span class="op">)</span>                  <span class="co"># classical per-rank %FO</span></span>
 <span></span>
 <span><span class="va">agg</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/dv_aggregate_threshold.html">dv_aggregate_threshold</a></span><span class="op">(</span><span class="va">cod</span>, threshold <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>    <span class="co"># prey in &lt; 10 stomachs move up a rank</span></span>
@@ -423,7 +421,7 @@
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"DietView"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">

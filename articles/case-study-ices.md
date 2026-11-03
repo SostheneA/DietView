@@ -59,39 +59,47 @@ c(records  = nrow(ices_diet),
 A stomach falls in one of three groups: it has prey records, it is
 flagged empty, or it has no record and no “empty” flag, so its content
 is unknown. The last group matters: it must not be counted as empty.
+Pass the stomach table to
+[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)
+with `stomachs` and the flag with `empty_col`; the printed object counts
+the three groups and
+[`dv_summary()`](https://sosthenea.github.io/DietView/reference/dv_summary.md)
+gives the vacuity (percentage of examined stomachs that were empty),
+stomachs of unknown status left out:
 
 ``` r
 
 st <- ices_stomachs
-st$status <- ifelse(st$stomach_empty %in% 1, "empty",
-             ifelse(st$stomach_id %in% ices_diet$stomach_id, "with prey",
-                    "unknown"))
-tab <- table(st$predator_common, st$status)
-tab <- tab[order(-rowSums(tab)), c("with prey", "empty", "unknown")]
-head(tab, 8)
-#>                          
-#>                           with prey empty unknown
-#>   Whiting                       896   294    1195
-#>   European plaice               729   638     753
-#>   Atlantic cod                  993    68     994
-#>   Atlantic mackerel            1051     3       0
-#>   Atlantic horse mackerel       135    61      97
-#>   European hake                 106    32     149
-#>   Tub gurnard                    90    22       9
-#>   Thorny skate                   48     5      57
-```
-
-``` r
-
-known <- tab[m4, "with prey"] + tab[m4, "empty"]
-vac <- round(100 * tab[m4, "empty"] / known, 1)
-vac
-#> Atlantic mackerel      Atlantic cod   European plaice           Whiting 
-#>               0.3               6.4              46.7              24.7
+prep0 <- dv_prepare(ices_diet,
+                    dv_spec(predator = "predator_common", stomach = "stomach_id",
+                            prey_id = "prey_aphia_id", prey_name = "prey_name"),
+                    taxonomy = "table", lineage = ices_lineage,
+                    stomachs = st, empty_col = "stomach_empty", verbose = FALSE)
+prep0
+#> <dietview_prep>
+#>   records   : 9639 
+#>   stomachs  : 4231 
+#>   predators : 22 
+#>   ranks     : kingdom > phylum > class > order > family > genus > species 
+#>   covariates:  
+#>   source    : table 
+#>   examined  : 5427 stomachs, 1196 empty (3458 of unknown status)
+vac_tab <- dv_summary(prep0)[, c("predator_common", "n_stomachs", "n_examined",
+                                "n_empty", "pct_vacuity")]
+head(vac_tab, 8)
+#>           predator_common n_stomachs n_examined n_empty pct_vacuity
+#> 1       Atlantic mackerel       1051       1054       3         0.3
+#> 2            Atlantic cod        993       1061      68         6.4
+#> 3                 Whiting        896       1190     294        24.7
+#> 4         European plaice        729       1367     638        46.7
+#> 5 Atlantic horse mackerel        135        196      61        31.1
+#> 6           European hake        106        138      32        23.2
+#> 7             Tub gurnard         90        112      22        19.6
+#> 8            Thorny skate         48         53       5         9.4
 ```
 
 Of the 8886 stomachs, 1197 are flagged empty and 3458 have an unknown
-status. Among stomachs of known status, the share of empty stomachs
+status. Among the four main predators, the share of empty stomachs
 (vacuity) ranges from 0.3% (Atlantic mackerel) to 46.7% (European
 plaice). This can only be computed from `ices_stomachs`: a long prey
 table holds no empty stomachs.
@@ -251,7 +259,7 @@ cat(sprintf(paste(
   rep_clean$n_records, rep_clean$n_stomachs, rep_clean$n_predators,
   min(dat$year), max(dat$year),
   sum(ices_diet$item_type == "non_food"), sum(is_nem),
-  sum(st$status == "empty"), sum(st$status == "unknown"),
+  n_flagged, n_unknown,
   rep_clean$n_missing_weight, pc(100 * rep_clean$n_missing_weight / rep_clean$n_records),
   sum(dat$digestion_label == "not recorded"),
   pc(100 * mean(dat$digestion_label == "not recorded"))))
@@ -432,7 +440,7 @@ returns one ring of the tree, sorted by record share:
 head(dv_rank_table(tr_rec[["Atlantic cod"]], "Class"), 4)
 #>           label value_item value_occ   pct_occ  value_w     pct_w
 #> 14 Malacostraca         62       999 43.359375 2286.830 22.361624
-#> 17    Teleostei         46       624 27.083333 7045.949 68.898369
+#> 17    Teleostei         45       624 27.083333 7045.949 68.898369
 #> 27           NA          1       192  8.333333  123.520  1.207833
 #> 18           NA          1       153  6.640625  248.537  2.430304
 ```
@@ -635,13 +643,13 @@ gives each label its own color.
 tree4 <- dv_tree(prep4)
 pal <- dv_palette_tree(tree4)
 length(pal)
-#> [1] 653
+#> [1] 652
 head(dv_palette(tree4$label[tree4$rank == "Class"]), 4)
 #> Clitellata   Gephyrea Polychaeta   Copepoda 
 #>  "#1f77b4"  "#aec7e8"  "#ff7f0e"  "#ffbb78"
 ```
 
-Prey records (`mode = "occurrence"`; the default, `"count"`, would count
+Prey records (`mode = "occurrence"`, the default; `"count"` would count
 distinct prey items). White wedges are records not identified at that
 rank.
 
@@ -708,7 +716,7 @@ round(unid, 1)
 #> Kingdom              51.3          8.3            13.8    11.7
 #> Phylum               51.3          8.3            13.8    11.7
 #> Class                78.0         18.4            19.0    44.0
-#> Order                78.0         23.3            77.9    48.5
+#> Order                78.0         23.3            76.6    48.4
 #> Family               78.2         39.4            85.7    69.3
 #> Genus                98.2         52.5            91.4    77.0
 #> Species              98.2         60.9            99.0    80.6
@@ -748,7 +756,7 @@ compare <- function(col) {
 #>              [0, 25) [25, 40) [40, 110]
 #> Malacostraca    58.0     40.6      34.2
 #> Teleostei       14.2     23.9      42.5
-#> NA              18.6     21.2      14.7
+#> NA              18.6     21.1      14.7
 #> Polychaeta       6.3      7.0       5.2
 #> Ophiuroidea      0.9      3.2       1.9
 #> Bivalvia         0.5      2.4       0.4
@@ -792,8 +800,8 @@ samples, not effects.
 dv_summary(prep4)
 #>     predator_common n_stomachs n_records n_taxa records_per_stomach
 #> 1 Atlantic mackerel       1048      1593     10                1.52
-#> 2      Atlantic cod        991      2304    144                2.32
-#> 3           Whiting        892      1605    101                1.80
+#> 2      Atlantic cod        991      2304    142                2.32
+#> 3           Whiting        892      1605     99                1.80
 #> 4   European plaice        729      1890     69                2.59
 #>   total_weight
 #> 1     2064.350
@@ -863,13 +871,13 @@ th <- ceiling(0.01 * min(n_stom))
 sw <- dv_threshold_sweep(prep4, sort(unique(c(1, 2, 5, th, 10, 20, 50))))
 sw
 #>   threshold n_categories pct_coarser
-#> 1         1          220       82.95
-#> 2         2          153       83.56
-#> 3         5          102       84.75
-#> 4         8           79       85.46
-#> 5        10           72       85.57
-#> 6        20           52       86.95
-#> 7        50           26       92.09
+#> 1         1          218       82.95
+#> 2         2          151       83.56
+#> 3         5          100       84.75
+#> 4         8           77       85.46
+#> 5        10           70       85.57
+#> 6        20           50       86.95
+#> 7        50           26       89.72
 ```
 
 `pct_coarser` is the share of records that end coarser than species (or
@@ -887,14 +895,14 @@ c(pooled = length(unique(agg$data$prey_category)),
   per_predator = length(unique(paste(agg_pp$data$predator_common,
                                      agg_pp$data$prey_category))))
 #>       pooled per_predator 
-#>           80          116
+#>           78          114
 table(agg$data$prey_rank, useNA = "ifany")
 #> 
 #>   class  family   genus kingdom   order  phylum species    <NA> 
 #>    1350     833     366      18    1025    1267    1075    1458
 ```
 
-With a threshold of 8 stomachs, the pooled aggregation keeps 80
+With a threshold of 8 stomachs, the pooled aggregation keeps 78
 categories shared by the four predators. The per-predator version adapts
 the resolution to each predator’s own sample, which suits
 single-predator descriptions but makes the categories differ between
@@ -909,7 +917,7 @@ diet vector per predator:
 
 m_st <- dv_matrix(agg, currency = "occurrence")
 dim(m_st)
-#> [1] 3660   80
+#> [1] 3660   78
 m_pred <- dv_matrix(agg, unit = "predator_common", currency = "occurrence",
                     include_na = FALSE)
 m_w <- dv_matrix(agg, unit = "predator_common", currency = "weight",
@@ -930,10 +938,10 @@ schoener <- function(m) {
 }
 (ov_rec <- schoener(m_pred))
 #>                   Atlantic cod Atlantic mackerel European plaice Whiting
-#> Atlantic cod              1.00              0.15            0.18    0.51
+#> Atlantic cod              1.00              0.15            0.18    0.52
 #> Atlantic mackerel         0.15              1.00            0.02    0.40
 #> European plaice           0.18              0.02            1.00    0.16
-#> Whiting                   0.51              0.40            0.16    1.00
+#> Whiting                   0.52              0.40            0.16    1.00
 (ov_w <- schoener(m_w))
 #>                   Atlantic cod Atlantic mackerel European plaice Whiting
 #> Atlantic cod              1.00              0.12            0.04    0.39
@@ -942,7 +950,7 @@ schoener <- function(m) {
 #> Whiting                   0.39              0.22            0.04    1.00
 ```
 
-By records, the most similar pair is Whiting and Atlantic cod (0.51),
+By records, the most similar pair is Whiting and Atlantic cod (0.52),
 the least similar European plaice and Atlantic mackerel (0.02). Values
 below about 0.6 are conventionally read as no biologically significant
 overlap. The same matrix at the stomach level (`m_st`) is what a
@@ -1019,7 +1027,7 @@ dv_build_html(prep4, output = out,
 c(MB = round(file.size(out) / 1e6, 1),
   seconds = round(as.numeric(Sys.time() - t0, units = "secs")))
 #>      MB seconds 
-#>    14.8    24.0
+#>     3.9     4.0
 ```
 
 The file is written to
@@ -1038,7 +1046,7 @@ path <- dv_deploy(prep4, file = "ices_records.html",
                   bands = "occurrence", strata = "region",
                   species_info = info, image_dir = img)
 round(file.size(path) / 1e6, 1)
-#> [1] 5.6
+#> [1] 3.7
 ```
 
 ### The app
@@ -1072,7 +1080,7 @@ trust them?*
   records) but Teleostei by weight (52.3%), and much of its stomach
   content is unidentified (44.0% of records at class rank).
 - The diets overlap little: the highest Schoener index between two
-  predators is 0.51 by records (Whiting and Atlantic cod), below the
+  predators is 0.52 by records (Whiting and Atlantic cod), below the
   conventional 0.6, and European plaice is the most isolated (overlap at
   most 0.18 with any other).
 
@@ -1095,4 +1103,4 @@ The limits are those of the data, and they bound every sentence above:
   and take percentile intervals of `pct_occ` and `pct_w`), or over hauls
   when fish from one haul share a meal.
 
-*This article ran in about 37 seconds.*
+*This article ran in about 17 seconds.*

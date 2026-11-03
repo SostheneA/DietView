@@ -2,12 +2,15 @@
 
 Builds a dashboard from any prepared dataset: a searchable, sortable
 landing grid of predator cards (stomach counts, length range, ID photo,
-description) plus one tab per predator. Each tab shows the diet in up to
-three bands of sunbursts (distinct prey items, prey records as % of all
-records, weight as % of total weight); each band repeats the same
-structure: an aggregated sunburst, one row of sunbursts per declared
-covariate, and optionally crossed rows (e.g. length bins split by
-period). Covariate levels that are `NA` are omitted from the rows.
+description) plus one tab per predator. Each tab shows the diet in bands
+of sunbursts (by default prey records as % of all records and weight as
+% of total weight; distinct prey items on request); each band repeats
+the same structure: an aggregated sunburst, one row of sunbursts per
+declared covariate, and optionally crossed rows (e.g. length bins split
+by period). Records whose covariate is `NA` are left out of that
+covariate's rows by default (`na_strata = "drop"`); `na_strata = "show"`
+gives them an "NA" panel, as in
+[`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md).
 
 ## Usage
 
@@ -17,13 +20,14 @@ dv_build_html(
   output,
   strata = prep$spec$covariates,
   cross = list(),
-  bands = c("count", "occurrence", "weight"),
+  bands = c("occurrence", "weight"),
   currency = c("records", "numbers"),
   length_col = NULL,
   species_info = list(),
   image_dir = file.path(tempdir(), "dietview-images"),
   photo_source = "none",
   licenses = c("cc0", "cc-by", "cc-by-sa"),
+  na_strata = c("drop", "show"),
   title = "DietView",
   self_contained = TRUE
 )
@@ -52,9 +56,9 @@ dv_build_html(
 
 - bands:
 
-  Which bands to draw and in which order: `"count"` (distinct prey
-  items), `"occurrence"` (prey records, or individuals with
-  `currency = "numbers"`) and `"weight"`.
+  Which bands to draw and in which order, any of `"occurrence"` (prey
+  records, or individuals with `currency = "numbers"`), `"weight"` and
+  `"count"` (distinct prey items). Default: occurrence and weight.
 
 - currency:
 
@@ -80,21 +84,38 @@ dv_build_html(
   access, and only openly licensed iNaturalist photos (CC0, CC BY, CC
   BY-SA).
 
+- na_strata:
+
+  `"drop"` (default) leaves records with a missing covariate value out
+  of that covariate's panels; `"show"` draws them in an "NA" panel. The
+  aggregated sunburst always holds every record. Same argument in
+  [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md).
+
 - title:
 
   Dashboard title.
 
 - self_contained:
 
-  If TRUE render a single embedded file (needs rmarkdown and pandoc);
-  without rmarkdown, a warning is given and the page is saved with its
-  dependencies in a `lib` folder next to it.
+  If `TRUE` (default), plotly.js is embedded and the dashboard is one
+  file. If `FALSE`, plotly.js is written once to a `lib` folder next to
+  the file and linked, which keeps the HTML small when several
+  dashboards share a folder. Neither needs pandoc.
 
 ## Value
 
 The output path, invisibly.
 
 ## Details
+
+The file stays small and opens fast: plotly.js is included once, the
+data of every sunburst (node ids, labels, parents, values and colors) is
+stored once as JSON, and the sunbursts of a tab are drawn the first time
+the tab is opened. The file works offline. Colors come from
+[`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)
+built on the pooled tree of the whole dataset, so a taxon has the same
+color in every panel. The cards can be opened with the mouse or with the
+keyboard (Tab, then Enter or Space).
 
 By default the record band counts prey records, even when the spec
 declares a `count` column; set `currency = "numbers"` to count
@@ -128,12 +149,9 @@ cod <- dat[dat$predator_common == "Atlantic cod", ]
 prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 
-# a dashboard for cod, stratified by quarter, written to tempdir();
-# self_contained = FALSE keeps this quick and needs no pandoc; the default
-# (TRUE) embeds everything in one file
+# a dashboard for cod, stratified by quarter, written to tempdir()
 out <- dv_build_html(prep_cod, output = file.path(tempdir(), "cod_dashboard.html"),
-                     strata = "quarter", bands = "count",
-                     self_contained = FALSE)
+                     strata = "quarter")
 file.exists(out)
 #> [1] TRUE
 ```

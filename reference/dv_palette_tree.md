@@ -6,7 +6,9 @@ are keyed by node `id`, so a taxon keeps its color in every panel built
 from trees of the same ranks; pass the result as `colors` to
 [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md).
 Nodes above `base_rank`, and nodes below an unidentified `base_rank`
-node, are gray.
+node, are gray. A lineage gap node (e.g. `"Polychaeta (no order)"`) is
+light gray itself, while its descendants keep the tint of their
+`base_rank` ancestor.
 
 ## Usage
 

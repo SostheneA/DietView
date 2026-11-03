@@ -21,6 +21,8 @@ frozen WoRMS lineage, used throughout the examples and articles.
   : Sampled stomachs of the ICES example data, empty ones included
 - [`ices_lineage`](https://sosthenea.github.io/DietView/reference/ices_lineage.md)
   : Frozen WoRMS lineage for the ICES example data
+- [`ices_lineage_raw`](https://sosthenea.github.io/DietView/reference/ices_lineage_raw.md)
+  : Uncorrected WoRMS lineage for the ICES example data
 
 ## 1 · Declare and validate your data
 

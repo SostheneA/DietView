@@ -84,9 +84,9 @@ head(acc)
 #> 1          1          1.10   0.4472136
 #> 2          2          2.80   1.1050125
 #> 3          3          4.20   1.2396944
-#> 4          4          5.90   1.3337719
-#> 5          5          7.30   1.5927467
-#> 6          6          8.45   1.7614288
+#> 4          4          5.85   1.2258187
+#> 5          5          7.25   1.5517393
+#> 6          6          8.35   1.7554427
 acc_fam <- dv_prey_accumulation(prep_cod, rank = "family", permutations = 20,
                                 seed = 1)
 # plot(acc$n_stomachs, acc$mean_richness, type = "b")

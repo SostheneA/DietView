@@ -5,10 +5,11 @@ writes a single HTML file with one page per predator, modeled on the
 diet dashboard built for the southern Gulf of St. Lawrence. The landing
 page shows one card per predator, with its stomach count and, if you
 give a length column, its length range. Each predator page shows the
-diet in up to three bands: distinct prey items, prey records (% of all
-records) and weight (% of total weight). Every band has the same layout:
-one sunburst for all the predator’s records, one row of sunbursts per
-covariate you choose, and, if you ask for them, crossed rows.
+diet in bands of sunbursts: by default prey records (% of all records)
+and weight (% of total weight); add `bands = "count"` for distinct prey
+items. Every band has the same layout: one sunburst for all the
+predator’s records, one row of sunbursts per covariate you choose, and,
+if you ask for them, crossed rows.
 
 The data are the public ICES stomach-content extract that ships with the
 package (ICES Stomach Content Database, ICES, Copenhagen; extract
@@ -197,9 +198,13 @@ multiplies the number of panels: five cod length classes in three
 regions give up to fifteen sunbursts per band, and some of them rest on
 few stomachs (see `stom` above). Each panel prints its stomach count;
 read it before the sunburst. With these four predators and this
-crossing, the file holds several hundred sunbursts: it took about a
-minute to build and weighs about 20 MB. Drop a band or the crossing for
-a lighter file.
+crossing, the file holds several hundred sunbursts. They are stored as
+data and drawn the first time a predator’s tab is opened, so the file
+stays small: the full ICES dashboard (22 predators, three strata, two
+bands) weighs about 4 MB, most of it the plotly.js library, and builds
+in seconds. With `self_contained = FALSE`, plotly.js goes to a `lib`
+folder next to the file instead, and the HTML itself is a few hundred
+kB.
 
 To show individuals (%N) rather than records in the second band, add
 `currency = "numbers"`. Records without a count, which here include

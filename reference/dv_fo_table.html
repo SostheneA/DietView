@@ -27,7 +27,7 @@ unique across predators (see dv_validate())."><meta property="og:image" content=
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -92,7 +92,13 @@ unique across predators (see <code><a href="dv_validate.html">dv_validate()</a><
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">dv_fo_table</span><span class="op">(</span><span class="va">prep</span>, rank <span class="op">=</span> <span class="cn">NULL</span>, by <span class="op">=</span> <span class="cn">NULL</span>, include_na <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">dv_fo_table</span><span class="op">(</span></span>
+<span>  <span class="va">prep</span>,</span>
+<span>  rank <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  include_na <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  denominator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nonempty"</span>, <span class="st">"examined"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -104,7 +110,8 @@ unique across predators (see <code><a href="dv_validate.html">dv_validate()</a><
 
 
 <dt id="arg-rank">rank<a class="anchor" aria-label="anchor" href="#arg-rank"></a></dt>
-<dd><p>A single rank (e.g. <code>"genus"</code>) or <code>NULL</code> for every rank stacked.</p></dd>
+<dd><p>One or more ranks (e.g. <code>"genus"</code>; case-insensitive) or <code>NULL</code>
+for every rank stacked.</p></dd>
 
 
 <dt id="arg-by">by<a class="anchor" aria-label="anchor" href="#arg-by"></a></dt>
@@ -114,12 +121,25 @@ unique across predators (see <code><a href="dv_validate.html">dv_validate()</a><
 <dt id="arg-include-na">include_na<a class="anchor" aria-label="anchor" href="#arg-include-na"></a></dt>
 <dd><p>Keep the explicit unidentified category at each rank.</p></dd>
 
+
+<dt id="arg-denominator">denominator<a class="anchor" aria-label="anchor" href="#arg-denominator"></a></dt>
+<dd><p><code>"nonempty"</code> (default: stomachs with records) or
+<code>"examined"</code> (all examined stomachs, empty ones included; needs a stomach
+table in <code>prep</code>, and the <code>by</code> column in it).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data.frame with (optional) <code>by</code>, <code>rank</code>, <code>taxon</code>, <code>n_stomachs</code>
-(stomachs containing the taxon), <code>n_total</code> (stomachs in the group), and
-<code>pct_fo</code>.</p>
+(stomachs containing the taxon), <code>n_total</code> (stomachs in the group: the
+denominator), and <code>pct_fo</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>A long prey table holds only non-empty stomachs, so by default %FO is over
+non-empty stomachs. When <code>prep</code> was built with <code>stomachs</code> (see
+<code><a href="dv_prepare.html">dv_prepare()</a></code>), <code>denominator = "examined"</code> uses every examined stomach,
+empty ones included (stomachs of unknown status are left out).</p>
     </div>
 
     <div class="section level2">
@@ -143,18 +163,37 @@ unique across predators (see <code><a href="dv_validate.html">dv_validate()</a><
 <span class="r-in"><span><span class="va">prep_cod</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span></span>
 <span class="r-in"><span>                       verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">dv_fo_table</span><span class="op">(</span><span class="va">prep_cod</span>, rank <span class="op">=</span> <span class="st">"class"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     rank        taxon n_stomachs n_total pct_fo</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  class Malacostraca        618     991  62.36</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  class    Teleostei        332     991  33.50</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  class           NA        323     991  32.59</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  class   Polychaeta        136     991  13.72</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  class  Ophiuroidea         49     991   4.94</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  class     Bivalvia         28     991   2.83</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7  class   Gastropoda         18     991   1.82</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8  class  Cephalopoda         10     991   1.01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9  class     Gephyrea          2     991   0.20</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 class       Myxini          1     991   0.10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 class    Trematoda          1     991   0.10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     rank                 taxon n_stomachs n_total pct_fo</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  class          Malacostraca        618     991  62.36</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  class             Teleostei        332     991  33.50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  class                    NA        322     991  32.49</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  class            Polychaeta        136     991  13.72</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5  class           Ophiuroidea         49     991   4.94</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6  class              Bivalvia         28     991   2.83</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  class            Gastropoda         18     991   1.82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  class           Cephalopoda         10     991   1.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  class              Gephyrea          2     991   0.20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 class                Myxini          1     991   0.10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 class Priapulida (no class)          1     991   0.10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 class             Trematoda          1     991   0.10</span>
+<span class="r-in"><span><span class="co"># over every examined cod stomach, empty ones included</span></span></span>
+<span class="r-in"><span><span class="va">prep_cod_st</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span></span>
+<span class="r-in"><span>                          stomachs <span class="op">=</span> <span class="va">ices_stomachs</span>, empty_col <span class="op">=</span> <span class="st">"stomach_empty"</span>,</span></span>
+<span class="r-in"><span>                          verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">dv_fo_table</span><span class="op">(</span><span class="va">prep_cod_st</span>, rank <span class="op">=</span> <span class="st">"class"</span>, denominator <span class="op">=</span> <span class="st">"examined"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     rank                 taxon n_stomachs n_total pct_fo</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  class          Malacostraca        618    1059  58.36</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  class             Teleostei        332    1059  31.35</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  class                    NA        322    1059  30.41</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  class            Polychaeta        136    1059  12.84</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5  class           Ophiuroidea         49    1059   4.63</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6  class              Bivalvia         28    1059   2.64</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  class            Gastropoda         18    1059   1.70</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  class           Cephalopoda         10    1059   0.94</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  class              Gephyrea          2    1059   0.19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 class                Myxini          1    1059   0.09</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 class Priapulida (no class)          1    1059   0.09</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 class             Trematoda          1    1059   0.09</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

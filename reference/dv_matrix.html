@@ -17,7 +17,7 @@ tools that do."><meta property="og:image" content="https://sosthenea.github.io/D
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,7 +83,8 @@ tools that do.</p>
 <span>  unit <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rank <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  currency <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weight"</span>, <span class="st">"occurrence"</span>, <span class="st">"fo"</span><span class="op">)</span>,</span>
-<span>  include_na <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  include_na <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  include_empty <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -106,7 +107,8 @@ rank label. Ignored when <code>rank</code> is given.</p></dd>
 
 
 <dt id="arg-rank">rank<a class="anchor" aria-label="anchor" href="#arg-rank"></a></dt>
-<dd><p>Optional rank (one of <code>prep$ranks</code>, e.g. <code>"class"</code>): columns are
+<dd><p>Optional rank (one of <code>prep$ranks</code>, e.g. <code>"class"</code>;
+case-insensitive): columns are
 then the taxa at that rank, plus the unidentified column (<code>"NA"</code>) when
 <code>include_na = TRUE</code>.</p></dd>
 
@@ -118,6 +120,13 @@ then the taxa at that rank, plus the unidentified column (<code>"NA"</code>) whe
 
 <dt id="arg-include-na">include_na<a class="anchor" aria-label="anchor" href="#arg-include-na"></a></dt>
 <dd><p>Keep an explicit unidentified column.</p></dd>
+
+
+<dt id="arg-include-empty">include_empty<a class="anchor" aria-label="anchor" href="#arg-include-empty"></a></dt>
+<dd><p>Add an all-zero row for every empty stomach (default
+<code>FALSE</code>). Needs a stomach table in <code>prep</code> (see <code><a href="dv_prepare.html">dv_prepare()</a></code>) and <code>unit</code>
+to be the stomach column. Without a stomach table the matrix holds only
+stomachs with records.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -147,7 +156,7 @@ then the taxa at that rank, plus the unidentified column (<code>"NA"</code>) whe
 <span class="r-in"><span>                       verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu">dv_matrix</span><span class="op">(</span><span class="va">prep_cod</span>, currency <span class="op">=</span> <span class="st">"occurrence"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 991 145</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 991 143</span>
 <span class="r-in"><span><span class="va">m_class</span> <span class="op">&lt;-</span> <span class="fu">dv_matrix</span><span class="op">(</span><span class="va">prep_cod</span>, rank <span class="op">=</span> <span class="st">"class"</span>, currency <span class="op">=</span> <span class="st">"weight"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">m_class</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         Bivalvia Cephalopoda Gastropoda Gephyrea</span>

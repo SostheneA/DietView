@@ -71,8 +71,8 @@ prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 dv_threshold_sweep(prep_cod, thresholds = c(2, 5, 10, 20))
 #>   threshold n_categories pct_coarser
-#> 1         2          104       62.28
-#> 2         5           63       65.32
-#> 3        10           47       66.75
-#> 4        20           32       72.18
+#> 1         2          102       62.28
+#> 2         5           61       65.32
+#> 3        10           45       66.75
+#> 4        20           30       71.35
 ```

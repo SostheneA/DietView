@@ -25,13 +25,16 @@ dv_summary(prep, by = NULL, rank = NULL)
 - rank:
 
   Optional rank (one of `prep$ranks`, e.g. `"family"`) at which `n_taxa`
-  is counted. `NULL` (default) uses the finest resolved label.
+  is counted, case-insensitive (`"family"` or `"Family"`). `NULL`
+  (default) uses the finest resolved label. At a stated rank, a lineage
+  gap group such as `"Polychaeta (no order)"` counts as one category.
 
 ## Value
 
 A data.frame with one row per predator (and per `by` level), with
 `n_stomachs`, `n_records`, `n_taxa`, `records_per_stomach`, and, when a
-weight column is declared, `total_weight`.
+weight column is declared, `total_weight`; with a stomach table, also
+`n_examined`, `n_empty` and `pct_vacuity`.
 
 ## Details
 
@@ -41,9 +44,14 @@ record, which mixes ranks: a stomach with *Themisto libellula* and
 `n_taxa` overstates richness, more so as digestion advances. Give `rank`
 to count taxa at one stated rank instead, unidentified records excluded.
 
-Note that a long prey-record table represents only non-empty stomachs,
-so this function cannot report a vacuity (percent-empty) index; that
-must be computed upstream from the full sampling frame.
+A long prey-record table represents only non-empty stomachs. When `prep`
+was built with `stomachs` (the table of every examined stomach, see
+[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)),
+the summary also reports `n_examined` (stomachs examined: with records
+or empty), `n_empty` and `pct_vacuity` (percentage of examined stomachs
+that were empty). Stomachs of unknown status (no record and not flagged
+empty) are left out of all three. Without `stomachs`, vacuity cannot be
+computed and these columns are absent.
 
 ## Examples
 
@@ -67,11 +75,11 @@ prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
 dv_summary(prep)
 #>            predator_common n_stomachs n_records n_taxa records_per_stomach
 #> 1        Atlantic mackerel       1048      1593     10                1.52
-#> 2             Atlantic cod        991      2304    144                2.32
-#> 3                  Whiting        892      1605    101                1.80
+#> 2             Atlantic cod        991      2304    142                2.32
+#> 3                  Whiting        892      1605     99                1.80
 #> 4          European plaice        729      1890     69                2.59
 #> 5  Atlantic horse mackerel        135       245     24                1.81
-#> 6            European hake        106       154     23                1.45
+#> 6            European hake        106       154     22                1.45
 #> 7              Tub gurnard         90       187     37                2.08
 #> 8             Thorny skate         48       184     27                3.83
 #> 9                   Turbot         47        87     21                1.85
@@ -114,8 +122,8 @@ dv_summary(prep)
 dv_summary(prep, by = "region")
 #>            predator_common             region n_stomachs n_records n_taxa
 #> 1        Atlantic mackerel          North Sea        948      1491     10
-#> 2             Atlantic cod          North Sea        731      1739    116
-#> 3                  Whiting          North Sea        650      1078     55
+#> 2             Atlantic cod          North Sea        731      1739    114
+#> 3                  Whiting          North Sea        650      1078     54
 #> 4          European plaice          North Sea        429       955     47
 #> 5          European plaice Skagerrak-Kattegat        262       874     43
 #> 6             Atlantic cod         Baltic Sea        198       430     63
@@ -124,14 +132,14 @@ dv_summary(prep, by = "region")
 #> 9  Atlantic horse mackerel         Baltic Sea         91       187     23
 #> 10                 Whiting Skagerrak-Kattegat         75       117     21
 #> 11           European hake Skagerrak-Kattegat         72       116     16
-#> 12            Atlantic cod Skagerrak-Kattegat         62       135     32
+#> 12            Atlantic cod Skagerrak-Kattegat         62       135     30
 #> 13            Thorny skate Skagerrak-Kattegat         42       160     23
 #> 14             Tub gurnard         Baltic Sea         39        75     25
 #> 15 Atlantic horse mackerel          North Sea         38        51      6
 #> 16         European plaice         Baltic Sea         38        61     11
 #> 17             Tub gurnard          North Sea         38        77     10
 #> 18                  Turbot          North Sea         36        66     16
-#> 19           European hake          North Sea         34        38     13
+#> 19           European hake          North Sea         34        38     12
 #> 20            Grey gurnard          North Sea         20        30      8
 #> 21                   Brill          North Sea         15        25      9
 #> 22             Spotted ray          North Sea         15        51     10
@@ -210,10 +218,23 @@ dv_summary(prep, by = "region")
 #> 46                3.00      23.5770
 #> 47                1.00      16.4910
 #> 48                5.00       0.8220
+# with every examined stomach, empty ones included: vacuity per predator
+prep_st <- dv_prepare(dat, spec, taxonomy = "table", lineage = ices_lineage,
+                      stomachs = ices_stomachs, empty_col = "stomach_empty",
+                      verbose = FALSE)
+head(dv_summary(prep_st)[, c("predator_common", "n_stomachs", "n_examined",
+                            "n_empty", "pct_vacuity")])
+#>           predator_common n_stomachs n_examined n_empty pct_vacuity
+#> 1       Atlantic mackerel       1048       1051       3         0.3
+#> 2            Atlantic cod        991       1059      68         6.4
+#> 3                 Whiting        892       1186     294        24.8
+#> 4         European plaice        729       1367     638        46.7
+#> 5 Atlantic horse mackerel        135        196      61        31.1
+#> 6           European hake        106        138      32        23.2
 head(dv_summary(prep, rank = "class"))
 #>           predator_common n_stomachs n_records n_taxa records_per_stomach
 #> 1       Atlantic mackerel       1048      1593      2                1.52
-#> 2            Atlantic cod        991      2304     10                2.32
+#> 2            Atlantic cod        991      2304     11                2.32
 #> 3                 Whiting        892      1605      9                1.80
 #> 4         European plaice        729      1890     14                2.59
 #> 5 Atlantic horse mackerel        135       245      6                1.81

@@ -57,6 +57,6 @@ cod <- dat[dat$predator_common == "Atlantic cod", ]
 prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
                        verbose = FALSE)
 dv_deploy(prep_cod, file = "cod_dashboard.html", dir = tempdir(),
-          strata = character(0), bands = "count", self_contained = FALSE)
-#> Deployed standalone dashboard: /tmp/Rtmp5feq8d/cod_dashboard.html
+          strata = character(0))
+#> Deployed standalone dashboard: /tmp/RtmpH44x8x/cod_dashboard.html
 ```

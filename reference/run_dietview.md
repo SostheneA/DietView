@@ -10,7 +10,12 @@ length bins by period).
 ## Usage
 
 ``` r
-run_dietview(prep, currency = c("records", "numbers"), ...)
+run_dietview(
+  prep,
+  currency = c("records", "numbers"),
+  na_strata = c("drop", "show"),
+  ...
+)
 ```
 
 ## Arguments
@@ -25,6 +30,12 @@ run_dietview(prep, currency = c("records", "numbers"), ...)
   `"records"` (default: each record counts once) or `"numbers"` (each
   record counts its `count` column, %N; needs `count` in the spec). See
   [`dv_tree()`](https://sosthenea.github.io/DietView/reference/dv_tree.md).
+
+- na_strata:
+
+  `"drop"` (default) or `"show"`: whether records with a missing
+  covariate value get an "NA" panel when faceting. Same argument in
+  [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md).
 
 - ...:
 
@@ -48,8 +59,9 @@ predators) and per predator. Pooled aggregations are computed on all
 predators before one is selected, so the categories are the same in
 every predator's view.
 
-The tabs show the sunburst (one panel per covariate cell when faceting,
-covariate `NA` values getting their own "NA" panel), the rank table, the
+The tabs show the sunburst (one panel per covariate cell when faceting;
+records with a missing covariate value are left out of the panels, or
+shown in an "NA" panel with `na_strata = "show"`), the rank table, the
 frequency of occurrence at the chosen rank, the digestion diagnostic
 (when a digestion column is declared) and a "Reproduce" tab. That tab
 shows the R script that rebuilds the current view with exported

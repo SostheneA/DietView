@@ -13,7 +13,7 @@ broken down by a covariate."><meta property="og:image" content="https://sosthene
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,14 +88,17 @@ broken down by a covariate.</p>
 
 <dt id="arg-rank">rank<a class="anchor" aria-label="anchor" href="#arg-rank"></a></dt>
 <dd><p>Optional rank (one of <code>prep$ranks</code>, e.g. <code>"family"</code>) at which
-<code>n_taxa</code> is counted. <code>NULL</code> (default) uses the finest resolved label.</p></dd>
+<code>n_taxa</code> is counted, case-insensitive (<code>"family"</code> or <code>"Family"</code>). <code>NULL</code>
+(default) uses the finest resolved label. At a stated rank, a lineage gap
+group such as <code>"Polychaeta (no order)"</code> counts as one category.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data.frame with one row per predator (and per <code>by</code> level), with
 <code>n_stomachs</code>, <code>n_records</code>, <code>n_taxa</code>, <code>records_per_stomach</code>, and, when a
-weight column is declared, <code>total_weight</code>.</p>
+weight column is declared, <code>total_weight</code>; with a stomach table, also
+<code>n_examined</code>, <code>n_empty</code> and <code>pct_vacuity</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -104,9 +107,13 @@ record, which mixes ranks: a stomach with <em>Themisto libellula</em> and
 "Amphipoda" counts two taxa although <em>Themisto</em> is an amphipod, so <code>n_taxa</code>
 overstates richness, more so as digestion advances. Give <code>rank</code> to count
 taxa at one stated rank instead, unidentified records excluded.</p>
-<p>Note that a long prey-record table represents only non-empty stomachs, so
-this function cannot report a vacuity (percent-empty) index; that must be
-computed upstream from the full sampling frame.</p>
+<p>A long prey-record table represents only non-empty stomachs. When <code>prep</code>
+was built with <code>stomachs</code> (the table of every examined stomach, see
+<code><a href="dv_prepare.html">dv_prepare()</a></code>), the summary also reports <code>n_examined</code> (stomachs examined:
+with records or empty), <code>n_empty</code> and <code>pct_vacuity</code> (percentage of examined
+stomachs that were empty). Stomachs of unknown status (no record and not
+flagged empty) are left out of all three. Without <code>stomachs</code>, vacuity cannot
+be computed and these columns are absent.</p>
     </div>
 
     <div class="section level2">
@@ -130,11 +137,11 @@ computed upstream from the full sampling frame.</p>
 <span class="r-in"><span><span class="fu">dv_summary</span><span class="op">(</span><span class="va">prep</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>            predator_common n_stomachs n_records n_taxa records_per_stomach</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1        Atlantic mackerel       1048      1593     10                1.52</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2             Atlantic cod        991      2304    144                2.32</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3                  Whiting        892      1605    101                1.80</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2             Atlantic cod        991      2304    142                2.32</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                  Whiting        892      1605     99                1.80</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4          European plaice        729      1890     69                2.59</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5  Atlantic horse mackerel        135       245     24                1.81</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6            European hake        106       154     23                1.45</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6            European hake        106       154     22                1.45</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7              Tub gurnard         90       187     37                2.08</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 8             Thorny skate         48       184     27                3.83</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 9                   Turbot         47        87     21                1.85</span>
@@ -177,8 +184,8 @@ computed upstream from the full sampling frame.</p>
 <span class="r-in"><span><span class="fu">dv_summary</span><span class="op">(</span><span class="va">prep</span>, by <span class="op">=</span> <span class="st">"region"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>            predator_common             region n_stomachs n_records n_taxa</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1        Atlantic mackerel          North Sea        948      1491     10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2             Atlantic cod          North Sea        731      1739    116</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3                  Whiting          North Sea        650      1078     55</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2             Atlantic cod          North Sea        731      1739    114</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                  Whiting          North Sea        650      1078     54</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4          European plaice          North Sea        429       955     47</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5          European plaice Skagerrak-Kattegat        262       874     43</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6             Atlantic cod         Baltic Sea        198       430     63</span>
@@ -187,14 +194,14 @@ computed upstream from the full sampling frame.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 9  Atlantic horse mackerel         Baltic Sea         91       187     23</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 10                 Whiting Skagerrak-Kattegat         75       117     21</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 11           European hake Skagerrak-Kattegat         72       116     16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12            Atlantic cod Skagerrak-Kattegat         62       135     32</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12            Atlantic cod Skagerrak-Kattegat         62       135     30</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 13            Thorny skate Skagerrak-Kattegat         42       160     23</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 14             Tub gurnard         Baltic Sea         39        75     25</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 15 Atlantic horse mackerel          North Sea         38        51      6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 16         European plaice         Baltic Sea         38        61     11</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 17             Tub gurnard          North Sea         38        77     10</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 18                  Turbot          North Sea         36        66     16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19           European hake          North Sea         34        38     13</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19           European hake          North Sea         34        38     12</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 20            Grey gurnard          North Sea         20        30      8</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 21                   Brill          North Sea         15        25      9</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 22             Spotted ray          North Sea         15        51     10</span>
@@ -273,10 +280,23 @@ computed upstream from the full sampling frame.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 46                3.00      23.5770</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 47                1.00      16.4910</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 48                5.00       0.8220</span>
+<span class="r-in"><span><span class="co"># with every examined stomach, empty ones included: vacuity per predator</span></span></span>
+<span class="r-in"><span><span class="va">prep_st</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span></span>
+<span class="r-in"><span>                      stomachs <span class="op">=</span> <span class="va">ices_stomachs</span>, empty_col <span class="op">=</span> <span class="st">"stomach_empty"</span>,</span></span>
+<span class="r-in"><span>                      verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">dv_summary</span><span class="op">(</span><span class="va">prep_st</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"predator_common"</span>, <span class="st">"n_stomachs"</span>, <span class="st">"n_examined"</span>,</span></span>
+<span class="r-in"><span>                            <span class="st">"n_empty"</span>, <span class="st">"pct_vacuity"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           predator_common n_stomachs n_examined n_empty pct_vacuity</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1       Atlantic mackerel       1048       1051       3         0.3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2            Atlantic cod        991       1059      68         6.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                 Whiting        892       1186     294        24.8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4         European plaice        729       1367     638        46.7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Atlantic horse mackerel        135        196      61        31.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6           European hake        106        138      32        23.2</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">dv_summary</span><span class="op">(</span><span class="va">prep</span>, rank <span class="op">=</span> <span class="st">"class"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           predator_common n_stomachs n_records n_taxa records_per_stomach</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1       Atlantic mackerel       1048      1593      2                1.52</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2            Atlantic cod        991      2304     10                2.32</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2            Atlantic cod        991      2304     11                2.32</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3                 Whiting        892      1605      9                1.80</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4         European plaice        729      1890     14                2.59</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5 Atlantic horse mackerel        135       245      6                1.81</span>

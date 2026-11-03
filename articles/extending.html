@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -417,7 +417,7 @@ of the lineage table:</p>
 <span>                    verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>seven_ranks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu"><a href="../reference/dv_tree.html">dv_tree</a></span><span class="op">(</span><span class="va">prep</span><span class="op">)</span><span class="op">)</span>, five_ranks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu"><a href="../reference/dv_tree.html">dv_tree</a></span><span class="op">(</span><span class="va">prep5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; seven_ranks  five_ranks </span></span>
-<span><span class="co">#&gt;         702         458</span></span></code></pre></div>
+<span><span class="co">#&gt;         701         459</span></span></code></pre></div>
 <p>Rank names are WoRMS rank names in lower case, so on the WoRMS path
 intermediate ranks such as <code>"subclass"</code> or
 <code>"infraorder"</code> can be added. A frozen table holds only the
@@ -428,26 +428,32 @@ freezing again.</p>
 <p>Fewer ranks make a simpler figure, but they also merge information:
 without <code>"species"</code>, a prey named to species and one named
 only to its genus look the same. Check one more thing on your own prey
-list: some taxa have no entry at one of the requested ranks in WoRMS.
-Such a prey shows an unidentified node at that rank with named taxa
-beyond it, and that node then mixes prey that were not identified with
-prey that were identified but have no taxon at that rank. Find those
-nodes before you report an unidentified share:</p>
+list: some taxa have no entry at one of the requested ranks in WoRMS. By
+default <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> fills such a hole, when a finer rank
+is identified, with <code>"&lt;ancestor&gt; (no &lt;rank&gt;)"</code>,
+drawn light gray, so identified prey never sit under an unidentified
+node:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_tree.html">dv_tree</a></span><span class="op">(</span><span class="va">prep</span><span class="op">)</span></span>
-<span><span class="va">named_kids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tapply.html" class="external-link">tapply</a></span><span class="op">(</span><span class="va">tree</span><span class="op">$</span><span class="va">label</span> <span class="op">!=</span> <span class="st">"NA"</span>, <span class="va">tree</span><span class="op">$</span><span class="va">parent</span>, <span class="va">any</span><span class="op">)</span></span>
-<span><span class="va">holes</span> <span class="op">&lt;-</span> <span class="va">tree</span><span class="op">[</span><span class="va">tree</span><span class="op">$</span><span class="va">label</span> <span class="op">==</span> <span class="st">"NA"</span> <span class="op">&amp;</span> <span class="va">tree</span><span class="op">$</span><span class="va">id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">named_kids</span><span class="op">)</span><span class="op">[</span><span class="va">named_kids</span><span class="op">]</span>, <span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">prep</span>, <span class="st">"lineage_gaps"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; kingdom  phylum   class   order  family   genus species </span></span>
+<span><span class="co">#&gt;       0       0       1      27       0       0       0</span></span>
+<span><span class="va">holes</span> <span class="op">&lt;-</span> <span class="va">tree</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"\\(no [a-z]+\\)$"</span>, <span class="va">tree</span><span class="op">$</span><span class="va">label</span><span class="op">)</span>, <span class="op">]</span></span>
 <span><span class="va">holes</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"rank"</span>, <span class="st">"value_occ"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;                                  id  rank value_occ</span></span>
-<span><span class="co">#&gt; 45           Animalia|Priapulida|NA Class         7</span></span>
-<span><span class="co">#&gt; 55  Animalia|Annelida|Polychaeta|NA Order       470</span></span>
-<span><span class="co">#&gt; 69 Animalia|Chordata|Leptocardii|NA Order         1</span></span></code></pre></div>
-<p>In the ICES data these are the polychaetes, whose unidentified order
-node holds 470 records, some of them in families that WoRMS places in no
-order; a lancelet (Leptocardii) with a family but no order; and
-Priapulida, which have no class. Their <code>NA</code> rows in
-<code><a href="../reference/dv_rank_table.html">dv_rank_table()</a></code> at that rank are not all unidentified
-prey.</p>
+<span><span class="co">#&gt;                                                      id  rank value_occ</span></span>
+<span><span class="co">#&gt; 45            Animalia|Priapulida|Priapulida (no class) Class         1</span></span>
+<span><span class="co">#&gt; 55   Animalia|Annelida|Polychaeta|Polychaeta (no order) Order        26</span></span>
+<span><span class="co">#&gt; 71 Animalia|Chordata|Leptocardii|Leptocardii (no order) Order         1</span></span>
+<span><span class="co"># identified nodes under an unidentified ("NA") node: none</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">tree</span><span class="op">$</span><span class="va">label</span> <span class="op">!=</span> <span class="st">"NA"</span> <span class="op">&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"(^|\\|)NA(\\||$)"</span>, <span class="va">tree</span><span class="op">$</span><span class="va">parent</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<p>In the ICES data these are the polychaetes, with 26 records in
+families that WoRMS places in no order; a lancelet (Leptocardii) with a
+family but no order; and Priapulida, which have no class. With
+<code>gaps = "keep"</code> these records stay <code>NA</code> at that
+rank and sit under the unidentified node instead, which then mixes prey
+that were not identified with prey that were identified but have no
+taxon at that rank.</p>
 </div>
 <div class="section level2">
 <h2 id="colors">5. Colors<a class="anchor" aria-label="anchor" href="#colors"></a>
@@ -458,7 +464,7 @@ them:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_palette.html">dv_palette</a></span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">class</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pal</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 21</span></span>
+<span><span class="co">#&gt; [1] 22</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pal</span>, <span class="fl">6</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Malacostraca    Teleostei     Bivalvia  Cephalopoda   Polychaeta Phaeophyceae </span></span>
 <span><span class="co">#&gt;    "#1f77b4"    "#aec7e8"    "#ff7f0e"    "#ffbb78"    "#2ca02c"    "#98df8a"</span></span></code></pre></div>

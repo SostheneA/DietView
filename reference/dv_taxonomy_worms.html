@@ -6,7 +6,10 @@ is read: an unaccepted AphiaID is followed to its accepted (valid) one
 (&quot;id_synonym&quot;), and the prey name stored with it is compared with the
 name WoRMS gives that AphiaID (name_check: &quot;agrees&quot; or &quot;differs&quot;). If
 the record cannot be read, the AphiaID is used as given
-(&quot;id_unchecked&quot;);
+(&quot;id_unchecked&quot;). If WoRMS does not know the AphiaID at all (both its
+record and its classification come back &quot;no content&quot;), the prey name
+is matched instead, as below, and the match is logged as
+&quot;id_fallback_name&quot;;
 exact - the prey name matches a WoRMS name exactly;
 fuzzy - (if fuzzy = TRUE) WoRMS TAXAMATCH
 (worrms::wm_records_taxamatch()) proposes the closest name, which can
@@ -26,7 +29,10 @@ is read: an unaccepted AphiaID is followed to its accepted (valid) one
 (&quot;id_synonym&quot;), and the prey name stored with it is compared with the
 name WoRMS gives that AphiaID (name_check: &quot;agrees&quot; or &quot;differs&quot;). If
 the record cannot be read, the AphiaID is used as given
-(&quot;id_unchecked&quot;);
+(&quot;id_unchecked&quot;). If WoRMS does not know the AphiaID at all (both its
+record and its classification come back &quot;no content&quot;), the prey name
+is matched instead, as below, and the match is logged as
+&quot;id_fallback_name&quot;;
 exact - the prey name matches a WoRMS name exactly;
 fuzzy - (if fuzzy = TRUE) WoRMS TAXAMATCH
 (worrms::wm_records_taxamatch()) proposes the closest name, which can
@@ -47,7 +53,7 @@ unidentified category downstream."><meta property="og:image" content="https://so
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -103,7 +109,10 @@ is read: an unaccepted AphiaID is followed to its accepted (valid) one
 (<code>"id_synonym"</code>), and the prey name stored with it is compared with the
 name WoRMS gives that AphiaID (<code>name_check</code>: "agrees" or "differs"). If
 the record cannot be read, the AphiaID is used as given
-(<code>"id_unchecked"</code>);</p></li>
+(<code>"id_unchecked"</code>). If WoRMS does not know the AphiaID at all (both its
+record and its classification come back "no content"), the prey name
+is matched instead, as below, and the match is logged as
+<code>"id_fallback_name"</code>;</p></li>
 <li><p><strong>exact</strong> - the prey name matches a WoRMS name exactly;</p></li>
 <li><p><strong>fuzzy</strong> - (if <code>fuzzy = TRUE</code>) WoRMS TAXAMATCH
 (<code><a href="https://docs.ropensci.org/worrms/reference/wm_records_taxamatch.html" class="external-link">worrms::wm_records_taxamatch()</a></code>) proposes the closest name, which can
@@ -171,7 +180,8 @@ fetched again (default 180). <code>Inf</code> trusts the cache forever.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p><code>keys</code> with one column per rank plus <code>aphia_used</code>, <code>match_type</code>
-("id", "id_synonym", "id_unchecked", "exact", "fuzzy", "unresolved"),
+("id", "id_synonym", "id_unchecked", "id_fallback_name", "exact",
+"fuzzy", "unresolved"),
 <code>name_check</code>, <code>matched_name</code>, <code>n_candidates</code> (WoRMS records returned for a
 name), <code>homonym</code> (more than one accepted record for that name),
 <code>lineage_ok</code> (<code>TRUE</code>/<code>FALSE</code> once a classification was requested, <code>NA</code>
@@ -179,11 +189,19 @@ otherwise) and <code>retrieved</code> (date the lineage was fetched from WoRMS).
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Requires the <span class="pkg">worrms</span> package and internet access. Successful lookups
-are cached to disk, so re-runs and other surveys do not requery. Failed
-lookups (timeout, no network, server error, an AphiaID WoRMS does not know)
-are never cached: they are flagged with <code>lineage_ok = FALSE</code> and a warning,
-and are retried on the next run.</p>
+    <p>Requires the <span class="pkg">worrms</span> package and internet access. Requests are
+batched: records are read for chunks of AphiaIDs (<code><a href="https://docs.ropensci.org/worrms/reference/wm_record.html" class="external-link">worrms::wm_record()</a></code>),
+names are matched in chunks (<code><a href="https://docs.ropensci.org/worrms/reference/wm_records_names.html" class="external-link">worrms::wm_records_names()</a></code>,
+<code><a href="https://docs.ropensci.org/worrms/reference/wm_records_taxamatch.html" class="external-link">worrms::wm_records_taxamatch()</a></code>) and classifications are requested per
+chunk (<code><a href="https://docs.ropensci.org/worrms/reference/wm_classification.html" class="external-link">worrms::wm_classification_()</a></code>); the chunk size is
+<code>getOption("DietView.worms_chunk", 50)</code>. A failed request is retried up to
+<code>getOption("DietView.worms_retries", 3)</code> times, waiting 1, 2, 4 ... seconds
+between attempts; a "no match" answer from WoRMS (HTTP 204) is final and
+not retried. Successful lookups are cached to disk, so re-runs and other
+surveys do not requery. Lookups that still fail (timeout, no network,
+server error, an AphiaID WoRMS does not know) are never cached: they are
+flagged with <code>lineage_ok = FALSE</code> and a warning, and are retried on the next
+run.</p>
 <p>The cache is managed: entries older than <code>cache_max_age</code> days are removed
 from the file each time it is read (and fetched again when needed), as are
 malformed (undated) entries. An unreadable cache file is

@@ -11,7 +11,7 @@ row included."><meta property="og:image" content="https://sosthenea.github.io/Di
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,7 +80,9 @@ row included.</p>
 
 
 <dt id="arg-rank">rank<a class="anchor" aria-label="anchor" href="#arg-rank"></a></dt>
-<dd><p>Rank label to extract (e.g. "Class").</p></dd>
+<dd><p>Rank to extract, by its display label or column name,
+case-insensitive (<code>"Class"</code>, <code>"class"</code> and <code>" CLASS "</code> are the same). An
+unknown rank is an error.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -108,38 +110,72 @@ row included.</p>
 <span class="r-in"><span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_build_tree.html">dv_build_tree</a></span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">data</span>, <span class="va">prep</span><span class="op">$</span><span class="va">ranks</span>, weight_col <span class="op">=</span> <span class="va">spec</span><span class="op">$</span><span class="va">weight</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">dv_rank_table</span><span class="op">(</span><span class="va">tree</span>, <span class="st">"Class"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            label value_item value_occ     pct_occ    value_w        pct_w</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23  Malacostraca         92      2085 24.44314185  2948.8905 1.346632e+01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29     Teleostei         64      1614 18.92145369 14366.4605 6.560545e+01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 47            NA          1      1553 18.20633060  1115.2120 5.092694e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20    Polychaeta         30       758  8.88628370   584.2752 2.668134e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 30            NA          1       713  8.35873388  1328.6695 6.067463e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25            NA          1       662  7.76084408   501.2407 2.288951e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 36   Ophiuroidea          4       493  5.77960141   526.9670 2.406432e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 38      Bivalvia         12       317  3.71629543   231.8770 1.058883e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 40    Gastropoda          3        72  0.84407972    26.4690 1.208725e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 37            NA          1        67  0.78546307    26.1870 1.195848e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 39   Cephalopoda          7        48  0.56271981    89.2940 4.077673e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 35    Echinoidea          2        31  0.36342321    49.9250 2.279860e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22      Copepoda          3        30  0.35169988     0.4480 2.045823e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21            NA          1        23  0.26963658    12.0040 5.481711e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 34    Asteroidea          1        11  0.12895662     1.0410 4.753800e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 41            NA          1        10  0.11723329    11.1470 5.090356e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 43     Trematoda          1        10  0.11723329     0.0110 5.023227e-05</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 28        Myxini          1         7  0.08206331    24.6800 1.127030e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 45            NA          2         7  0.08206331    39.4100 1.799685e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 44            NA          1         4  0.04689332     0.3750 1.712464e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19      Gephyrea          1         3  0.03516999     4.2900 1.959059e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24   Thecostraca          1         2  0.02344666     0.3400 1.552634e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26            NA          1         2  0.02344666     0.5100 2.328951e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18    Clitellata          1         1  0.01172333     0.0700 3.196599e-04</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27   Leptocardii          1         1  0.01172333     0.2970 1.356271e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31  Hexacorallia          1         1  0.01172333     1.5320 6.995986e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32      Hydrozoa          1         1  0.01172333     6.5000 2.968271e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 33            NA          1         1  0.01172333     0.0010 4.566570e-06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 42 Hoplonemertea          1         1  0.01172333     0.0010 4.566570e-06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 46  Phaeophyceae          1         1  0.01172333     0.0000 0.000000e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 48            NA          1         1  0.01172333     0.1480 6.758524e-04</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    label value_item value_occ     pct_occ    value_w</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23          Malacostraca         92      2085 24.44314185  2948.8905</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 29             Teleostei         63      1614 18.92145369 14366.4605</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 48                    NA          1      1553 18.20633060  1115.2120</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20            Polychaeta         29       758  8.88628370   584.2752</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 30                    NA          1       713  8.35873388  1328.6695</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 25                    NA          1       662  7.76084408   501.2407</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 36           Ophiuroidea          4       493  5.77960141   526.9670</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 38              Bivalvia         12       317  3.71629543   231.8770</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 40            Gastropoda          3        72  0.84407972    26.4690</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 37                    NA          1        67  0.78546307    26.1870</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 39           Cephalopoda          7        48  0.56271981    89.2940</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 35            Echinoidea          2        31  0.36342321    49.9250</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22              Copepoda          3        30  0.35169988     0.4480</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21                    NA          1        23  0.26963658    12.0040</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 34            Asteroidea          1        11  0.12895662     1.0410</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 41                    NA          1        10  0.11723329    11.1470</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 43             Trematoda          1        10  0.11723329     0.0110</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 28                Myxini          1         7  0.08206331    24.6800</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 46                    NA          1         6  0.07033998    36.8600</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 44                    NA          1         4  0.04689332     0.3750</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19              Gephyrea          1         3  0.03516999     4.2900</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24           Thecostraca          1         2  0.02344666     0.3400</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 26                    NA          1         2  0.02344666     0.5100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18            Clitellata          1         1  0.01172333     0.0700</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 27           Leptocardii          1         1  0.01172333     0.2970</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 31          Hexacorallia          1         1  0.01172333     1.5320</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 32              Hydrozoa          1         1  0.01172333     6.5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 33                    NA          1         1  0.01172333     0.0010</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 42         Hoplonemertea          1         1  0.01172333     0.0010</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 45 Priapulida (no class)          1         1  0.01172333     2.5500</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 47          Phaeophyceae          1         1  0.01172333     0.0000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 49                    NA          1         1  0.01172333     0.1480</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           pct_w</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23 1.346632e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 29 6.560545e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 48 5.092694e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20 2.668134e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 30 6.067463e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 25 2.288951e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 36 2.406432e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 38 1.058883e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 40 1.208725e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 37 1.195848e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 39 4.077673e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 35 2.279860e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22 2.045823e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21 5.481711e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 34 4.753800e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 41 5.090356e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 43 5.023227e-05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 28 1.127030e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 46 1.683238e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 44 1.712464e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19 1.959059e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24 1.552634e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 26 2.328951e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18 3.196599e-04</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 27 1.356271e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 31 6.995986e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 32 2.968271e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 33 4.566570e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 42 4.566570e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 45 1.164475e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 47 0.000000e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 49 6.758524e-04</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

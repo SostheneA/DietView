@@ -9,7 +9,10 @@ order:
     one (`"id_synonym"`), and the prey name stored with it is compared
     with the name WoRMS gives that AphiaID (`name_check`: "agrees" or
     "differs"). If the record cannot be read, the AphiaID is used as
-    given (`"id_unchecked"`);
+    given (`"id_unchecked"`). If WoRMS does not know the AphiaID at all
+    (both its record and its classification come back "no content"), the
+    prey name is matched instead, as below, and the match is logged as
+    `"id_fallback_name"`;
 
 2.  **exact** - the prey name matches a WoRMS name exactly;
 
@@ -81,18 +84,30 @@ dv_taxonomy_worms(
 ## Value
 
 `keys` with one column per rank plus `aphia_used`, `match_type` ("id",
-"id_synonym", "id_unchecked", "exact", "fuzzy", "unresolved"),
-`name_check`, `matched_name`, `n_candidates` (WoRMS records returned for
-a name), `homonym` (more than one accepted record for that name),
-`lineage_ok` (`TRUE`/`FALSE` once a classification was requested, `NA`
-otherwise) and `retrieved` (date the lineage was fetched from WoRMS).
+"id_synonym", "id_unchecked", "id_fallback_name", "exact", "fuzzy",
+"unresolved"), `name_check`, `matched_name`, `n_candidates` (WoRMS
+records returned for a name), `homonym` (more than one accepted record
+for that name), `lineage_ok` (`TRUE`/`FALSE` once a classification was
+requested, `NA` otherwise) and `retrieved` (date the lineage was fetched
+from WoRMS).
 
 ## Details
 
-Requires the worrms package and internet access. Successful lookups are
-cached to disk, so re-runs and other surveys do not requery. Failed
-lookups (timeout, no network, server error, an AphiaID WoRMS does not
-know) are never cached: they are flagged with `lineage_ok = FALSE` and a
+Requires the worrms package and internet access. Requests are batched:
+records are read for chunks of AphiaIDs
+([`worrms::wm_record()`](https://docs.ropensci.org/worrms/reference/wm_record.html)),
+names are matched in chunks
+([`worrms::wm_records_names()`](https://docs.ropensci.org/worrms/reference/wm_records_names.html),
+[`worrms::wm_records_taxamatch()`](https://docs.ropensci.org/worrms/reference/wm_records_taxamatch.html))
+and classifications are requested per chunk
+([`worrms::wm_classification_()`](https://docs.ropensci.org/worrms/reference/wm_classification.html));
+the chunk size is `getOption("DietView.worms_chunk", 50)`. A failed
+request is retried up to `getOption("DietView.worms_retries", 3)` times,
+waiting 1, 2, 4 ... seconds between attempts; a "no match" answer from
+WoRMS (HTTP 204) is final and not retried. Successful lookups are cached
+to disk, so re-runs and other surveys do not requery. Lookups that still
+fail (timeout, no network, server error, an AphiaID WoRMS does not know)
+are never cached: they are flagged with `lineage_ok = FALSE` and a
 warning, and are retried on the next run.
 
 The cache is managed: entries older than `cache_max_age` days are

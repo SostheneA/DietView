@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,10 +56,38 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.0.9000" id="dietview-0109000">DietView 0.1.0.9000<a class="anchor" aria-label="anchor" href="#dietview-0109000"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-1-0-9000">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-0-9000"></a></h3>
+<ul><li>
+<code><a href="../reference/dv_sunburst.html">dv_sunburst()</a></code> now sizes wedges by prey records by default (<code>mode = "occurrence"</code>); the choices are ordered <code>"occurrence"</code>, <code>"weight"</code>, <code>"count"</code>, as in <code><a href="../reference/run_dietview.html">run_dietview()</a></code>.</li>
+<li>
+<code><a href="../reference/dv_build_html.html">dv_build_html()</a></code> draws the record and weight bands by default (<code>bands = c("occurrence", "weight")</code>); add <code>"count"</code> for distinct prey items.</li>
+<li>Default colors follow the hierarchy: <code><a href="../reference/dv_build_html.html">dv_build_html()</a></code>, <code><a href="../reference/run_dietview.html">run_dietview()</a></code> and the script of <code><a href="../reference/dv_script.html">dv_script()</a></code> use <code><a href="../reference/dv_palette_tree.html">dv_palette_tree()</a></code> built from the pooled tree of the whole prepared dataset, and <code>dv_sunburst(colors = NULL)</code> uses <code><a href="../reference/dv_palette_tree.html">dv_palette_tree()</a></code> of the tree drawn. A taxon keeps one color across panels and neighbouring wedges no longer share a color. <code><a href="../reference/dv_palette.html">dv_palette()</a></code> is still exported for label-keyed colors.</li>
+<li>
+<code><a href="../reference/dv_build_html.html">dv_build_html()</a></code>, <code><a href="../reference/run_dietview.html">run_dietview()</a></code> and <code><a href="../reference/dv_script.html">dv_script()</a></code> share one argument for missing covariate values, <code>na_strata = c("drop", "show")</code>. The default leaves records with a missing value out of that covariate’s panels (the dashboard’s behaviour); <code>"show"</code> gives them an “NA” panel (the app’s previous behaviour, now opt-in).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="other-changes-0-1-0-9000">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-1-0-9000"></a></h3>
+<ul><li>WoRMS lookups are batched and retried. <code><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms()</a></code> reads records and matches names in chunks (<code>getOption("DietView.worms_chunk", 50)</code>) instead of one request per prey, retries a failed request up to <code>getOption("DietView.worms_retries", 3)</code> times with backoff (1, 2, 4 s), and reads “no match” from the HTTP status when the condition carries it (worrms 0.4 only gives it in the message, which stays the fallback). An AphiaID that WoRMS does not know falls back to the prey name, logged as <code>match_type = "id_fallback_name"</code> and listed by <code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code>.</li>
+<li>
+<code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> gains <code>stomachs</code> (one row per examined stomach, empty ones included, e.g. <code>ices_stomachs</code>) and <code>empty_col</code> (the empty flag), stored in <code>prep$stomachs</code>. With it, <code><a href="../reference/dv_summary.html">dv_summary()</a></code> adds <code>n_examined</code>, <code>n_empty</code> and <code>pct_vacuity</code>; <code><a href="../reference/dv_fo_table.html">dv_fo_table()</a></code> gains <code>denominator = c("nonempty", "examined")</code>; and <code><a href="../reference/dv_matrix.html">dv_matrix()</a></code> gains <code>include_empty</code> to add all-zero rows for empty stomachs. Stomachs with neither a record nor an empty flag are of unknown status and left out. Without <code>stomachs</code>, nothing changes.</li>
+<li>
+<code>ices_lineage</code> now gives the three unaccepted AphiaIDs of the ICES data the lineage of their accepted record (231869 -&gt; <em>Aphrodita aculeata</em>, 400596 -&gt; <em>Trisopterus esmarkii</em>, 298205 -&gt; <em>Lumpenus lampretaeformis</em>), so Norway pout and the others are one node each and <code>dv_lineage_check(ices_lineage)</code> is clean. The keys are unchanged. The uncorrected table is the new dataset <code>ices_lineage_raw</code>, used to demonstrate <code><a href="../reference/dv_lineage_check.html">dv_lineage_check()</a></code>.</li>
+<li>The dashboard of <code><a href="../reference/dv_build_html.html">dv_build_html()</a></code> is drawn on demand: plotly.js is included once, the data of every sunburst is stored once as JSON, and a predator’s sunbursts are drawn the first time its tab is opened. On the full ICES data (22 predators, strata region/year/quarter) the file went from 17.1 MB to 4.1 MB with three bands (13.3 MB to 4.0 MB with two), and the build from 70 s to 9 s. The file still works offline and no longer needs rmarkdown or pandoc; <code>self_contained = FALSE</code> links plotly.js from a <code>lib</code> folder.</li>
+<li>Dashboard cards are keyboard-accessible (<code>role = "button"</code>, focusable, opened with Enter or Space).</li>
+<li>Install from GitHub with <code>pak::pak("SostheneA/DietView")</code>; the README no longer points to an R-universe repository.</li>
+<li>The documentation site is built by GitHub Actions and served from the <code>gh-pages</code> branch; the technical reference is also available as a PDF.</li>
+<li>Lineage gaps are shown as <code>"&lt;ancestor&gt; (no &lt;rank&gt;)"</code>. When WoRMS gives no taxon at a rank for a group (several polychaete families have no order, lancelets have no order, Priapulida have no class), <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> now fills that rank for records identified below it, e.g. <code>"Polychaeta (no order)"</code>, instead of leaving them under the unidentified node. Gap nodes are light gray in the sunbursts, their hover text says they are identified material, and the counts per rank are stored in <code>attr(prep, "lineage_gaps")</code>. <code><a href="../reference/dv_aggregate_threshold.html">dv_aggregate_threshold()</a></code>, <code><a href="../reference/dv_lineage_check.html">dv_lineage_check()</a></code>, richness counts and the digestion diagnostic treat gaps as “no taxon at this rank”. Use <code>dv_prepare(gaps = "keep")</code> for the previous behaviour.</li>
+<li>Rank arguments are case-insensitive and accept the column name or the display label (<code>"class"</code>, <code>"Class"</code>, <code>" CLASS "</code>) in <code><a href="../reference/dv_rank_table.html">dv_rank_table()</a></code>, <code><a href="../reference/dv_summary.html">dv_summary()</a></code>, <code><a href="../reference/dv_prey_accumulation.html">dv_prey_accumulation()</a></code>, <code><a href="../reference/dv_fo_table.html">dv_fo_table()</a></code>, <code><a href="../reference/dv_matrix.html">dv_matrix()</a></code> and <code><a href="../reference/dv_script.html">dv_script()</a></code>. <code><a href="../reference/dv_rank_table.html">dv_rank_table()</a></code> now errors on an unknown rank instead of returning an empty table.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="dietview-010">DietView 0.1.0<a class="anchor" aria-label="anchor" href="#dietview-010"></a></h2>
 <ul><li>Initial release.</li>
 </ul></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

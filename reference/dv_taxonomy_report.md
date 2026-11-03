@@ -3,12 +3,13 @@
 Returns the prey whose taxonomy needs a human eye: fuzzy matches (WoRMS
 TAXAMATCH proposed a close-but-not-identical name), unresolved prey (no
 match), AphiaIDs that WoRMS treats as unaccepted (`"id_synonym"`,
-followed to the accepted one) or whose record could not be read
-(`"id_unchecked"`), AphiaIDs whose stored name differs from the WoRMS
-name (`name_check = "differs"`), names with several accepted WoRMS
-records (`homonym`), and matches for which WoRMS returned no
-classification (`lineage_ok = FALSE`, usually a network or server error;
-run again to retry). Use it to audit the enrichment, then correct
+followed to the accepted one), whose record could not be read
+(`"id_unchecked"`) or that WoRMS does not know, so the prey name was
+used instead (`"id_fallback_name"`), AphiaIDs whose stored name differs
+from the WoRMS name (`name_check = "differs"`), names with several
+accepted WoRMS records (`homonym`), and matches for which WoRMS returned
+no classification (`lineage_ok = FALSE`, usually a network or server
+error; run again to retry). Use it to audit the enrichment, then correct
 anything wrong by supplying a lineage table
 (`dv_prepare(taxonomy = "table")`) or fixing the source names.
 

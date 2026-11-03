@@ -6,7 +6,10 @@ after 20 colors, so in a large survey several taxa share a color; see
 [`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)
 for colors that follow the hierarchy. The unidentified (`"NA"`) category
 is always white; the sunburst draws a gray outline around every wedge so
-white wedges stay visible.
+white wedges stay visible. Lineage gaps (labels such as
+`"Polychaeta (no order)"`, see the `gaps` argument of
+[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md))
+are light gray.
 
 ## Usage
 

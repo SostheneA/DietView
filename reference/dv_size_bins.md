@@ -47,11 +47,13 @@ last break falls in the last bin, labelled `[a, b]` (or, with
 bin, labelled `[a, b]`).
 
 Lengths outside the breaks become `NA`. A covariate `NA` is not a
-taxonomic `NA`: the dashboard
+taxonomic `NA`: by default the dashboard
 ([`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md))
-omits `NA` strata, while the Shiny app
+and the Shiny app
 ([`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md))
-shows them as an "NA" panel.
+leave records with a missing length bin out of the length-bin panels
+(`na_strata = "drop"`); `na_strata = "show"` draws them in an "NA"
+panel. The aggregated sunburst always holds every record.
 
 ## Examples
 

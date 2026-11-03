@@ -19,6 +19,7 @@ dv_script(
   aggregation = NULL,
   facet = NULL,
   rank = NULL,
+  na_strata = c("drop", "show"),
   data_file = "dietview_prep.rds",
   file = NULL
 )
@@ -59,13 +60,21 @@ dv_script(
   Up to two covariates to draw one panel per level (or per combination
   of levels), or `NULL`. With two, `c(inner, outer)` as in the app:
   `panels` is then a list over the levels of `outer`, each a list over
-  the levels of `inner`. Missing covariate values get their own `"NA"`
-  panel.
+  the levels of `inner`.
 
 - rank:
 
-  Rank for the rank table and the frequency-of-occurrence table.
-  Defaults to the third rank of `prep`.
+  Rank for the rank table and the frequency-of-occurrence table, by
+  column name or display label, case-insensitive. Defaults to the third
+  rank of `prep`.
+
+- na_strata:
+
+  `"drop"` (default) leaves records with a missing covariate value out
+  of the panels; `"show"` gives them an `"NA"` panel. As in
+  [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md)
+  and
+  [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md).
 
 - data_file:
 
@@ -101,7 +110,7 @@ s <- dv_script(prep, mode = "weight",
                aggregation = list(threshold = 10, scope = "pooled"))
 s
 #> ## DietView analysis script
-#> ## Generated 2026-11-02 18:19 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).
+#> ## Generated 2026-11-03 00:36 UTC with DietView 0.1.0.9000 and R version 4.6.2 (2026-10-29).
 #> ## Predator: all predators | wedges: weight | currency: records
 #> ## Reporting resolution: threshold 10 stomachs, scope = pooled, min_predators = 1
 #> # Taxonomy source: table
@@ -126,10 +135,9 @@ s
 #> prep <- dv_aggregate_threshold(prep, threshold = 10, scope = "pooled", min_predators = 1)
 #> attr(prep, "aggregation")
 #> 
-#> ## 3. Colors: one per taxon label, from all predators, so a taxon keeps its
-#> ## color in every view (unidentified material is the white "NA" category)
-#> fill_na <- function(x) { x <- as.character(x); x[is.na(x) | x == ""] <- "NA"; x }
-#> pal <- dv_palette(unlist(lapply(prep$ranks, function(r) fill_na(prep$data[[r]]))))
+#> ## 3. Colors: one hue per phylum, from the pooled tree of all predators, so a
+#> ## taxon keeps its color in every view (unidentified material is white)
+#> pal <- dv_palette_tree(dv_build_tree(prep$data, prep$ranks))
 #> 
 #> ## 5. Multi-rank tree and sunburst
 #> tree <- dv_build_tree(prep$data, prep$ranks, weight_col = "prey_weight_g", count_col = NULL)

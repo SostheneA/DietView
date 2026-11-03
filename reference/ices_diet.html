@@ -17,7 +17,7 @@ Use it with the frozen lineage ices_lineage (taxonomy = &quot;table&quot;)."><me
 
     <a class="navbar-brand me-2" href="../index.html">DietView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -201,25 +201,25 @@ weights are in grams and prey lengths in cm throughout.</p>
 <span class="r-in"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">cod</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span></span>
 <span class="r-in"><span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="dv_rank_table.html">dv_rank_table</a></span><span class="op">(</span><span class="fu"><a href="dv_tree.html">dv_tree</a></span><span class="op">(</span><span class="va">prep</span><span class="op">)</span>, <span class="st">"Class"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           label value_item value_occ     pct_occ  value_w        pct_w</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15 Malacostraca         62       999 42.02776609 2286.830 2.234782e+01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18    Teleostei         46       624 26.25157762 7045.949 6.885584e+01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29           NA          1       192  8.07740850  123.520 1.207087e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19           NA          1       153  6.43668490  248.537 2.428803e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13   Polychaeta         11       144  6.05805637  380.515 3.718545e+00</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26           NA          1        73  3.07109802    6.317 6.173226e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16           NA          1        68  2.86074884   55.395 5.413422e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20  Ophiuroidea          3        50  2.10349180   25.900 2.531052e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22     Bivalvia          7        29  1.22002524    7.203 7.039060e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24   Gastropoda          2        19  0.79932688   15.820 1.545994e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23  Cephalopoda          4        11  0.46276820   18.931 1.850013e-01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21           NA          1         5  0.21034918    3.930 3.840554e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25           NA          1         3  0.12620951    6.739 6.585621e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12     Gephyrea          1         2  0.08413967    3.630 3.547382e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14           NA          1         2  0.08413967    0.293 2.863313e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17       Myxini          1         1  0.04206984    0.840 8.208817e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27    Trematoda          1         1  0.04206984    0.001 9.772401e-06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 28           NA          1         1  0.04206984    2.550 2.491962e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    label value_item value_occ     pct_occ  value_w        pct_w</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15          Malacostraca         62       999 42.02776609 2286.830 2.234782e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18             Teleostei         45       624 26.25157762 7045.949 6.885584e+01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 29                    NA          1       192  8.07740850  123.520 1.207087e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19                    NA          1       153  6.43668490  248.537 2.428803e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13            Polychaeta         10       144  6.05805637  380.515 3.718545e+00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 26                    NA          1        73  3.07109802    6.317 6.173226e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16                    NA          1        68  2.86074884   55.395 5.413422e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20           Ophiuroidea          3        50  2.10349180   25.900 2.531052e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22              Bivalvia          7        29  1.22002524    7.203 7.039060e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24            Gastropoda          2        19  0.79932688   15.820 1.545994e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23           Cephalopoda          4        11  0.46276820   18.931 1.850013e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21                    NA          1         5  0.21034918    3.930 3.840554e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 25                    NA          1         3  0.12620951    6.739 6.585621e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12              Gephyrea          1         2  0.08413967    3.630 3.547382e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14                    NA          1         2  0.08413967    0.293 2.863313e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17                Myxini          1         1  0.04206984    0.840 8.208817e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 27             Trematoda          1         1  0.04206984    0.001 9.772401e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 28 Priapulida (no class)          1         1  0.04206984    2.550 2.491962e-02</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
