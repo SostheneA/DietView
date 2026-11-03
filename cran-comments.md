@@ -12,7 +12,18 @@ data.
 
 ## Test environments
 
-* Local: Windows 11 x64 (build 26100), R 4.5.2
+To be filled in after running `devtools::check_win_devel()`,
+`devtools::check_win_release()`, `devtools::check_mac_release()` and
+`rhub::rhub_check()`:
+
+* Local: Windows 11 x64 (build 26100), R 4.5.2: 0 errors | 0 warnings | 1 note
+  ("unable to verify current time", local clock check only)
+* win-builder, R-devel: _pending_
+* win-builder, R-release: _pending_
+* mac-builder, R-release: _pending_
+* R-hub, ubuntu-latest (R-devel): _pending_
+* R-hub, windows-latest (R-devel): _pending_
+* R-hub, macos-latest (R-devel): _pending_
 
 ## Notes for the CRAN team
 
