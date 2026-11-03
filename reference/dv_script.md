@@ -110,7 +110,7 @@ s <- dv_script(prep, mode = "weight",
                aggregation = list(threshold = 10, scope = "pooled"))
 s
 #> ## DietView analysis script
-#> ## Generated 2026-11-03 01:26 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).
+#> ## Generated 2026-11-03 02:04 UTC with DietView 0.1.0 and R version 4.6.2 (2026-10-29).
 #> ## Predator: all predators | wedges: weight | currency: records
 #> ## Reporting resolution: threshold 10 stomachs, scope = pooled, min_predators = 1
 #> # Taxonomy source: table
