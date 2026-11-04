@@ -172,7 +172,7 @@ dv_sunburst <- function(x,
                                 mode = "occurrence", colors = NULL,
                                 rotation = 90, title = "", na_strata = "drop",
                                 stomach_col = NULL, min_stomachs = 0,
-                                weight_type = "mass") {
+                                weight_type = "mass", units = "stomachs") {
   if (na_strata == "drop") {
     for (fc in facet_col) {
       v <- as.character(records[[fc]])
@@ -229,8 +229,10 @@ dv_sunburst <- function(x,
     anns[[k]] <- list(
       text = paste0("<b>", ce$lab, "</b>",
                     if (nrow(ce$sub) == 0L) "<br><i>no records</i>"
-                    else if (few) paste0("<br>Stomachs (n) = ", n_st,
-                                         "<br><i>", .dv_few_msg(min_stomachs), "</i>")
+                    else if (few) paste0("<br>",
+                                         paste0(toupper(substr(units, 1, 1)), substring(units, 2)),
+                                         " (n) = ", n_st,
+                                         "<br><i>", .dv_few_msg(min_stomachs, units), "</i>")
                     else ""),
       x = (ce$col + 0.5) / n_col, y = 1 - ce$row / n_row,
       xref = "paper", yref = "paper",

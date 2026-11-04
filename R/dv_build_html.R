@@ -178,7 +178,7 @@ dv_build_html <- function(prep, output,
   # no sunburst (and no data in the JSON)
   cell_panel <- function(sub, mode, view, key) {
     if (nstom(sub) < min_stomachs)
-      htmltools::tags$p(class = "dv-few", .dv_few_msg(min_stomachs))
+      htmltools::tags$p(class = "dv-few", .dv_few_msg(min_stomachs, .dv_unit(spec, 2L)))
     else panel(sub, mode, view, key)
   }
   # covariate values as panel labels: missing values become "NA" (shown) or
@@ -207,7 +207,7 @@ dv_build_html <- function(prep, output,
       htmltools::tags$div(
         style = cell_style(length(lv)),
         htmltools::tags$h5(paste0(cv, ": ", l)),
-        htmltools::tags$h6(paste("Stomachs (n) =", nstom(sub))),
+        htmltools::tags$h6(paste(.dv_unit(spec, 2L, TRUE), "(n) =", nstom(sub))),
         cell_panel(sub, mode, view, paste(view, cv, l, sep = "\r")))
     })
     htmltools::tagList(
@@ -226,7 +226,7 @@ dv_build_html <- function(prep, output,
         htmltools::tags$div(
           style = cell_style(length(il)),
           htmltools::tags$h5(paste0(inner, ": ", i)),
-          htmltools::tags$h6(paste("Stomachs (n) =", nstom(sub))),
+          htmltools::tags$h6(paste(.dv_unit(spec, 2L, TRUE), "(n) =", nstom(sub))),
           cell_panel(sub, mode, view, paste(view, inner, i, outer, o, sep = "\r")))
       })
       htmltools::tagList(
@@ -268,14 +268,14 @@ dv_build_html <- function(prep, output,
     id = "view_global", class = "dashboard-view",
     htmltools::tags$button(class = "btn-back", onclick = "showTab('view_home')", "\u2b05 Home"),
     htmltools::tags$h2("Global", style = "text-align:center;"),
-    htmltools::tags$h4(paste("Total stomachs:", nstom(d)), style = "text-align:center;color:#555;"),
+    htmltools::tags$h4(paste0("Total ", .dv_unit(spec, 2L), ": ", nstom(d)), style = "text-align:center;color:#555;"),
     lapply(bands, function(m) build_band(d, m, "view_global")))
   cards[["__g"]] <- do.call(htmltools::tags$div, c(
     list(class = "species-card", `data-order` = "0",
          style = "border:2px solid #1f77b4;background:#f0f8ff;"),
     card_open("view_global"),
     list(htmltools::tags$h3(class = "card-title", "\U0001F310 Global"),
-         htmltools::tags$p(class = "card-stat", htmltools::tags$b("Total stomachs: "), nstom(d)))))
+         htmltools::tags$p(class = "card-stat", htmltools::tags$b(paste0("Total ", .dv_unit(spec, 2L), ": ")), nstom(d)))))
 
   for (i in seq_along(preds)) {
     p <- preds[i]; recs <- d[which(as.character(d[[pcol]]) == p), ]
@@ -299,7 +299,7 @@ dv_build_html <- function(prep, output,
         htmltools::tags$div(
           class = "card-body",
           htmltools::tags$div(class = "card-stats",
-                              htmltools::tags$p(class = "card-stat", htmltools::tags$b("Total stomachs: "), nstom(recs)),
+                              htmltools::tags$p(class = "card-stat", htmltools::tags$b(paste0("Total ", .dv_unit(spec, 2L), ": ")), nstom(recs)),
                               len_line),
           if (!is.null(a$uri))
             htmltools::tags$div(
@@ -318,7 +318,7 @@ dv_build_html <- function(prep, output,
       id = view, class = "dashboard-view",
       htmltools::tags$button(class = "btn-back", onclick = "showTab('view_home')", "\u2b05 Home"),
       htmltools::tags$h2(p, style = "text-align:center;"),
-      htmltools::tags$h4(paste("Total stomachs:", nstom(recs)), style = "text-align:center;color:#555;"),
+      htmltools::tags$h4(paste0("Total ", .dv_unit(spec, 2L), ": ", nstom(recs)), style = "text-align:center;color:#555;"),
       lapply(bands, function(m) build_band(recs, m, view)))
   }
 
@@ -513,8 +513,8 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
 }
 
 # Internal: the line shown in place of a covariate panel with too few stomachs.
-.dv_few_msg <- function(min_stomachs)
-  paste0("Too few stomachs to show (minimum: ", format(min_stomachs), ")")
+.dv_few_msg <- function(min_stomachs, units = "stomachs")
+  paste0("Too few ", units, " to show (minimum: ", format(min_stomachs), ")")
 
 # Internal: the plotly.js bundle shipped with the plotly R package.
 .dv_plotly_js <- function() {

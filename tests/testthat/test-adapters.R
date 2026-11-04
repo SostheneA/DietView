@@ -96,3 +96,47 @@ test_that("the default weight type keeps the mass labels", {
   tr <- dv_tree(dv_prepare(d, spec, taxonomy = "columns", verbose = FALSE))
   expect_match(.dv_sb_prep(tr, "weight")$tree$hovertext[1], "Weight share")
 })
+
+test_that("dv_resolution works without digestion and matches the digestion diagnostic", {
+  d <- data.frame(pred = c("a", "a", "b", "b"), st = c("s1", "s2", "s3", "s4"),
+                  prey = c("x", "y", "z", "w"), w = c(1, 3, 2, 2),
+                  dig = c("fresh", "digested", "fresh", "digested"),
+                  phylum = c("P1", "P1", "P2", NA), genus = c("G1", NA, NA, NA))
+  spec <- dv_spec(predator = "pred", stomach = "st", prey_name = "prey", weight = "w",
+                  ranks = c("phylum", "genus"))
+  prep <- dv_prepare(d, spec, taxonomy = "columns", verbose = FALSE)
+  r <- dv_resolution(prep)
+  expect_equal(as.character(r$finest_rank), c("Phylum", "Genus", "Unresolved"))
+  expect_equal(r$n_records, c(2, 1, 1))
+  expect_equal(r$p_weight[r$finest_rank == "Phylum"], 100 * 5 / 8)
+  rb <- dv_resolution(prep, by = "pred")
+  expect_equal(sum(rb$p_records[rb$pred == "a"]), 100)
+  expect_error(dv_resolution(prep, by = "nope"), "not found")
+  expect_error(dv_digestion_diagnostic(prep), "dv_resolution")
+  spec2 <- dv_spec(predator = "pred", stomach = "st", prey_name = "prey", weight = "w",
+                   digestion = "dig", ranks = c("phylum", "genus"))
+  prep2 <- dv_prepare(d, spec2, taxonomy = "columns", verbose = FALSE)
+  dg <- dv_digestion_diagnostic(prep2)
+  expect_named(dg, c("digestion", "finest_rank", "n_records", "weight", "p_records", "p_weight"))
+  expect_equal(sum(dg$p_records[dg$digestion == "fresh"]), 100)
+})
+
+test_that("unit_label changes the wording, not the names", {
+  d <- data.frame(pred = "seal", sample = c("S1", "S2"), prey = "A", phylum = "Chordata")
+  spec <- dv_spec(predator = "pred", stomach = "sample", prey_name = "prey",
+                  ranks = "phylum", unit_label = "scat")
+  expect_message(dv_validate(d, spec), "from 2 scats")
+  prep <- dv_prepare(d, spec, taxonomy = "columns", verbose = FALSE)
+  expect_output(print(prep), "scats")
+  expect_equal(.dv_unit(spec, 1L), "scat")
+  expect_equal(.dv_unit(dv_spec(predator = "p", stomach = "s", prey_name = "n",
+                                unit_label = c("fish", "fish")), 2L), "fish")
+  expect_equal(.dv_unit(list()), "stomachs")
+  expect_error(dv_spec(predator = "p", stomach = "s", prey_name = "n", unit_label = ""),
+               "unit_label")
+  f <- tempfile(fileext = ".html")
+  dv_build_html(prep, output = f, photo_source = "none")
+  h <- paste(readLines(f, warn = FALSE), collapse = "")
+  expect_match(h, "Total scats")
+  expect_false(grepl("Total stomachs", h))
+})

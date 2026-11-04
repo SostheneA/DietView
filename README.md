@@ -1,16 +1,20 @@
 # DietView <img src="man/figures/logo.png" align="right" height="130" alt="DietView logo" />
 
-> Interactive, hierarchical visualization of predator stomach-content data
+> Interactive, hierarchical visualization of predator diet data
 
 Stomach contents are identified to uneven depth: one prey is named to species,
 the next only to "Teleostei", and some material cannot be placed at all.
 DietView keeps all of it. From a long table with one row per prey record, it
-attaches a taxonomic lineage (from WoRMS, or from a lineage table you supply),
+attaches a taxonomic lineage (from WoRMS, the GBIF Backbone, or a lineage table
+you supply),
 keeps every record that stopped at a coarse rank as an explicit *unidentified*
 category below that rank, and shows the whole diet at every rank in one
 sunburst, by prey records or by weight. It also reports the classical frequency
 of occurrence, how identification depth changes with digestion, and can write
-the result to a single HTML file that opens in any browser. See the
+the result to a single HTML file that opens in any browser. The same tools
+work beyond stomachs: DNA metabarcoding of scats or gut contents (sequence
+reads summarized as relative read abundance), pellets, regurgitates, and other
+compositional data such as catch or benthic samples. See the
 [documentation site](https://sosthenea.github.io/DietView/).
 
 ## Table of contents
@@ -22,6 +26,7 @@ the result to a single HTML file that opens in any browser. See the
 - [The explicit-NA philosophy](#the-explicit-na-philosophy)
 - [Function reference](#function-reference)
 - [Input format](#input-format)
+- [Beyond stomach contents](#beyond-stomach-contents)
 - [Getting help](#getting-help)
 - [Citation](#citation)
 - [Related work](#related-work)
@@ -29,19 +34,26 @@ the result to a single HTML file that opens in any browser. See the
 ## Overview
 
 DietView is built around a single input contract (*one row per prey record in a
-stomach*) and one reusable specification object. From there it offers:
+sampling unit*, usually a stomach) and one reusable specification object. From
+there it offers:
 
 - **taxonomy on demand**: resolve prey against WoRMS by AphiaID (preferred) or
   name, following unaccepted names to their valid AphiaID, with exact matching
   first, then WoRMS TAXAMATCH for misspellings, and a provenance log to review;
-  or join a lineage table for a fully offline, reproducible run;
+  resolve terrestrial and freshwater prey against the GBIF Backbone with the
+  same rules; or join a lineage table for a fully offline, reproducible run;
 - **within-rank importance** in two currencies (prey records and weight), where
   every taxonomic rank sums to 100 % and unidentified prey is an explicit **NA**
   category rather than a dropped row;
 - **covariate stratification** by any user-declared columns (period, year, size
   class, length bins, region, …), plus helpers to derive periods and length bins;
-- a **digestion identification-bias diagnostic** that shows how the finest
-  resolved rank shifts toward coarse ranks as digestion advances;
+- an **identification-resolution diagnostic**: the finest rank each record
+  reaches, by predator, method or any covariate, and by digestion stage, to
+  show how identification degrades with digestion;
+- **other data shapes**: wide sample-by-taxon tables (ASV/OTU tables, catch
+  compositions) and pipeline lineage strings (QIIME 2, SILVA, MIDORI, BOLD)
+  come in with `dv_from_wide()` and `dv_parse_lineage()`; sequence reads are
+  declared as such and summarized as relative read abundance (RRA);
 - **interactive sunbursts** (plotly), with one color per taxon kept the same in
   every panel, so strata can be compared at a glance;
 - three **outputs**: a [Shiny](https://shiny.posit.co/) explorer, a
@@ -59,7 +71,10 @@ records from 4,231 stomachs of 22 fish species, North Sea, Skagerrak-Kattegat
 and Baltic Sea, 2020-2024), `ices_stomachs` (every sampled stomach, empty ones
 included) and `ices_lineage` (their frozen WoRMS classification). Source: ICES
 Stomach Content Database, ICES, Copenhagen; extract distributed with the R
-package stomachr (Lindmark 2026). See `?ices_diet`.
+package stomachr (Lindmark 2026). See `?ices_diet`. For DNA-based diet, it
+also ships `salish_seal_dna`, the metabarcoding diet of 4,625 harbour seal
+scats from the Salish Sea (Thomas et al. 2022, *Scientific Data*, CC0), with
+its frozen WoRMS lineage `salish_seal_lineage`.
 
 ## Documentation
 
@@ -89,6 +104,7 @@ sunbursts you see there are real output.
 | 5 | [Covariate stratification](https://sosthenea.github.io/DietView/articles/covariates.html) | periods, size bins, and crossing two covariates |
 | 6 | [Digestion identification bias](https://sosthenea.github.io/DietView/articles/digestion.html) | how identification degrades with digestion |
 | 7 | [WoRMS taxonomy](https://sosthenea.github.io/DietView/articles/taxonomy-worms.html) | matching, provenance, and reviewing fuzzy hits |
+| 7b | [Beyond stomachs](https://sosthenea.github.io/DietView/articles/other-data.html) | DNA metabarcoding (harbour seal scats), RRA, ASV tables, GBIF, catch composition |
 | 8 | [Exploring & aggregating diet data](https://sosthenea.github.io/DietView/articles/exploration.html) | sample summary, prey-accumulation, true %FO, threshold aggregation, set x category matrix |
 | 9 | [A known diet](https://sosthenea.github.io/DietView/articles/known-diet.html) | a simulated survey: what keeping or dropping unidentified prey does |
 
@@ -121,7 +137,8 @@ pak::pak("SostheneA/DietView")
 ```
 
 Optional features need a few more packages: `worrms` (WoRMS taxonomy) and
-`shiny` + `DT` (interactive app). The HTML dashboard needs neither `rmarkdown`
+`shiny` + `DT` (interactive app). GBIF taxonomy needs no extra package, only
+internet access. The HTML dashboard needs neither `rmarkdown`
 nor pandoc.
 
 ```r
@@ -213,11 +230,12 @@ rank or stay unresolved; the diagnostic shows by how much, instead of hiding it.
 | Step | Functions |
 |---|---|
 | declare & validate | [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.html), [`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.html) |
-| attach taxonomy | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.html), [`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.html), [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.html), [`dv_lineage_check()`](https://sosthenea.github.io/DietView/reference/dv_lineage_check.html), [`dv_cache_clear()`](https://sosthenea.github.io/DietView/reference/dv_cache_clear.html) |
+| other data shapes | [`dv_from_wide()`](https://sosthenea.github.io/DietView/reference/dv_from_wide.html), [`dv_parse_lineage()`](https://sosthenea.github.io/DietView/reference/dv_parse_lineage.html) |
+| attach taxonomy | [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.html), [`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.html), [`dv_taxonomy_gbif()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.html), [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.html), [`dv_lineage_check()`](https://sosthenea.github.io/DietView/reference/dv_lineage_check.html), [`dv_cache_clear()`](https://sosthenea.github.io/DietView/reference/dv_cache_clear.html) |
 | covariates | [`dv_add_period()`](https://sosthenea.github.io/DietView/reference/dv_add_period.html), [`dv_size_bins()`](https://sosthenea.github.io/DietView/reference/dv_size_bins.html) |
 | metrics | [`dv_tree()`](https://sosthenea.github.io/DietView/reference/dv_tree.html), [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.html), [`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.html) |
 | figures | [`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.html), [`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.html), [`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.html) |
-| digestion bias | [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.html) |
+| identification resolution | [`dv_resolution()`](https://sosthenea.github.io/DietView/reference/dv_resolution.html), [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.html) |
 | species cards | [`dv_species_card_assets()`](https://sosthenea.github.io/DietView/reference/dv_species_card_assets.html) |
 | dashboards & app | [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.html), [`dv_deploy()`](https://sosthenea.github.io/DietView/reference/dv_deploy.html), [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.html), [`dv_script()`](https://sosthenea.github.io/DietView/reference/dv_script.html) |
 | explore & aggregate | [`dv_summary()`](https://sosthenea.github.io/DietView/reference/dv_summary.html), [`dv_prey_accumulation()`](https://sosthenea.github.io/DietView/reference/dv_prey_accumulation.html), [`dv_fo_table()`](https://sosthenea.github.io/DietView/reference/dv_fo_table.html), [`dv_aggregate_threshold()`](https://sosthenea.github.io/DietView/reference/dv_aggregate_threshold.html), [`dv_threshold_sweep()`](https://sosthenea.github.io/DietView/reference/dv_threshold_sweep.html), [`dv_matrix()`](https://sosthenea.github.io/DietView/reference/dv_matrix.html) |
@@ -235,6 +253,38 @@ see `?ices_diet`). The data dictionary
 example `dietview_example.csv` (base table) and `dietview_example_lineage.csv`
 (lineage lookup), kept for tests and quick checks of the mechanics.
 
+## Beyond stomach contents
+
+The input contract is not tied to stomachs: any table of taxa with a quantity,
+inside sampling units, with covariates, fits. Declare what the quantity is and
+what a unit is, and every figure, table and dashboard follows:
+
+```r
+# DNA metabarcoding of harbour seal scats (bundled, CC0)
+spec <- dv_spec(predator = "predator", stomach = "sample_id",
+                prey_name = "prey_label", weight = "diet_fraction",
+                weight_type = "rra",            # relative read abundance, not mass
+                unit_label = "scat",            # "scats", not "stomachs", everywhere
+                covariates = c("season", "year", "site"))
+seal <- dv_prepare(salish_seal_dna, spec, taxonomy = "table",
+                   lineage = salish_seal_lineage)
+dv_rank_table(dv_tree(seal), "Family")          # pct_w is the mean RRA
+dv_resolution(seal, by = "lab")                 # where identification stops
+
+# an ASV table straight from a pipeline
+long <- dv_from_wide(asv_table, id_cols = c("asv", "taxonomy"), meta = samples,
+                     collapse_by = "taxonomy")
+long <- dv_parse_lineage(long, "taxonomy")      # "k__Animalia; p__..." -> rank columns
+
+# terrestrial or freshwater prey
+prep <- dv_prepare(dat, spec, taxonomy = "gbif", kingdom = "Animalia")
+```
+
+`weight_type = "reads"` gives the pooled share of reads instead. Biomarker
+methods such as stable isotopes or fatty acids estimate source contributions
+rather than identifying prey, and are out of scope. See the article
+[Beyond stomachs](https://sosthenea.github.io/DietView/articles/other-data.html).
+
 ## Getting help
 
 For bugs or feature requests, please use the [issue
@@ -251,7 +301,9 @@ citation("DietView")
 DietView is a visualization and reporting layer; it does not model diet
 composition or fit selectivity. It complements diet-analysis workflows built on
 `vegan` (multivariate community statistics), to which `dv_matrix()` is the
-direct bridge, the WoRMS toolchain (`worrms`), and interactive graphics via
+direct bridge, the WoRMS toolchain (`worrms`), metabarcoding pipelines (QIIME 2,
+DADA2), whose outputs `dv_from_wide()` and `dv_parse_lineage()` read, and
+interactive graphics via
 `plotly` and `htmlwidgets`. The sunburst and dashboard
 design follow the southern Gulf of St. Lawrence (sGSL) diet dashboard it
 generalizes.

@@ -311,7 +311,7 @@ dv_prepare <- function(data, spec,
 print.dietview_prep <- function(x, ...) {
   cat("<dietview_prep>\n")
   cat("  records   :", nrow(x$data), "\n")
-  cat("  stomachs  :", length(unique(x$data[[x$spec$stomach]])), "\n")
+  cat(sprintf("  %-10s:", .dv_unit(x$spec, 2L)), length(unique(x$data[[x$spec$stomach]])), "\n")
   cat("  predators :", length(unique(x$data[[x$spec$predator]])), "\n")
   cat("  ranks     :", paste(x$ranks, collapse = " > "), "\n")
   cat("  covariates:", paste(x$spec$covariates, collapse = ", "), "\n")
@@ -319,7 +319,7 @@ print.dietview_prep <- function(x, ...) {
     cat("  source    :", x$taxonomy_source, "\n")
   st <- .dv_stomach_status(x)
   if (!is.null(st))
-    cat("  examined  :", sum(st$status != "unknown"), "stomachs,",
+    cat("  examined  :", sum(st$status != "unknown"), paste0(.dv_unit(x$spec, 2L), ","),
         sum(st$status == "empty"), "empty",
         if (any(st$status == "unknown")) paste0("(", sum(st$status == "unknown"), " of unknown status)"),
         "\n")

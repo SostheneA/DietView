@@ -15,7 +15,8 @@ dv_spec(
   covariates = character(0),
   ranks = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
   predator_latin = NULL,
-  weight_type = c("mass", "reads", "rra")
+  weight_type = c("mass", "reads", "rra"),
+  unit_label = "stomach"
 )
 }
 \arguments{
@@ -63,6 +64,12 @@ proportions are added as a new column.
 }
 With reads, \code{stomach} is still the sampling unit (a stomach, a scat, a
 pellet, a sample); \code{count} and \code{digestion} are usually absent.}
+
+\item{unit_label}{What one \code{stomach} is, for messages, the dashboard and
+the Shiny app: \code{"stomach"} (default), \code{"scat"}, \code{"sample"}, \code{"haul"}...
+Give one word, or \code{c(singular, plural)} when the plural is not formed
+with an "s". Argument and column names (\verb{stomachs =}, \code{min_stomachs},
+\code{n_stomachs}) do not change.}
 }
 \value{
 An object of class \code{dietview_spec}.

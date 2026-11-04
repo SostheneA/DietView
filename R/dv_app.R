@@ -108,7 +108,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
         shiny::selectInput("resolution", "Reporting resolution", choices = res_choices),
         shiny::conditionalPanel(
           "input.resolution != 'none'",
-          shiny::numericInput("threshold", "Minimum number of stomachs per category",
+          shiny::numericInput("threshold", paste("Minimum number of", .dv_unit(spec, 2L), "per category"),
                               value = max(1L, ceiling(0.01 * n_stom_min)), min = 1, step = 1)
         ),
         shiny::conditionalPanel(
@@ -142,12 +142,16 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
                                           "with no taxon at that rank in WoRMS."),
                           tbl_out("tbl")),
           shiny::tabPanel("Frequency of occurrence",
-                          shiny::helpText("Share of stomachs containing each taxon at the",
+                          shiny::helpText(paste("Share of", .dv_unit(spec, 2L), "containing each taxon at the"),
                                           "chosen rank; does not sum to 100% across taxa."),
                           tbl_out("fo")),
           if (has_dig) shiny::tabPanel("Digestion",
                           shiny::helpText("Deepest identified rank of each record, by",
                                           "digestion stage (% of records and of weight)."),
+                          tbl_out("dig"))
+          else shiny::tabPanel("Resolution",
+                          shiny::helpText("Deepest identified rank of each record",
+                                          "(% of records and of weight)."),
                           tbl_out("dig")),
           shiny::tabPanel("Reproduce",
                           shiny::helpText("This script rebuilds the current view with exported",
@@ -168,7 +172,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
       if (identical(input$resolution, "none")) return(NULL)
       th <- input$threshold
       shiny::validate(shiny::need(is.numeric(th) && !is.na(th) && th >= 1,
-                                  "The threshold must be a number of stomachs >= 1."))
+                                  paste("The threshold must be a number of", .dv_unit(spec, 2L), ">= 1.")))
       switch(input$resolution,
              pooled = list(threshold = th, scope = "pooled", min_predators = 1L),
              cross = list(threshold = th, scope = "pooled",
@@ -206,8 +210,8 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
     output$res_note <- shiny::renderText({
       a <- attr(prep_res(), "aggregation")
       if (is.null(a)) "Full hierarchy: every record is counted once at every rank."
-      else sprintf("%d categories, each found in at least %s stomachs%s%s.",
-                   a$n_categories, format(a$threshold),
+      else sprintf("%d categories, each found in at least %s %s%s%s.",
+                   a$n_categories, format(a$threshold), .dv_unit(spec, 2L),
                    if (a$min_predators > 1) sprintf(" and %d predators", a$min_predators) else "",
                    if (a$scope == "per_predator") " of the same predator" else "")
     })
@@ -221,6 +225,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
           recs(), ranks = ranks,
           weight_col = spec$weight, count_col = ccol,
           weight_type = spec$weight_type %||% "mass",
+          units = .dv_unit(spec, 2L),
           facet_col = fc, mode = input$mode, colors = colors(), na_strata = na_strata,
           stomach_col = spec$stomach, min_stomachs = min_stomachs,
           title = paste0(input$predator, " - ",
@@ -232,7 +237,8 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
     })
     rank_tbl <- shiny::reactive(dv_rank_table(tree(), input$rank))
     fo_tbl <- shiny::reactive(dv_fo_table(prep_sel(), rank = input$rank))
-    dig_tbl <- shiny::reactive(dv_digestion_diagnostic(prep_sel()))
+    dig_tbl <- shiny::reactive(if (has_dig) dv_digestion_diagnostic(prep_sel())
+                               else dv_resolution(prep_sel()))
     script <- shiny::reactive(
       dv_script(prep, predator = if (identical(input$predator, ALL_PRED)) NULL else input$predator,
                 mode = input$mode, currency = currency, aggregation = aggregation(),
@@ -246,7 +252,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
     }
     show("tbl", function() as.data.frame(rank_tbl()))
     show("fo", fo_tbl)
-    if (has_dig) show("dig", dig_tbl)
+    show("dig", dig_tbl)
     output$script <- shiny::renderText(paste(script(), collapse = "\n"))
 
     output$dl_script <- shiny::downloadHandler(

@@ -145,3 +145,71 @@
 #' @examples
 #' dv_lineage_check(ices_lineage_raw)[, c("check", "rank", "label", "variant")]
 "ices_lineage_raw"
+
+#' DNA metabarcoding diet of Salish Sea harbour seals
+#'
+#' Prey composition of 4,625 harbour seal (*Phoca vitulina*) scats collected at
+#' 52 haul-out sites of the Salish Sea (British Columbia and Washington State)
+#' from 2012 to 2018, identified by DNA metabarcoding (16S, plus COI for
+#' salmonids and some fishes). One row per prey taxon in a scat. It is the
+#' public dataset of Thomas et al. (2022), shipped to show DietView on
+#' non-stomach, read-based diet data; see the article "Beyond stomachs".
+#'
+#' `diet_fraction` is the authors' proportion of the scat's prey DNA assigned
+#' to that prey (relative read abundance, combining both markers); it sums to
+#' 1 within each scat. Use it as the weight with `weight_type = "rra"`. Some
+#' sequences could not be split between closely related species and are
+#' reported as alternatives (`"Sebastes flavidus OR Sebastes melanops"`):
+#' [salish_seal_lineage] places them at the finest rank the candidates share,
+#' so they show as unidentified below that rank, as a digested stomach item
+#' would.
+#'
+#' @format A data frame with 11,641 rows and 14 columns:
+#' \describe{
+#'   \item{sample_id}{Scat identifier (unique).}
+#'   \item{predator}{"Harbour seal".}
+#'   \item{site, lat, lon}{Haul-out site and its position (decimal degrees).}
+#'   \item{year, month}{Collection date.}
+#'   \item{season}{Factor derived from `month` (winter = Dec-Feb, ...).}
+#'   \item{lab}{Laboratory that processed the scat (DFO, UBC or WDFW).}
+#'   \item{prey_label}{Prey taxon as assigned, or alternatives joined by "OR".}
+#'   \item{common_name}{Prey common name, as given by the authors.}
+#'   \item{reads_16S, reads_COI}{Sequence reads of the prey for each marker.}
+#'   \item{diet_fraction}{Proportion of the scat's prey DNA (0-1).}
+#' }
+#' @source Thomas, A. C., Deagle, B., Nordstrom, C., Majewski, S., Nelson,
+#'   B. W., Acevedo-Gutiérrez, A., Jeffries, S., Moore, J., Louden, A., Allegue,
+#'   H., Pearson, S., Schmidt, M., & Trites, A. W. (2022). Data on the diets of
+#'   Salish Sea harbour seals from DNA metabarcoding. *Scientific Data*, 9, 68.
+#'   \doi{10.1038/s41597-022-01152-5}. Data: \doi{10.6084/m9.figshare.12043173},
+#'   released under CC0 1.0. Labels were cleaned (underscores to spaces);
+#'   nothing else was changed.
+#' @examples
+#' spec <- dv_spec(predator = "predator", stomach = "sample_id",
+#'                 prey_name = "prey_label", weight = "diet_fraction",
+#'                 weight_type = "rra", covariates = c("season", "year", "site"),
+#'                 unit_label = "scat")
+#' prep <- dv_prepare(salish_seal_dna, spec, taxonomy = "table",
+#'                    lineage = salish_seal_lineage, verbose = FALSE)
+#' dv_rank_table(dv_tree(prep), "Family")[1:5, ]
+"salish_seal_dna"
+
+#' Frozen WoRMS lineage for the Salish Sea harbour seal data
+#'
+#' The lineage (kingdom to species) of every `prey_label` of
+#' [salish_seal_dna], resolved against WoRMS with [dv_taxonomy_worms()] when
+#' the data were built (one misspelling, *Chirolophus decoratus*, was matched to
+#' *Chirolophis decoratus*). For a label listing alternatives ("A OR B"), the
+#' ranks the candidate species share are kept and the finer ranks are `NA`.
+#' Pass it to [dv_prepare()] with `taxonomy = "table"`.
+#'
+#' @format A data frame with 117 rows and 10 columns: `prey_label`, the seven
+#'   ranks `kingdom` to `species`, `n_candidates` (species listed in the label)
+#'   and `aphia_id` (the WoRMS AphiaID, for single-species labels).
+#' @source World Register of Marine Species (WoRMS,
+#'   <https://www.marinespecies.org>), retrieved 2026-11-04; see
+#'   `data-raw/salish_seal.R`.
+#' @examples
+#' salish_seal_lineage[salish_seal_lineage$n_candidates > 1,
+#'                     c("prey_label", "family", "genus")]
+"salish_seal_lineage"
