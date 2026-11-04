@@ -1,0 +1,169 @@
+---
+title: "Beyond stomachs: DNA metabarcoding, scats and other compositional data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Beyond stomachs: DNA metabarcoding, scats and other compositional data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", warning = FALSE, message = FALSE)
+```
+
+DietView was written for stomach contents, but what it needs is more general:
+a taxon name with a quantity, inside a sampling unit, with covariates. The
+same structure describes diet from DNA metabarcoding of scats or gut contents,
+pellets and regurgitates, catch composition from a survey haul, or a benthic
+grab. This article shows the three pieces that bring such data in:
+
+* `dv_from_wide()` reshapes a wide sample-by-taxon table into the long format;
+* `dv_parse_lineage()` splits the lineage strings that pipelines report into
+  rank columns;
+* `dv_spec(weight_type = )` says what the quantity is, so sequence reads are
+  summarized as relative read abundance rather than as a mass.
+
+For prey outside the marine realm, `dv_prepare(taxonomy = "gbif")` resolves
+names against the GBIF Backbone Taxonomy with the same rules and the same
+review log as WoRMS.
+
+```{r setup}
+library(DietView)
+```
+
+## 1. A metabarcoding table
+
+A typical output of a metabarcoding pipeline is one row per ASV, a taxonomy
+string, and one column of read counts per sample. Here are six ASVs from four
+seal scats (made-up numbers):
+
+```{r asv}
+asv <- data.frame(
+  asv = paste0("ASV", 1:6),
+  taxonomy = c(
+    "k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__Gadus;s__morhua",
+    "k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__Gadus;s__morhua",
+    "k__Animalia;p__Chordata;c__Actinopteri;o__Clupeiformes;f__Clupeidae;g__Clupea;s__harengus",
+    "k__Animalia;p__Chordata;c__Actinopteri;o__Pleuronectiformes;f__;g__;s__",
+    "k__Animalia;p__Mollusca;c__Cephalopoda;o__Myopsida;f__Loliginidae;g__Loligo;s__Loligo sp.",
+    "Unassigned"),
+  scat1 = c(5200, 800, 0, 300, 0, 40),
+  scat2 = c(0, 0, 6100, 0, 900, 0),
+  scat3 = c(1500, 0, 1500, 0, 0, 10),
+  scat4 = c(0, 0, 0, 2500, 2500, 0))
+meta <- data.frame(sample = paste0("scat", 1:4), predator = "grey seal",
+                   season = c("winter", "winter", "summer", "summer"))
+```
+
+### Reshape and parse
+
+`dv_from_wide()` turns it into one row per ASV in a sample, drops the zeros and
+joins the sample metadata. ASV1 and ASV2 carry the same taxonomy;
+`collapse_by = "taxonomy"` sums them, so that a taxon counts once per sample in
+the shares of records and in %FO:
+
+```{r long}
+long <- dv_from_wide(asv, id_cols = c("asv", "taxonomy"), meta = meta,
+                     collapse_by = "taxonomy")
+long <- dv_parse_lineage(long, "taxonomy")
+long[, c("sample", "reads", "order", "genus", "species", "prey_name")]
+```
+
+The empty fields (`f__`), the placeholder `Unassigned` and `Loligo sp.` become
+`NA`: these records stay in the tree, as the explicit unidentified category
+below the deepest rank they reached, exactly as a stomach item identified only
+to order.
+
+### Reads are not biomass
+
+Sequence reads measure DNA, not prey mass: digestion, tissue type and primer
+bias all distort the link (Deagle et al. 2019). DietView therefore never
+labels reads as weight. Two summaries are offered:
+
+* `weight_type = "reads"`: the share of all reads (pooled), which lets the
+  samples with most reads dominate;
+* `weight_type = "rra"`: the relative read abundance. The reads of each sample
+  are divided by its total before summing, so every sample weighs the same and
+  the share at a rank is the mean RRA over samples.
+
+The shares of prey records stay available and, with one record per taxon and
+sample, are the occurrence-based view; `dv_fo_table()` gives the classical
+frequency of occurrence over samples.
+
+```{r prep}
+spec <- dv_spec(predator = "predator", stomach = "sample",
+                prey_name = "prey_name", weight = "reads",
+                weight_type = "rra", covariates = "season")
+prep <- dv_prepare(long, spec, taxonomy = "columns", verbose = FALSE)
+tree <- dv_tree(prep)
+dv_rank_table(tree, "Order")
+dv_fo_table(prep, rank = "order")
+```
+
+`pct_w` is the mean RRA. Each figure and dashboard labels it as such:
+
+```{r sunburst, eval = FALSE}
+dv_sunburst(tree, mode = "weight", title = "Grey seal scats (RRA)")
+dv_build_html(prep, output = "seal_scats.html", cross = list("season"))
+```
+
+## 2. Which taxonomy?
+
+Three routes, by what the data already carry:
+
+| The data carry | Use | Why |
+|---|---|---|
+| A lineage string from the assignment step | `dv_parse_lineage()` then `taxonomy = "columns"` | Keeps the reference taxonomy the sequences were assigned with (NCBI, SILVA, BOLD), and needs no network. |
+| Prey names, marine prey | `taxonomy = "worms"` | WoRMS is the authority for marine taxa. |
+| Prey names, terrestrial or freshwater prey | `taxonomy = "gbif"` | The GBIF Backbone covers all kingdoms. |
+
+The names produced by `dv_parse_lineage()` can also be sent to WoRMS or GBIF,
+to harmonize a metabarcoding data set with stomach data classified there:
+
+```{r gbif, eval = FALSE}
+prep_gbif <- dv_prepare(long, spec, taxonomy = "gbif", kingdom = "Animalia")
+dv_taxonomy_report(prep_gbif)
+```
+
+GBIF matches are logged like WoRMS matches, with two extra review flags:
+`"higherrank"` (the name is unknown to GBIF, but a coarser taxon in it is
+known, so the lineage stops there) and `low_confidence`. The GBIF Backbone has
+no class for some groups (ray-finned fishes sit directly under Chordata); the
+default `gaps = "label"` fills that rank as `"Chordata (no class)"` rather
+than counting the records as unidentified.
+
+## 3. Other compositional data
+
+Catch composition, plankton or benthos tables often come with samples in rows
+and taxa in columns. `taxa_in = "columns"` reads that layout:
+
+```{r catch}
+haul <- data.frame(haul = c("H1", "H2"), stratum = c("401", "402"),
+                   `Gadus morhua` = c(12.4, 0), `Clupea harengus` = c(30.1, 55.0),
+                   check.names = FALSE)
+catch <- dv_from_wide(haul, taxa_in = "columns", id_cols = c("haul", "stratum"),
+                      sample_col = "haul", value_col = "kg")
+catch
+```
+
+Then declare the haul as the sampling unit, the stratum as the "predator" (or
+as a covariate, with a constant predator column), and the weight in kg as a
+mass. Everything downstream (sunbursts, covariate strata, the dashboard)
+works unchanged.
+
+## 4. What does not fit
+
+Stable isotopes and fatty acids do not identify prey: mixing models
+(MixSIAR, simmr, QFASA) estimate the contributions of a few source groups
+chosen by the analyst, with posterior uncertainty. A sunburst of posterior
+means would hide that uncertainty and the shallow, often functional, grouping
+of the sources. DietView is not meant for those outputs; it can, however, hold
+the stomach or DNA data from the same predators on one taxonomic backbone, the
+reference against which isotope-based diets are often compared.
+
+## References
+
+Deagle, B. E., Thomas, A. C., McInnes, J. C., Clarke, L. J., Vesterinen,
+E. J., Clare, E. L., Kartzinel, T. R., & Eveson, J. P. (2019). Counting with
+DNA in metabarcoding studies: How should we convert sequence reads to dietary
+data? *Molecular Ecology*, 28(2), 391-406.
