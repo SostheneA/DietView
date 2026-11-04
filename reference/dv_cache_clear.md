@@ -1,9 +1,10 @@
-# Delete the WoRMS lookup cache
+# Delete the WoRMS and GBIF lookup caches
 
-[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)
-and
+[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md),
 [`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.md)
-keep successful WoRMS lookups in a cache file, by default in
+and
+[`dv_taxonomy_gbif()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.md)
+keep successful lookups in cache files (one per source), by default in
 `tools::R_user_dir("DietView", "cache")`. Expired entries are removed
 automatically; this function deletes the whole cache, and the cache
 directory too if nothing else is left in it.
@@ -11,7 +12,10 @@ directory too if nothing else is left in it.
 ## Usage
 
 ``` r
-dv_cache_clear(cache_dir = tools::R_user_dir("DietView", "cache"))
+dv_cache_clear(
+  cache_dir = tools::R_user_dir("DietView", "cache"),
+  source = c("all", "worms", "gbif")
+)
 ```
 
 ## Arguments
@@ -20,6 +24,10 @@ dv_cache_clear(cache_dir = tools::R_user_dir("DietView", "cache"))
 
   The cache directory, as given to
   [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md).
+
+- source:
+
+  Which cache to delete: `"all"` (default), `"worms"` or `"gbif"`.
 
 ## Value
 

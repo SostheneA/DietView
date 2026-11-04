@@ -34,6 +34,7 @@ table must be one prey record in a stomach."><meta property="og:image" content="
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
     <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
+    <li><a class="dropdown-item" href="../articles/other-data.html">Beyond stomachs: DNA metabarcoding, scats and other compositional data</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Outputs &amp; extension</h6></li>
@@ -78,7 +79,9 @@ table must be one prey record in a stomach.</p>
 <span>  digestion <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
 <span>  ranks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"kingdom"</span>, <span class="st">"phylum"</span>, <span class="st">"class"</span>, <span class="st">"order"</span>, <span class="st">"family"</span>, <span class="st">"genus"</span>, <span class="st">"species"</span><span class="op">)</span>,</span>
-<span>  predator_latin <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  predator_latin <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  weight_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mass"</span>, <span class="st">"reads"</span>, <span class="st">"rra"</span><span class="op">)</span>,</span>
+<span>  unit_label <span class="op">=</span> <span class="st">"stomach"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -134,6 +137,28 @@ columns, keep the default; otherwise they are filled by <code><a href="dv_prepar
 <dd><p>Optional column with the predator Latin name (used to
 look up identification photos when <code><a href="dv_build_html.html">dv_build_html()</a></code> is given a
 <code>photo_source</code>).</p></dd>
+
+
+<dt id="arg-weight-type">weight_type<a class="anchor" aria-label="anchor" href="#arg-weight-type"></a></dt>
+<dd><p>What the <code>weight</code> column measures:</p><ul><li><p><code>"mass"</code> (default): prey mass; the weight views show %W;</p></li>
+<li><p><code>"reads"</code>: sequence reads (DNA metabarcoding); the weight views
+show the pooled share of all reads;</p></li>
+<li><p><code>"rra"</code>: sequence reads, turned into relative read abundance by
+<code><a href="dv_prepare.html">dv_prepare()</a></code>: the reads of each sample (the <code>stomach</code> column) are
+divided by the sample total, so every sample weighs the same and the
+weight share at a rank is the mean RRA over samples (Deagle et al.
+2019, Molecular Ecology 28: 391-406). The raw reads are kept and the
+proportions are added as a new column.</p></li>
+</ul><p>With reads, <code>stomach</code> is still the sampling unit (a stomach, a scat, a
+pellet, a sample); <code>count</code> and <code>digestion</code> are usually absent.</p></dd>
+
+
+<dt id="arg-unit-label">unit_label<a class="anchor" aria-label="anchor" href="#arg-unit-label"></a></dt>
+<dd><p>What one <code>stomach</code> is, for messages, the dashboard and
+the Shiny app: <code>"stomach"</code> (default), <code>"scat"</code>, <code>"sample"</code>, <code>"haul"</code>...
+Give one word, or <code>c(singular, plural)</code> when the plural is not formed
+with an "s". Argument and column names (<code>stomachs =</code>, <code>min_stomachs</code>,
+<code>n_stomachs</code>) do not change.</p></dd>
 
 </dl></div>
     <div class="section level2">

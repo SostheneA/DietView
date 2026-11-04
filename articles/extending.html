@@ -52,6 +52,7 @@
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
     <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
+    <li><a class="dropdown-item" href="../articles/other-data.html">Beyond stomachs: DNA metabarcoding, scats and other compositional data</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Outputs &amp; extension</h6></li>
@@ -270,7 +271,7 @@ of each numeric column per country catches most of them:</p>
 <span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/dv_validate.html">dv_validate</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 8530 records from 4222 stomachs of 22 predator(s); 2305 stomach(s) hold a single record; 531 record(s) lack a weight.</span></span></code></pre></div>
+<span><span class="co">#&gt; 8530 records from 4222 stomachs of 22 predator(s); 2305 stomachs hold a single record; 531 record(s) lack a weight.</span></span></code></pre></div>
 <p>Give both a prey ID and a prey name when you have them: the ID is
 used for the lookup, and the name lets DietView check that the two
 agree. In the ICES data every identified prey has an AphiaID; the 1,553
@@ -505,12 +506,16 @@ levels.</p>
 <p>WoRMS covers marine taxa and many brackish and freshwater ones. When
 DietView matches a name without an ID, it restricts the search to marine
 records, so a strictly freshwater or terrestrial prey named without an
-AphiaID will often be <code>unresolved</code>. For such prey, build a
-lineage table from an authority that covers them (for example GBIF or
-the Catalogue of Life) and use <code>taxonomy = "table"</code> (section
-3). If your prey list mixes marine and other taxa, resolve the marine
-part with WoRMS, append the rest by hand from the other authority, and
-say in your methods which authority supplied which part.</p>
+AphiaID will often be <code>unresolved</code>. For such prey, use
+<code>taxonomy = "gbif"</code>: the GBIF Backbone Taxonomy covers all
+kingdoms, and the matching follows the same rules and writes the same
+review log as WoRMS (see <code><a href="../reference/dv_taxonomy_gbif.html">?dv_taxonomy_gbif</a></code>). If your prey
+list mixes marine and other taxa, resolve the marine part with WoRMS and
+the rest with GBIF (<code><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms()</a></code> and
+<code><a href="../reference/dv_taxonomy_gbif.html">dv_taxonomy_gbif()</a></code> on the two sets of keys), bind the two
+lineages into one table for <code>taxonomy = "table"</code>, and say in
+your methods which authority supplied which part. For DNA metabarcoding,
+scats and other compositional data, see the article <a href="other-data.html">Beyond stomachs</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

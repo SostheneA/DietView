@@ -20,6 +20,8 @@
   DietView](https://sosthenea.github.io/DietView/articles/getting-started.md):
 - [A known diet: what keeping unidentified prey
   changes](https://sosthenea.github.io/DietView/articles/known-diet.md):
+- [Beyond stomachs: DNA metabarcoding, scats and other compositional
+  data](https://sosthenea.github.io/DietView/articles/other-data.md):
 - [The interactive Shiny
   explorer](https://sosthenea.github.io/DietView/articles/shiny-app.md):
 - [Species identification cards and

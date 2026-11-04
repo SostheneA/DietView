@@ -40,6 +40,7 @@ repair."><meta property="og:image" content="https://sosthenea.github.io/DietView
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
     <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
+    <li><a class="dropdown-item" href="../articles/other-data.html">Beyond stomachs: DNA metabarcoding, scats and other compositional data</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Outputs &amp; extension</h6></li>
@@ -132,7 +133,7 @@ dropped from the returned spec, with a warning.</p>
 <span class="r-in"><span>  covariates     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">v</span> <span class="op">&lt;-</span> <span class="fu">dv_validate</span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> 8530 records from 4222 stomachs of 22 predator(s); 2305 stomach(s) hold a single record; 531 record(s) lack a weight.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 8530 records from 4222 stomachs of 22 predator(s); 2305 stomachs hold a single record; 531 record(s) lack a weight.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">v</span>, <span class="st">"dv_report"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $n_records</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 8530</span>

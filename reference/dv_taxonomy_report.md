@@ -27,7 +27,10 @@ dv_taxonomy_report(
 
 - prep:
 
-  A `dietview_prep` produced with `taxonomy = "worms"`.
+  A `dietview_prep` produced with `taxonomy = "worms"` or `"gbif"`. For
+  GBIF, matches at a coarser rank than the name (`"higherrank"`) and
+  matches below the confidence threshold (`low_confidence`) are also
+  listed for review.
 
 - which:
 

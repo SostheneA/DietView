@@ -17,7 +17,9 @@ dv_spec(
   digestion = NULL,
   covariates = character(0),
   ranks = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
-  predator_latin = NULL
+  predator_latin = NULL,
+  weight_type = c("mass", "reads", "rra"),
+  unit_label = "stomach"
 )
 ```
 
@@ -78,6 +80,34 @@ dv_spec(
   identification photos when
   [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md)
   is given a `photo_source`).
+
+- weight_type:
+
+  What the `weight` column measures:
+
+  - `"mass"` (default): prey mass; the weight views show %W;
+
+  - `"reads"`: sequence reads (DNA metabarcoding); the weight views show
+    the pooled share of all reads;
+
+  - `"rra"`: sequence reads, turned into relative read abundance by
+    [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md):
+    the reads of each sample (the `stomach` column) are divided by the
+    sample total, so every sample weighs the same and the weight share
+    at a rank is the mean RRA over samples (Deagle et al. 2019,
+    Molecular Ecology 28: 391-406). The raw reads are kept and the
+    proportions are added as a new column.
+
+  With reads, `stomach` is still the sampling unit (a stomach, a scat, a
+  pellet, a sample); `count` and `digestion` are usually absent.
+
+- unit_label:
+
+  What one `stomach` is, for messages, the dashboard and the Shiny app:
+  `"stomach"` (default), `"scat"`, `"sample"`, `"haul"`... Give one
+  word, or `c(singular, plural)` when the plural is not formed with an
+  "s". Argument and column names (`stomachs =`, `min_stomachs`,
+  `n_stomachs`) do not change.
 
 ## Value
 

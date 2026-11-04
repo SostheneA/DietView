@@ -11,13 +11,14 @@ articles:
   articles/extending: extending.html
   getting-started: getting-started.html
   known-diet: known-diet.html
+  articles/other-data: other-data.html
   articles/shiny-app: shiny-app.html
   articles/species-cards: species-cards.html
   taxonomy-worms: taxonomy-worms.html
   articles/technical-reference: technical-reference.html
   articles/tour: tour.html
   articles/within-rank-na: within-rank-na.html
-last_built: 2026-11-03T11:48Z
+last_built: 2026-11-04T19:04Z
 urls:
   reference: https://sosthenea.github.io/DietView/reference
   article: https://sosthenea.github.io/DietView/articles

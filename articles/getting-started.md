@@ -85,7 +85,7 @@ spec <- dv_spec(
   covariates     = c("region", "year", "quarter")
 )
 dv_validate(dat, spec)
-#> 8530 records from 4222 stomachs of 22 predator(s); 2305 stomach(s) hold a single record; 531 record(s) lack a weight.
+#> 8530 records from 4222 stomachs of 22 predator(s); 2305 stomachs hold a single record; 531 record(s) lack a weight.
 ```
 
 The specification changes nothing in your table. It records which column

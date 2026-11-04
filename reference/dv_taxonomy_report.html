@@ -50,6 +50,7 @@ enrichment, then correct anything wrong by supplying a lineage table
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
     <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
+    <li><a class="dropdown-item" href="../articles/other-data.html">Beyond stomachs: DNA metabarcoding, scats and other compositional data</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Outputs &amp; extension</h6></li>
@@ -104,7 +105,10 @@ enrichment, then correct anything wrong by supplying a lineage table
 
 
 <dl><dt id="arg-prep">prep<a class="anchor" aria-label="anchor" href="#arg-prep"></a></dt>
-<dd><p>A <code>dietview_prep</code> produced with <code>taxonomy = "worms"</code>.</p></dd>
+<dd><p>A <code>dietview_prep</code> produced with <code>taxonomy = "worms"</code> or
+<code>"gbif"</code>. For GBIF, matches at a coarser rank than the name
+(<code>"higherrank"</code>) and matches below the confidence threshold
+(<code>low_confidence</code>) are also listed for review.</p></dd>
 
 
 <dt id="arg-which">which<a class="anchor" aria-label="anchor" href="#arg-which"></a></dt>

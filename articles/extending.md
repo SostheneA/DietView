@@ -165,7 +165,7 @@ spec <- dv_spec(
   covariates     = c("region", "year", "quarter")
 )
 dv_validate(dat, spec)
-#> 8530 records from 4222 stomachs of 22 predator(s); 2305 stomach(s) hold a single record; 531 record(s) lack a weight.
+#> 8530 records from 4222 stomachs of 22 predator(s); 2305 stomachs hold a single record; 531 record(s) lack a weight.
 ```
 
 Give both a prey ID and a prey name when you have them: the ID is used
@@ -387,9 +387,18 @@ levels.
 WoRMS covers marine taxa and many brackish and freshwater ones. When
 DietView matches a name without an ID, it restricts the search to marine
 records, so a strictly freshwater or terrestrial prey named without an
-AphiaID will often be `unresolved`. For such prey, build a lineage table
-from an authority that covers them (for example GBIF or the Catalogue of
-Life) and use `taxonomy = "table"` (section 3). If your prey list mixes
-marine and other taxa, resolve the marine part with WoRMS, append the
-rest by hand from the other authority, and say in your methods which
-authority supplied which part.
+AphiaID will often be `unresolved`. For such prey, use
+`taxonomy = "gbif"`: the GBIF Backbone Taxonomy covers all kingdoms, and
+the matching follows the same rules and writes the same review log as
+WoRMS (see
+[`?dv_taxonomy_gbif`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.md)).
+If your prey list mixes marine and other taxa, resolve the marine part
+with WoRMS and the rest with GBIF
+([`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.md)
+and
+[`dv_taxonomy_gbif()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.md)
+on the two sets of keys), bind the two lineages into one table for
+`taxonomy = "table"`, and say in your methods which authority supplied
+which part. For DNA metabarcoding, scats and other compositional data,
+see the article [Beyond
+stomachs](https://sosthenea.github.io/DietView/articles/other-data.md).

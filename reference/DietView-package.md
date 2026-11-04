@@ -1,4 +1,4 @@
-# DietView: interactive, hierarchical visualization of predator stomach-content data
+# DietView: interactive, hierarchical visualization of predator diet data
 
 DietView takes a long table of stomach-content records (one row per prey
 record), attaches a taxonomic lineage (from WoRMS, or from a lineage

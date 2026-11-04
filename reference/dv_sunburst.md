@@ -25,7 +25,8 @@ dv_sunburst(
   colors = NULL,
   rotation = 90,
   title = "",
-  subtitle = ""
+  subtitle = "",
+  weight_type = "mass"
 )
 ```
 
@@ -47,11 +48,11 @@ dv_sunburst(
 
   One of "occurrence" (default), "weight", "count".
 
-- ranks, weight_col, count_col:
+- ranks, weight_col, count_col, weight_type:
 
   Passed to
   [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)
-  if `x` is raw.
+  if `x` is raw (a tree carries its own `weight_type`).
 
 - colors:
 

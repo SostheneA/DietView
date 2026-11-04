@@ -6,14 +6,16 @@ What DietView is and how the pieces fit together.
 
 - [`DietView`](https://sosthenea.github.io/DietView/reference/DietView-package.md)
   [`DietView-package`](https://sosthenea.github.io/DietView/reference/DietView-package.md)
-  : DietView: interactive, hierarchical visualization of predator
-  stomach-content data
+  : DietView: interactive, hierarchical visualization of predator diet
+  data
 
 ## Example data
 
 Public stomach-content data from the ICES Stomach Content Database
 (North Sea, Skagerrak-Kattegat and Baltic Sea, 2020-2024), with their
-frozen WoRMS lineage, used throughout the examples and articles.
+frozen WoRMS lineage, used throughout the examples and articles; and the
+public DNA metabarcoding diet of Salish Sea harbour seals (Thomas et
+al. 2022).
 
 - [`ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)
   : Stomach contents of North-East Atlantic fishes (ICES, 2020-2024)
@@ -23,6 +25,10 @@ frozen WoRMS lineage, used throughout the examples and articles.
   : Frozen WoRMS lineage for the ICES example data
 - [`ices_lineage_raw`](https://sosthenea.github.io/DietView/reference/ices_lineage_raw.md)
   : Uncorrected WoRMS lineage for the ICES example data
+- [`salish_seal_dna`](https://sosthenea.github.io/DietView/reference/salish_seal_dna.md)
+  : DNA metabarcoding diet of Salish Sea harbour seals
+- [`salish_seal_lineage`](https://sosthenea.github.io/DietView/reference/salish_seal_lineage.md)
+  : Frozen WoRMS lineage for the Salish Sea harbour seal data
 
 ## 1 · Declare and validate your data
 
@@ -34,23 +40,37 @@ hard-coded; every other function reads this spec.
 - [`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.md)
   : Check a long diet table against a spec before any work is done
 
+## 1b · Bring other data shapes
+
+Reshape wide sample-by-taxon tables (ASV/OTU tables, catch compositions)
+into the long format, and split pipeline lineage strings into rank
+columns.
+
+- [`dv_from_wide()`](https://sosthenea.github.io/DietView/reference/dv_from_wide.md)
+  : Reshape a wide sample-by-taxon table into DietView's long format
+- [`dv_parse_lineage()`](https://sosthenea.github.io/DietView/reference/dv_parse_lineage.md)
+  : Split a lineage string into rank columns
+
 ## 2 · Attach taxonomy
 
-Resolve prey to the WoRMS classification (or join your own lineage
-table), keeping unresolved prey as an explicit unidentified category and
-logging every match for review.
+Resolve prey to the WoRMS classification (marine), the GBIF Backbone
+(all kingdoms), or join your own lineage table, keeping unresolved prey
+as an explicit unidentified category and logging every match for review.
 
 - [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)
   : Prepare a diet table for DietView (validate + add taxa)
 - [`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.md)
   : Resolve prey to the WoRMS classification (id, exact name, then
   fuzzy)
+- [`dv_taxonomy_gbif()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.md)
+  : Resolve prey to the GBIF Backbone Taxonomy (key, exact name, then
+  fuzzy)
 - [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md)
   : Review doubtful prey matches
 - [`dv_lineage_check()`](https://sosthenea.github.io/DietView/reference/dv_lineage_check.md)
   : Check a lineage for spelling variants and inconsistent placements
 - [`dv_cache_clear()`](https://sosthenea.github.io/DietView/reference/dv_cache_clear.md)
-  : Delete the WoRMS lookup cache
+  : Delete the WoRMS and GBIF lookup caches
 
 ## 3 · Build covariates
 
@@ -86,8 +106,13 @@ Render the multi-rank sunburst and its color dictionaries.
 - [`dv_palette_tree()`](https://sosthenea.github.io/DietView/reference/dv_palette_tree.md)
   : Colors that follow the taxonomic hierarchy
 
-## 6 · Quantify the digestion identification bias
+## 6 · Identification resolution and the digestion bias
 
+The finest rank each record reaches, overall or by any grouping
+(predator, method, year), and split by digestion stage.
+
+- [`dv_resolution()`](https://sosthenea.github.io/DietView/reference/dv_resolution.md)
+  : Identification resolution: the finest rank each record reaches
 - [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md)
   : Identification resolution versus digestion level
 

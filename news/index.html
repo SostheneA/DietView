@@ -30,6 +30,7 @@
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
     <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
+    <li><a class="dropdown-item" href="../articles/other-data.html">Beyond stomachs: DNA metabarcoding, scats and other compositional data</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Outputs &amp; extension</h6></li>
@@ -58,8 +59,28 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="dietview-010">DietView 0.1.0<a class="anchor" aria-label="anchor" href="#dietview-010"></a></h2>
 <ul><li>Initial CRAN release.</li>
+</ul><div class="section level3">
+<h3 id="beyond-stomach-contents-0-1-0">Beyond stomach contents<a class="anchor" aria-label="anchor" href="#beyond-stomach-contents-0-1-0"></a></h3>
+<ul><li>
+<code>dv_prepare(taxonomy = "gbif")</code> and the new <code><a href="../reference/dv_taxonomy_gbif.html">dv_taxonomy_gbif()</a></code> resolve prey against the GBIF Backbone Taxonomy (all kingdoms), for terrestrial and freshwater diets. Same rules as WoRMS: key, exact name, then fuzzy name, a per-prey provenance log, an on-disk cache and <code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code>. GBIF adds two review flags: <code>"higherrank"</code> matches and <code>low_confidence</code>. No new dependency.</li>
+<li>
+<code><a href="../reference/dv_parse_lineage.html">dv_parse_lineage()</a></code> splits lineage strings from metabarcoding pipelines (QIIME 2, DADA2, SILVA, MIDORI, BOLD, BLAST) into rank columns, so the reference taxonomy used for assignment (NCBI, SILVA, BOLD…) can be kept with <code>taxonomy = "columns"</code>.</li>
+<li>
+<code><a href="../reference/dv_from_wide.html">dv_from_wide()</a></code> reshapes wide sample-by-taxon tables (ASV/OTU tables, catch compositions) into the long format and joins sample metadata.</li>
+<li>
+<code>dv_spec(weight_type = )</code>: <code>"mass"</code> (default), <code>"reads"</code> (pooled read share) or <code>"rra"</code> (relative read abundance, the mean over samples of per-sample read proportions). Labels of the weight views follow.</li>
+<li>
+<code><a href="../reference/dv_resolution.html">dv_resolution()</a></code>: the finest rank each record reaches, by any grouping, without needing a digestion column (the identification-resolution diagnostic for DNA data); <code><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic()</a></code> now builds on it, and the Shiny app shows a “Resolution” tab when there is no digestion column.</li>
+<li>
+<code>dv_spec(unit_label = )</code>: names the sampling unit (“scat”, “sample”, “haul”…) in messages, printouts, the dashboard and the Shiny app. Argument and column names are unchanged.</li>
+<li>New example data: <code>salish_seal_dna</code> and <code>salish_seal_lineage</code>, the DNA metabarcoding diet of 4,625 Salish Sea harbour seal scats (Thomas et al. 2022, CC0).</li>
+<li>
+<code><a href="../reference/dv_cache_clear.html">dv_cache_clear()</a></code> gains <code>source = c("all", "worms", "gbif")</code>.</li>
+<li>New article: “Beyond stomachs: DNA metabarcoding, scats and other compositional data”.</li>
 </ul></div>
-  </main></div>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

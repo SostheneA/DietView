@@ -52,6 +52,7 @@
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
     <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
+    <li><a class="dropdown-item" href="../articles/other-data.html">Beyond stomachs: DNA metabarcoding, scats and other compositional data</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Outputs &amp; extension</h6></li>
@@ -102,18 +103,22 @@ design decisions behind them.</p>
 <div class="section level2">
 <h2 id="what-dietview-is">What DietView is<a class="anchor" aria-label="anchor" href="#what-dietview-is"></a>
 </h2>
-<p>DietView turns a <strong>plain long table of stomach-content
-records</strong> — one row per prey record, with columns for the
-predator, the stomach, the prey, an optional weight, and any covariates
-— into interactive, taxonomically complete <strong>sunburst</strong>
-views of predator diet. The input table carries <em>no taxonomy</em>:
-DietView adds the seven flagship Linnaean ranks (kingdom to species)
-itself, from WoRMS or from a lineage table you supply. From that single
-input it produces per-taxon importance in two currencies, an explicit
-“NA” category for unidentified prey, covariate stratified views, a
-digestion identification-bias diagnostic, and three outputs (a Shiny
-explorer, a self-contained HTML dashboard, and plain plotly
-figures).</p>
+<p>DietView turns a <strong>plain long table of diet records</strong> —
+one row per prey record in a sampling unit (a stomach, a scat, a pellet,
+a DNA sample), with columns for the predator, the unit, the prey, an
+optional quantity, and any covariates — into interactive, taxonomically
+complete <strong>sunburst</strong> views of predator diet. The input
+table carries <em>no taxonomy</em>: DietView adds the seven flagship
+Linnaean ranks (kingdom to species) itself, from WoRMS (marine prey),
+the GBIF Backbone (all kingdoms), lineage strings already in the data,
+or a lineage table you supply. From that single input it produces
+per-taxon importance in two currencies, an explicit “NA” category for
+unidentified prey, covariate stratified views, an
+identification-resolution diagnostic (by any grouping, and by digestion
+stage), and three outputs (a Shiny explorer, a self-contained HTML
+dashboard, and plain plotly figures). The quantity can be prey mass,
+sequence reads, or relative read abundance (RRA), and every label
+follows.</p>
 </div>
 <div class="section level2">
 <h2 id="design-principles-the-why-behind-the-code">Design principles (the why behind the code)<a class="anchor" aria-label="anchor" href="#design-principles-the-why-behind-the-code"></a>
@@ -123,12 +128,17 @@ hard-codes column names. You describe the roles of your columns once,
 with <code><a href="../reference/dv_spec.html">dv_spec()</a></code>, and every other function reads that spec.
 This is what lets the same code serve any survey.</p>
 <p><strong>Taxonomy on demand, provenance-logged, never silently
-guessed.</strong> Prey are resolved to WoRMS in a strict order — known
-AphiaID, exact name, then optionally fuzzy name, then unresolved — and
-every prey carries a provenance record. Fuzzy matches are flagged, and
-<code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code> surfaces exactly what needs a human
-eye. Unaccepted names are followed to their valid AphiaID; results are
-cached.</p>
+guessed.</strong> Prey are resolved to WoRMS or to the GBIF Backbone in
+a strict order — known ID, exact name, then optionally fuzzy name (GBIF
+adds a higher-rank match), then unresolved — and every prey carries a
+provenance record. Fuzzy, higher-rank, low-confidence and homonym
+matches are flagged, and <code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code> surfaces
+exactly what needs a human eye. Unaccepted names are followed to their
+valid taxon; results are cached, one file per authority. A GBIF name
+shared by several taxa (Polychaeta is a class of worms and a genus of
+flies) is resolved only when exactly one exact, accepted candidate
+exists; otherwise GBIF’s conservative answer (the shared ancestor) is
+kept and flagged.</p>
 <p><strong>The explicit-NA philosophy.</strong> Where identification
 stops, DietView keeps the deeper ranks as <code>NA</code> and renders
 them as an explicit “NA” category (white). Two consequences: within-rank
@@ -142,10 +152,26 @@ sunburst is its own complete pie.</p>
 occurrence (how often) or weight (how much biomass); they routinely
 disagree, and showing both is part of an honest diet description. A
 <code>count</code> mode sizes segments by distinct diet items.</p>
-<p><strong>The <code>branchvalues = "total"</code> invariant.</strong>
-Aggregation is done at the finest rank and rolled up, so a parent’s
-value equals the sum of its children — exactly what plotly’s sunburst
-requires. A unit test guards it.</p>
+<p><strong>Say what the quantity is.</strong> Sequence reads are not
+biomass. <code>dv_spec(weight_type =)</code> declares the weight column
+as prey mass (<code>"mass"</code>, %W), pooled reads
+(<code>"reads"</code>, share of all reads) or relative read abundance
+(<code>"rra"</code>): the reads of each unit are divided by the unit
+total before summing, so every unit weighs the same and the share at a
+rank is the mean RRA over units (Deagle et al. 2019). The arithmetic of
+the tree is unchanged; only the labels of the weight views differ, so no
+figure can call reads “weight”.</p>
+<p><strong>Say what the unit is.</strong>
+<code>dv_spec(unit_label =)</code> names the sampling unit (“scat”,
+“sample”, “haul”); messages, printouts, the dashboard and the Shiny app
+use it. Argument and column names (<code>stomachs =</code>,
+<code>min_stomachs</code>, <code>n_stomachs</code>) stay the same, so
+code written for stomachs runs unchanged on scats.</p>
+<p><strong>The roll-up invariant.</strong> Aggregation is done at the
+finest rank and rolled up, so a parent’s value equals the sum of its
+children; a unit test guards it. The sunburst passes only the leaf
+values to plotly (<code>branchvalues = "remainder"</code>, parents at
+0), so the wedge sizes cannot drift from the table.</p>
 <p><strong>Fixed orientation for comparability.</strong> Sunbursts use
 <code>sort = FALSE</code> and a fixed start angle, so a taxon sits in
 the same place across covariate cells and cells can be compared
@@ -161,27 +187,38 @@ run.</p>
 <pre><code>  raw long table  +  dv_spec()                 -&gt; dietview_spec
         |
         v
+  (wide table -&gt; dv_from_wide();  lineage string -&gt; dv_parse_lineage())
+        |
+        v
   dv_prepare(data, spec, taxonomy=)            -&gt; dietview_prep
-     |   taxonomy: 'columns' | 'table' | 'worms' | 'auto'
+     |   taxonomy: 'columns' | 'table' | 'worms' | 'gbif' | 'auto'
+     |   weight_type = 'rra': reads -&gt; per-unit proportions
         |
         v
   dv_build_tree(prep$data, ranks, weight/count) -&gt; dietview_tree  (within-rank %)
         |
         +-------------------+--------------------+
         v                   v                    v
-  dv_sunburst()      dv_rank_table()   dv_digestion_diagnostic()
+  dv_sunburst()      dv_rank_table()   dv_resolution() / dv_digestion_diagnostic()
   dv_build_html()/dv_deploy()/run_dietview()</code></pre>
-<p>The eight stages: (1) declare &amp; validate — <code>dv_spec</code>,
-<code>dv_validate</code>; (2) attach taxonomy — <code>dv_prepare</code>,
-<code>dv_taxonomy_worms</code>, <code>dv_taxonomy_report</code>; (3)
+<p>The stages: (0) reshape other data shapes —
+<code>dv_from_wide</code>, <code>dv_parse_lineage</code>; (1) declare
+&amp; validate — <code>dv_spec</code>, <code>dv_validate</code>; (2)
+attach taxonomy — <code>dv_prepare</code>,
+<code>dv_taxonomy_worms</code>, <code>dv_taxonomy_gbif</code>,
+<code>dv_taxonomy_report</code>, <code>dv_lineage_check</code>; (3)
 build covariates — <code>dv_add_period</code>,
 <code>dv_size_bins</code>; (4) compute metrics —
-<code>dv_build_tree</code>, <code>dv_rank_table</code>; (5) draw figures
-— <code>dv_sunburst</code>, <code>dv_palette</code>; (6) digestion bias
-— <code>dv_digestion_diagnostic</code>; (7) species cards —
-<code>dv_species_card_assets</code>; (8) ship —
+<code>dv_build_tree</code>, <code>dv_tree</code>,
+<code>dv_rank_table</code>; (5) draw figures — <code>dv_sunburst</code>,
+<code>dv_palette</code>; (6) identification resolution —
+<code>dv_resolution</code>, <code>dv_digestion_diagnostic</code>; (7)
+species cards — <code>dv_species_card_assets</code>; (8) ship —
 <code>dv_build_html</code>, <code>dv_deploy</code>,
-<code>run_dietview</code>.</p>
+<code>run_dietview</code>, <code>dv_script</code>; (9) explore and
+export — <code>dv_summary</code>, <code>dv_prey_accumulation</code>,
+<code>dv_fo_table</code>, <code>dv_aggregate_threshold</code>,
+<code>dv_matrix</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="data-structures">Data structures<a class="anchor" aria-label="anchor" href="#data-structures"></a>
@@ -191,19 +228,29 @@ build covariates — <code>dv_add_period</code>,
 <code>predator</code>, <code>stomach</code>,
 <code>prey_name</code>/<code>prey_id</code>, <code>weight</code>,
 <code>count</code>, <code>digestion</code>, <code>covariates</code>,
-<code>ranks</code>, <code>predator_latin</code>.</p>
+<code>ranks</code>, <code>predator_latin</code>,
+<code>weight_type</code> (<code>"mass"</code>, <code>"reads"</code>,
+<code>"rra"</code>) and <code>unit_label</code>. After
+<code><a href="../reference/dv_prepare.html">dv_prepare()</a></code> with <code>weight_type = "rra"</code>,
+<code>weight</code> names the new proportion column and
+<code>weight_raw</code> the original reads.</p>
 <p><strong><code>dietview_prep</code></strong> (from
 <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code>): <code>data</code> (long table with rank
-columns attached), <code>spec</code>, <code>ranks</code>, and
-<code>taxonomy_log</code> (NULL unless taxonomy = <code>"worms"</code>).
-Its <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> summarises counts, ranks, covariates, and WoRMS
-match breakdown.</p>
+columns attached), <code>spec</code>, <code>ranks</code>,
+<code>taxonomy_source</code>, <code>taxonomy_log</code> (NULL unless
+taxonomy = <code>"worms"</code> or <code>"gbif"</code>; its ID column is
+<code>aphia_used</code> or <code>gbif_key</code>, its attribute
+<code>source</code> names the authority) and, optionally,
+<code>stomachs</code> (the examined units). Its <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>
+summarises counts (in the spec’s unit), ranks, covariates, and the match
+breakdown.</p>
 <p><strong><code>dietview_tree</code></strong> (from
 <code><a href="../reference/dv_build_tree.html">dv_build_tree()</a></code>): one row per sunburst node —
 <code>id</code>, <code>label</code>, <code>parent</code>,
 <code>rank</code>, <code>value_item</code>, <code>value_occ</code>,
 <code>value_w</code>, <code>pct_occ</code>, <code>pct_w</code> (each
-rank’s percentages sum to 100).</p>
+rank’s percentages sum to 100), with the attributes
+<code>currency</code> and <code>weight_type</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="function-reference-summary">Function reference (summary)<a class="anchor" aria-label="anchor" href="#function-reference-summary"></a>
@@ -211,8 +258,22 @@ rank’s percentages sum to 100).</p>
 <p>The complete per-argument reference lives on the <a href="../reference/index.html">reference index</a>. In brief:</p>
 <ul>
 <li>
-<strong><code><a href="../reference/dv_spec.html">dv_spec()</a></code></strong> — declare column roles once;
-a defensive constructor that errors if no prey key is given.</li>
+<strong><code><a href="../reference/dv_from_wide.html">dv_from_wide()</a></code></strong> — pivot a wide
+sample-by-taxon table (taxa in rows or in columns) to the long format,
+drop zeros, join sample metadata, and optionally sum the rows of one
+taxon within a unit (<code>collapse_by</code>).</li>
+<li>
+<strong><code><a href="../reference/dv_parse_lineage.html">dv_parse_lineage()</a></code></strong> — split pipeline
+lineage strings into rank columns: prefixed (<code>k__</code>,
+<code>p__</code>…) or positional fields, placeholders and
+<code>sp.</code> to <code>NA</code>, NCBI tax IDs and underscores
+cleaned, <code>s__epithet</code> completed with its genus; adds the
+deepest name as <code>prey_name</code>.</li>
+<li>
+<strong><code><a href="../reference/dv_spec.html">dv_spec()</a></code></strong> — declare column roles once,
+with the quantity type and the unit label; a defensive constructor that
+errors if no prey key is given, or if reads are declared without a
+weight column.</li>
 <li>
 <strong><code><a href="../reference/dv_validate.html">dv_validate()</a></code></strong> — check a table against
 a spec; hard errors on missing required columns, soft warnings on
@@ -220,16 +281,23 @@ missing weight/digestion.</li>
 <li>
 <strong><code><a href="../reference/dv_prepare.html">dv_prepare()</a></code></strong> — validate + attach
 lineage via <code>columns</code> / <code>table</code> /
-<code>worms</code> / <code>auto</code>; normalise “NA”/“” to real
-<code>NA</code>.</li>
+<code>worms</code> / <code>gbif</code> / <code>auto</code>; normalise
+“NA”/“” to real <code>NA</code>; label lineage gaps; turn reads into RRA
+when asked.</li>
 <li>
 <strong><code><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms()</a></code></strong> — resolve prey to
 WoRMS (id/exact/fuzzy/unresolved), follow unaccepted names to valid
 AphiaID, cache, log provenance.</li>
 <li>
-<strong><code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code></strong> — return fuzzy +
-unresolved prey to review, sorted by records affected; optional
-CSV.</li>
+<strong><code><a href="../reference/dv_taxonomy_gbif.html">dv_taxonomy_gbif()</a></code></strong> — the same for the
+GBIF Backbone (all kingdoms), over the public GBIF API with no extra
+package: key, exact, fuzzy, higher-rank, homonyms settled from GBIF’s
+alternatives when one exact accepted candidate exists; a step up to a
+kingdom alone counts as no match.</li>
+<li>
+<strong><code><a href="../reference/dv_taxonomy_report.html">dv_taxonomy_report()</a></code></strong> — return the
+matches to review (fuzzy, higher rank, low confidence, homonyms,
+unresolved, synonyms), sorted by records affected; optional CSV.</li>
 <li>
 <strong><code><a href="../reference/dv_add_period.html">dv_add_period()</a></code> /
 <code><a href="../reference/dv_size_bins.html">dv_size_bins()</a></code></strong> — derive period and length-bin
@@ -248,9 +316,12 @@ sunburst; fixed orientation, currency-dependent sizing and hover.</li>
 <strong><code><a href="../reference/dv_palette.html">dv_palette()</a></code></strong> — stable label → colour
 dictionary; NA forced white.</li>
 <li>
-<strong><code><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic()</a></code></strong> —
-finest-resolved-rank shares by digestion level (via a
-<code>max.col</code> trick), optionally crossed with a covariate.</li>
+<strong><code><a href="../reference/dv_resolution.html">dv_resolution()</a></code></strong> — finest-resolved-rank
+shares of records and weight (via a <code>max.col</code> trick), overall
+or by any grouping columns; needs no digestion column.</li>
+<li>
+<strong><code><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic()</a></code></strong> — the same
+by digestion level, optionally crossed with a covariate.</li>
 <li>
 <strong><code><a href="../reference/dv_species_card_assets.html">dv_species_card_assets()</a></code></strong> — resolve an
 ID photo + description as a base64 data URI; graceful offline
@@ -309,13 +380,30 @@ reading order and start angle identical across covariate cells — what
 makes side-by-side comparison meaningful.</p>
 </div>
 <div class="section level3">
-<h3 id="the-digestion-trick">The digestion trick<a class="anchor" aria-label="anchor" href="#the-digestion-trick"></a>
+<h3 id="the-resolution-trick">The resolution trick<a class="anchor" aria-label="anchor" href="#the-resolution-trick"></a>
 </h3>
 <p>For each record, the finest resolved rank is found by multiplying a
-logical matrix of “rank is non-NA” by the rank position and taking
+logical matrix of “rank is a real taxon” (non-NA and not a lineage-gap
+label) by the rank position and taking
 <code>max.col(..., ties = 'last')</code>; records with no resolved rank
-become “Unresolved”. Grouping by digestion level (and optionally a
-covariate) then gives record and weight shares within each level.</p>
+become “Unresolved”. Grouping by any columns
+(<code><a href="../reference/dv_resolution.html">dv_resolution()</a></code>) or by digestion level
+(<code><a href="../reference/dv_digestion_diagnostic.html">dv_digestion_diagnostic()</a></code>) then gives record and weight
+shares within each group. For DNA data this measures where the marker or
+the reference library stops separating taxa; for stomachs, where
+digestion does.</p>
+</div>
+<div class="section level3">
+<h3 id="relative-read-abundance">Relative read abundance<a class="anchor" aria-label="anchor" href="#relative-read-abundance"></a>
+</h3>
+<p>With <code>weight_type = "rra"</code>, <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code>
+divides each record’s reads by the total of its unit
+(<code>stats::ave(reads, unit, FUN = sum)</code>) and stores the result
+as a new column that becomes the spec’s weight. Summed in the tree, a
+node’s <code>value_w</code> is the sum of per-unit proportions and
+<code>pct_w</code> is that sum over the number of units: the mean RRA.
+Units with no reads contribute nothing, with a warning. The labels of
+the weight views (<code>.dv_wlabels()</code>) follow the type.</p>
 </div>
 </div>
 <div class="section level2">
@@ -326,15 +414,22 @@ covariate) then gives record and weight shares within each level.</p>
 <code>.dv_titlecase()</code> / <code>.dv_slugify()</code> (display and
 file-name formatting), <code>.dv_fill_na()</code> (the explicit-NA
 conversion), <code>.dv_empty_tree()</code> (typed empty tree),
-<code>.dv_pct_fmt()</code> (hover formatting), and the dashboard pieces
+<code>.dv_pct_fmt()</code> (hover formatting),
+<code>.dv_wlabels()</code> (labels of the weight views per
+<code>weight_type</code>), <code>.dv_unit()</code> (the unit label,
+singular or plural), <code>.dv_resolution_table()</code> (the resolution
+core), <code>.dv_add_rra()</code> (reads to RRA),
+<code>.dv_gbif_get()</code> / <code>.dv_gbif_try()</code> (GBIF requests
+with retries; mocked in tests), and the dashboard pieces
 <code>.dv_head_tags()</code>, <code>.dv_home()</code>,
 <code>.dv_render()</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="bundled-data-and-the-input-contract">Bundled data and the input contract<a class="anchor" aria-label="anchor" href="#bundled-data-and-the-input-contract"></a>
 </h2>
-<p>One row = one prey record in one stomach; free column names mapped
-via <code><a href="../reference/dv_spec.html">dv_spec()</a></code>. The package ships three kinds of data.</p>
+<p>One row = one prey record in one sampling unit; free column names
+mapped via <code><a href="../reference/dv_spec.html">dv_spec()</a></code>. The package ships four kinds of
+data.</p>
 <p><strong>The ICES datasets</strong> (<code>data/</code>, lazy-loaded;
 documented in <code><a href="../reference/ices_diet.html">?ices_diet</a></code>), the data of the articles,
 vignettes and examples. They are a public extract of the ICES Stomach
@@ -395,6 +490,41 @@ nematodes:</p>
 <span>                covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"region"</span>, <span class="st">"year"</span>, <span class="st">"quarter"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_prepare.html">dv_prepare</a></span><span class="op">(</span><span class="va">dat</span>, <span class="va">spec</span>, taxonomy <span class="op">=</span> <span class="st">"table"</span>, lineage <span class="op">=</span> <span class="va">ices_lineage</span>,</span>
 <span>                   verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><strong>The Salish Sea harbour seal DNA data</strong>
+(<code>data/</code>, documented in <code><a href="../reference/salish_seal_dna.html">?salish_seal_dna</a></code>), built
+by <code>data-raw/salish_seal.R</code> from the public dataset of Thomas
+et al. (2022, <em>Scientific Data</em> 9: 68; figshare, CC0).</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th>Dataset</th>
+<th>Rows</th>
+<th>Content</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>salish_seal_dna</code></td>
+<td>11,641 prey records</td>
+<td>4,625 scats from 52 haul-outs, 2012-2018; prey label, common name,
+16S and COI reads, the authors’ diet fraction (RRA), site, position,
+year, month, season, laboratory</td>
+</tr>
+<tr class="even">
+<td><code>salish_seal_lineage</code></td>
+<td>117 labels</td>
+<td>the frozen WoRMS lineage, keyed by <code>prey_label</code>; labels
+listing alternatives (“A OR B”) keep only the ranks their candidates
+share</td>
+</tr>
+</tbody>
+</table>
+<p>It is the worked example of the “Beyond stomachs” article: scats as
+units (<code>unit_label = "scat"</code>), <code>diet_fraction</code> as
+RRA, and <code><a href="../reference/dv_resolution.html">dv_resolution()</a></code> by laboratory.</p>
 <p><strong>The small example</strong>
 (<code>inst/extdata/dietview_example.csv</code>, 24 invented records,
 with <code>dietview_example_lineage.csv</code> and a data dictionary)
@@ -410,23 +540,28 @@ unidentified prey does, which real data cannot show.</p>
 <div class="section level2">
 <h2 id="dependencies">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies"></a>
 </h2>
-<p><code>dplyr</code> / <code>tidyr</code> (aggregation),
-<code>plotly</code> (sunburst), <code>htmltools</code> (dashboard HTML),
-<code>jsonlite</code> (Wikipedia/Commons), <code>knitr</code>
+<p><code>dplyr</code> (aggregation), <code>plotly</code> (sunburst),
+<code>htmltools</code> (dashboard HTML), <code>jsonlite</code>
+(Wikipedia/Commons and the GBIF API), <code>knitr</code>
 (<code>image_uri</code>, vignettes), <code>grDevices</code> /
-<code>stats</code> / <code>tools</code> / <code>utils</code> /
-<code>rlang</code> (colours, stats, paths, tidy-eval). Suggested:
-<code>worrms</code> (WoRMS), <code>shiny</code> + <code>DT</code> (app),
-<code>rmarkdown</code> (self-contained render), <code>testthat</code>
-(tests).</p>
+<code>stats</code> / <code>tools</code> / <code>utils</code> (colours,
+stats, paths, web requests). Suggested: <code>worrms</code> (WoRMS),
+<code>shiny</code> + <code>DT</code> (app), <code>rmarkdown</code>
+(self-contained render), <code>testthat</code> + <code>withr</code>
+(tests). GBIF needs no extra package.</p>
 </div>
 <div class="section level2">
 <h2 id="testing">Testing<a class="anchor" aria-label="anchor" href="#testing"></a>
 </h2>
 <p>The testthat suite locks the invariants that make the sunburst
 coherent: within-rank shares sum to 100 (NA included); the explicit “NA”
-node exists; the <code>branchvalues = 'total'</code> invariant holds;
-empty input yields a typed empty tree, not an error.</p>
+node exists; the roll-up invariant holds; empty input yields a typed
+empty tree, not an error. WoRMS and GBIF are tested offline, against
+mocked answers that copy the shape of each API (synonyms, fuzzy and
+higher-rank matches, homonyms, failures that must not be cached). The
+adapters, RRA arithmetic (against hand-computed means),
+<code><a href="../reference/dv_resolution.html">dv_resolution()</a></code> and the unit label are tested on small
+tables.</p>
 </div>
 <div class="section level2">
 <h2 id="extending-dietview">Extending DietView<a class="anchor" aria-label="anchor" href="#extending-dietview"></a>
@@ -435,7 +570,19 @@ empty input yields a typed empty tree, not an error.</p>
 mapped with <code><a href="../reference/dv_spec.html">dv_spec()</a></code>. Freeze taxonomy into a lineage table
 for a fully offline run; pass custom <code>ranks</code> or
 <code>colors</code>; add covariates and derive periods/size bins with
-the helpers; supply a lineage table for non-marine prey. See the <a href="extending.html">Adapting DietView</a> article.</p>
+the helpers; use GBIF for non-marine prey. See the <a href="extending.html">Adapting DietView</a> article, and <a href="other-data.html">Beyond stomachs</a> for DNA metabarcoding, scats
+and other compositional data. Stable isotopes and fatty acids, which
+estimate source contributions rather than identify prey, are out of
+scope.</p>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>Deagle, B. E. et al. (2019). Counting with DNA in metabarcoding
+studies: How should we convert sequence reads to dietary data?
+<em>Molecular Ecology</em>, 28(2), 391-406.</p>
+<p>Thomas, A. C. et al. (2022). Data on the diets of Salish Sea harbour
+seals from DNA metabarcoding. <em>Scientific Data</em>, 9, 68.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

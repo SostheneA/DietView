@@ -304,7 +304,7 @@ is.null(prep$taxonomy_log)
 #> [1] TRUE
 tryCatch(dv_taxonomy_report(prep, which = "review"),
          error = function(e) conditionMessage(e))
-#> [1] "No taxonomy log: this object was not prepared with taxonomy = 'worms'."
+#> [1] "No taxonomy log: this object was not prepared with taxonomy = 'worms' or 'gbif'."
 ```
 
 What we can check offline is the depth of identification: the WoRMS rank
@@ -1103,4 +1103,4 @@ The limits are those of the data, and they bound every sentence above:
   and take percentile intervals of `pct_occ` and `pct_w`), or over hauls
   when fish from one haul share a meal.
 
-*This article ran in about 12 seconds.*
+*This article ran in about 15 seconds.*

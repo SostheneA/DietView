@@ -131,7 +131,7 @@ spec <- dv_spec(
 )
 
 str(spec)
-#> List of 10
+#> List of 12
 #>  $ predator      : chr "predator_common"
 #>  $ stomach       : chr "stomach_id"
 #>  $ prey_name     : chr "prey_name"
@@ -142,6 +142,8 @@ str(spec)
 #>  $ covariates    : chr [1:3] "region" "year" "quarter"
 #>  $ ranks         : chr [1:7] "kingdom" "phylum" "class" "order" ...
 #>  $ predator_latin: chr "predator_latin"
+#>  $ weight_type   : chr "mass"
+#>  $ unit_label    : chr "stomach"
 #>  - attr(*, "class")= chr "dietview_spec"
 ```
 
@@ -191,7 +193,7 @@ lack a weight. It never changes your data.
 ``` r
 
 dv_validate(dat, spec)
-#> 8530 records from 4222 stomachs of 22 predator(s); 2305 stomach(s) hold a single record; 531 record(s) lack a weight.
+#> 8530 records from 4222 stomachs of 22 predator(s); 2305 stomachs hold a single record; 531 record(s) lack a weight.
 ```
 
 No warning here: every record has a prey key (an AphiaID or, for

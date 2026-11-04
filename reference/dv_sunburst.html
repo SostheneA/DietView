@@ -48,6 +48,7 @@ dv_prepare()) form a light gray wedge, described as such in the hover text."><me
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
     <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
+    <li><a class="dropdown-item" href="../articles/other-data.html">Beyond stomachs: DNA metabarcoding, scats and other compositional data</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Outputs &amp; extension</h6></li>
@@ -98,7 +99,8 @@ that has no taxon at that rank, such as <code>"Polychaeta (no order)"</code>; se
 <span>  colors <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rotation <span class="op">=</span> <span class="fl">90</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">""</span>,</span>
-<span>  subtitle <span class="op">=</span> <span class="st">""</span></span>
+<span>  subtitle <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  weight_type <span class="op">=</span> <span class="st">"mass"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -119,8 +121,9 @@ gaps appear as unidentified (<code>"NA"</code>) nodes. Build the tree from a
 <dd><p>One of "occurrence" (default), "weight", "count".</p></dd>
 
 
-<dt id="arg-ranks-weight-col-count-col">ranks, weight_col, count_col<a class="anchor" aria-label="anchor" href="#arg-ranks-weight-col-count-col"></a></dt>
-<dd><p>Passed to <code><a href="dv_build_tree.html">dv_build_tree()</a></code> if <code>x</code> is raw.</p></dd>
+<dt id="arg-ranks-weight-col-count-col-weight-type">ranks, weight_col, count_col, weight_type<a class="anchor" aria-label="anchor" href="#arg-ranks-weight-col-count-col-weight-type"></a></dt>
+<dd><p>Passed to <code><a href="dv_build_tree.html">dv_build_tree()</a></code>
+if <code>x</code> is raw (a tree carries its own <code>weight_type</code>).</p></dd>
 
 
 <dt id="arg-colors">colors<a class="anchor" aria-label="anchor" href="#arg-colors"></a></dt>

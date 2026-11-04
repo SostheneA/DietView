@@ -12,6 +12,7 @@
 <url><loc>https://sosthenea.github.io/DietView/articles/getting-started.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/articles/index.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/articles/known-diet.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/articles/other-data.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/articles/shiny-app.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/articles/species-cards.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/articles/taxonomy-worms.html</loc></url>
@@ -30,19 +31,23 @@
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_deploy.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_fo_table.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/reference/dv_from_wide.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_lineage_check.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_matrix.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_palette.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_palette_tree.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/reference/dv_parse_lineage.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_prepare.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_prey_accumulation.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_rank_table.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/reference/dv_resolution.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_script.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_size_bins.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_spec.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_species_card_assets.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_summary.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_sunburst.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/dv_threshold_sweep.html</loc></url>
@@ -54,5 +59,7 @@
 <url><loc>https://sosthenea.github.io/DietView/reference/ices_stomachs.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/index.html</loc></url>
 <url><loc>https://sosthenea.github.io/DietView/reference/run_dietview.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/reference/salish_seal_dna.html</loc></url>
+<url><loc>https://sosthenea.github.io/DietView/reference/salish_seal_lineage.html</loc></url>
 </urlset>
 

@@ -28,6 +28,11 @@ dv_digestion_diagnostic(prep, by = NULL)
 A data.frame with columns `digestion`, optional `by`, `finest_rank`,
 `n_records`, `p_records`, `weight`, `p_weight`.
 
+## See also
+
+[`dv_resolution()`](https://sosthenea.github.io/DietView/reference/dv_resolution.md)
+for the same summary by any grouping, without digestion stages.
+
 ## Examples
 
 ``` r

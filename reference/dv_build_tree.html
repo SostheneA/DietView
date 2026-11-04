@@ -30,6 +30,7 @@
     <li><a class="dropdown-item" href="../articles/digestion.html">The digestion identification bias</a></li>
     <li><a class="dropdown-item" href="../articles/known-diet.html">A known diet: what keeping or dropping unidentified prey does</a></li>
     <li><a class="dropdown-item" href="../articles/taxonomy-worms.html">Resolving prey taxonomy with WoRMS</a></li>
+    <li><a class="dropdown-item" href="../articles/other-data.html">Beyond stomachs: DNA metabarcoding, scats and other compositional data</a></li>
     <li><a class="dropdown-item" href="../articles/exploration.html">Exploring and aggregating diet data</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Outputs &amp; extension</h6></li>
@@ -67,7 +68,8 @@
 <span>  <span class="va">ranks</span>,</span>
 <span>  weight_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  count_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  rank_labels <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  rank_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  weight_type <span class="op">=</span> <span class="st">"mass"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -94,11 +96,17 @@
 <dt id="arg-rank-labels">rank_labels<a class="anchor" aria-label="anchor" href="#arg-rank-labels"></a></dt>
 <dd><p>Optional display labels for the ranks.</p></dd>
 
+
+<dt id="arg-weight-type">weight_type<a class="anchor" aria-label="anchor" href="#arg-weight-type"></a></dt>
+<dd><p>What <code>weight_col</code> measures (<code>"mass"</code>, <code>"reads"</code> or
+<code>"rra"</code>; see <code><a href="dv_spec.html">dv_spec()</a></code>). It only changes the labels of the weight views
+and is stored as the attribute <code>weight_type</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>dietview_tree</code> data.frame: <code>id, label, parent, rank, value_item, value_occ, value_w, pct_occ, pct_w</code>, with the attribute <code>currency</code>
-(<code>"records"</code>, or <code>"numbers"</code> when <code>count_col</code> is given).</p>
+    <p>A <code>dietview_tree</code> data.frame: <code>id, label, parent, rank, value_item, value_occ, value_w, pct_occ, pct_w</code>, with the attributes <code>currency</code>
+(<code>"records"</code>, or <code>"numbers"</code> when <code>count_col</code> is given) and <code>weight_type</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

@@ -7,7 +7,13 @@ can come from:
 
 - `"columns"` - the rank columns are already in `data`;
 
-- `"worms"` - fetch the lineage from WoRMS by AphiaID/name;
+- `"worms"` - fetch the lineage from WoRMS by AphiaID/name (marine prey;
+  see
+  [`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.md));
+
+- `"gbif"` - fetch the lineage from the GBIF Backbone Taxonomy by GBIF
+  taxon key/name (all kingdoms, terrestrial and freshwater prey; see
+  [`dv_taxonomy_gbif()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.md));
 
 - `"table"` - join a lineage table you supply via `lineage`;
 
@@ -24,9 +30,10 @@ dropped.
 dv_prepare(
   data,
   spec,
-  taxonomy = c("auto", "columns", "worms", "table"),
+  taxonomy = c("auto", "columns", "worms", "gbif", "table"),
   lineage = NULL,
   fuzzy = TRUE,
+  kingdom = NULL,
   cache_dir = tools::R_user_dir("DietView", "cache"),
   cache_max_age = 180,
   strict_covariates = TRUE,
@@ -50,7 +57,8 @@ dv_prepare(
 
 - taxonomy:
 
-  One of "auto", "columns", "worms", "table".
+  One of "auto", "columns", "worms", "gbif", "table". `"auto"` never
+  picks `"gbif"`: ask for it explicitly.
 
 - lineage:
 
@@ -59,14 +67,20 @@ dv_prepare(
 
 - fuzzy:
 
-  For `taxonomy = "worms"`: when the exact name fails, try WoRMS
-  TAXAMATCH fuzzy matching (default `TRUE`). Fuzzy hits are flagged,
-  never silent - review them with
+  For `taxonomy = "worms"` or `"gbif"`: when the exact name fails, try
+  WoRMS TAXAMATCH fuzzy matching (default `TRUE`). Fuzzy hits are
+  flagged, never silent - review them with
   [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md).
+
+- kingdom:
+
+  For `taxonomy = "gbif"`: an optional kingdom hint, e.g. `"Animalia"`.
+  See
+  [`dv_taxonomy_gbif()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.md).
 
 - cache_dir:
 
-  Cache directory for the WoRMS path. `NULL` disables caching.
+  Cache directory for the WoRMS and GBIF paths. `NULL` disables caching.
 
 - cache_max_age:
 
@@ -132,21 +146,24 @@ dv_prepare(
 
 An object of class `dietview_prep`: a list with `data`, `spec` (minus
 any dropped covariates), `ranks`, `taxonomy_source` (the taxonomy path
-actually used) and `taxonomy_log`. When `taxonomy = "worms"`,
-`taxonomy_log` is the per-prey provenance table, with the attributes
-`retrieved` (time of the run) and `worrms_version`; otherwise it is
-`NULL`. The attribute `lineage_gaps` is a named integer vector: the
-number of records whose rank was filled as a lineage gap, per rank. With
+actually used) and `taxonomy_log`. When `taxonomy = "worms"` or
+`"gbif"`, `taxonomy_log` is the per-prey provenance table, with the
+attributes `retrieved` (time of the run), `source` (`"WoRMS"` or
+`"GBIF Backbone"`) and, for WoRMS, `worrms_version`; otherwise it is
+`NULL`. Its ID column is `aphia_used` for WoRMS and `gbif_key` for GBIF.
+The attribute `lineage_gaps` is a named integer vector: the number of
+records whose rank was filled as a lineage gap, per rank. With
 `stomachs`, the list also holds `stomachs`: the examined stomachs, with
 their stomach, predator and covariate columns and a logical `empty_flag`
 column.
 
 ## Details
 
-With `taxonomy = "worms"`, each record is keyed by its AphiaID when it
-has one and by its own prey name otherwise, so records without an
-AphiaID never share a lineage by accident. Records with neither key stay
-fully unidentified, with a warning.
+With `taxonomy = "worms"` or `"gbif"`, each record is keyed by its
+AphiaID (or GBIF taxon key) when it has one and by its own prey name
+otherwise, so records without an AphiaID never share a lineage by
+accident. Records with neither key stay fully unidentified, with a
+warning.
 
 Some groups have no taxon at a rank in WoRMS: several polychaete
 families have no order, lancelets have no order and Priapulida have no

@@ -10,7 +10,8 @@ dv_build_tree(
   ranks,
   weight_col = NULL,
   count_col = NULL,
-  rank_labels = NULL
+  rank_labels = NULL,
+  weight_type = "mass"
 )
 ```
 
@@ -36,12 +37,19 @@ dv_build_tree(
 
   Optional display labels for the ranks.
 
+- weight_type:
+
+  What `weight_col` measures (`"mass"`, `"reads"` or `"rra"`; see
+  [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)).
+  It only changes the labels of the weight views and is stored as the
+  attribute `weight_type`.
+
 ## Value
 
 A `dietview_tree` data.frame:
 `id, label, parent, rank, value_item, value_occ, value_w, pct_occ, pct_w`,
-with the attribute `currency` (`"records"`, or `"numbers"` when
-`count_col` is given).
+with the attributes `currency` (`"records"`, or `"numbers"` when
+`count_col` is given) and `weight_type`.
 
 ## Details
 
