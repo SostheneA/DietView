@@ -33,11 +33,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Sosthène A. V. Akia \email{akiasosthene@gmail.com}
+\strong{Maintainer}: Sosth<U+00E8>ne A. V. Akia \email{akiasosthene@gmail.com}
 
 Authors:
 \itemize{
-  \item Sosthène A. V. Akia \email{akiasosthene@gmail.com}
+  \item Sosth<U+00E8>ne A. V. Akia \email{akiasosthene@gmail.com}
 }
 
 Other contributors:

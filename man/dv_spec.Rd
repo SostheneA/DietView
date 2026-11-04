@@ -14,7 +14,8 @@ dv_spec(
   digestion = NULL,
   covariates = character(0),
   ranks = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
-  predator_latin = NULL
+  predator_latin = NULL,
+  weight_type = c("mass", "reads", "rra")
 )
 }
 \arguments{
@@ -47,6 +48,21 @@ columns, keep the default; otherwise they are filled by \code{\link[=dv_prepare]
 \item{predator_latin}{Optional column with the predator Latin name (used to
 look up identification photos when \code{\link[=dv_build_html]{dv_build_html()}} is given a
 \code{photo_source}).}
+
+\item{weight_type}{What the \code{weight} column measures:
+\itemize{
+\item \code{"mass"} (default): prey mass; the weight views show \%W;
+\item \code{"reads"}: sequence reads (DNA metabarcoding); the weight views
+show the pooled share of all reads;
+\item \code{"rra"}: sequence reads, turned into relative read abundance by
+\code{\link[=dv_prepare]{dv_prepare()}}: the reads of each sample (the \code{stomach} column) are
+divided by the sample total, so every sample weighs the same and the
+weight share at a rank is the mean RRA over samples (Deagle et al.
+2019, Molecular Ecology 28: 391-406). The raw reads are kept and the
+proportions are added as a new column.
+}
+With reads, \code{stomach} is still the sampling unit (a stomach, a scat, a
+pellet, a sample); \code{count} and \code{digestion} are usually absent.}
 }
 \value{
 An object of class \code{dietview_spec}.

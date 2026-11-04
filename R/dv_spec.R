@@ -24,6 +24,20 @@
 #' @param predator_latin Optional column with the predator Latin name (used to
 #'   look up identification photos when [dv_build_html()] is given a
 #'   `photo_source`).
+#' @param weight_type What the `weight` column measures:
+#'   \itemize{
+#'     \item `"mass"` (default): prey mass; the weight views show %W;
+#'     \item `"reads"`: sequence reads (DNA metabarcoding); the weight views
+#'       show the pooled share of all reads;
+#'     \item `"rra"`: sequence reads, turned into relative read abundance by
+#'       [dv_prepare()]: the reads of each sample (the `stomach` column) are
+#'       divided by the sample total, so every sample weighs the same and the
+#'       weight share at a rank is the mean RRA over samples (Deagle et al.
+#'       2019, Molecular Ecology 28: 391-406). The raw reads are kept and the
+#'       proportions are added as a new column.
+#'   }
+#'   With reads, `stomach` is still the sampling unit (a stomach, a scat, a
+#'   pellet, a sample); `count` and `digestion` are usually absent.
 #'
 #' @return An object of class `dietview_spec`.
 #' @examples
@@ -47,16 +61,21 @@ dv_spec <- function(predator, stomach,
                     covariates = character(0),
                     ranks = c("kingdom", "phylum", "class", "order",
                               "family", "genus", "species"),
-                    predator_latin = NULL) {
+                    predator_latin = NULL,
+                    weight_type = c("mass", "reads", "rra")) {
   if (is.null(prey_name) && is.null(prey_id)) {
     stop("Provide at least one of `prey_name` or `prey_id`.", call. = FALSE)
   }
+  weight_type <- match.arg(weight_type)
+  if (weight_type != "mass" && is.null(weight))
+    stop("weight_type = '", weight_type, "' needs the `weight` column (the reads).",
+         call. = FALSE)
   structure(
     list(predator = predator, stomach = stomach,
          prey_name = prey_name, prey_id = prey_id,
          weight = weight, count = count, digestion = digestion,
          covariates = covariates, ranks = ranks,
-         predator_latin = predator_latin),
+         predator_latin = predator_latin, weight_type = weight_type),
     class = "dietview_spec"
   )
 }

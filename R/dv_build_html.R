@@ -117,7 +117,10 @@ dv_build_html <- function(prep, output,
 
   # one node dictionary and one palette, from the pooled tree of the whole prep:
   # every panel's tree is a subset of it, so a taxon has one color everywhere
-  pooled <- dv_build_tree(d, ranks = ranks, weight_col = wcol, count_col = ccol)
+  wtype <- spec$weight_type %||% "mass"
+  wl <- .dv_wlabels(wtype)
+  pooled <- dv_build_tree(d, ranks = ranks, weight_col = wcol, count_col = ccol,
+                          weight_type = wtype)
   colors <- dv_palette_tree(pooled)
   nodes <- list(
     id     = pooled$id,
@@ -136,8 +139,8 @@ dv_build_html <- function(prep, output,
                       value = rec_lab, digits = NULL,
                       share = if (currency == "numbers") "Numerical share at this rank (%N)"
                               else "Share of all records at this rank"),
-    weight = list(title = "Weight (% of total weight)", color = "#d62728",
-                  value = "Weight", digits = 1L, share = "Weight share at this rank"),
+    weight = list(title = wl$title, color = "#d62728",
+                  value = wl$value, digits = wl$digits, share = wl$share),
     count = list(title = "Distinct prey items", color = "#2c3e50",
                  value = "Distinct prey items", digits = NULL, share = NULL)
   )
@@ -149,7 +152,8 @@ dv_build_html <- function(prep, output,
   subset_of <- function(recs, key) {
     k <- match(key, reg$keys)
     if (!is.na(k)) return(k - 1L)
-    tr <- dv_build_tree(recs, ranks = ranks, weight_col = wcol, count_col = ccol)
+    tr <- dv_build_tree(recs, ranks = ranks, weight_col = wcol, count_col = ccol,
+                        weight_type = wtype)
     idx <- match(tr$id, pooled$id)
     reg$subsets[[length(reg$subsets) + 1L]] <- list(
       n = idx - 1L, o = tr$value_occ, w = signif(tr$value_w, 6),
@@ -323,7 +327,7 @@ dv_build_html <- function(prep, output,
                  m[c("value", "digits", "share")],
                  function(x) if (is.null(x)) NULL else jsonlite::unbox(x))),
                subsets = reg$subsets, views = reg$views)
-  body <- htmltools::tagList(.dv_home(title, cards, currency, bands), htmltools::tagList(tabs))
+  body <- htmltools::tagList(.dv_home(title, cards, currency, bands, wtype), htmltools::tagList(tabs))
   .dv_write_dashboard(body, data, output, title, self_contained)
   invisible(output)
 }
@@ -467,11 +471,12 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
 "
 
 .dv_home <- function(title, cards, currency = "records",
-                     bands = c("occurrence", "weight", "count")) {
+                     bands = c("occurrence", "weight", "count"),
+                     weight_type = "mass") {
   band_txt <- c(
     occurrence = if (currency == "numbers") "individuals (% of all individuals)"
                  else "prey records (% of all records)",
-    weight = "weight (% of total weight)",
+    weight = .dv_wlabels(weight_type)$home,
     count = "distinct prey items")[bands]
   band_txt <- if (length(band_txt) > 1)
     paste(paste(band_txt[-length(band_txt)], collapse = ", "), "and", band_txt[length(band_txt)])

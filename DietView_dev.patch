@@ -1,0 +1,2288 @@
+diff --git a/DESCRIPTION b/DESCRIPTION
+index 494c5df..4c1121a 100644
+--- a/DESCRIPTION
++++ b/DESCRIPTION
+@@ -10,8 +10,12 @@ Description: Builds interactive, hierarchical views of predator diet from a
+     long table of stomach-content records, one row per prey record. Prey are
+     placed in a taxonomic hierarchy either by querying the World Register of
+     Marine Species ('WoRMS'; WoRMS Editorial Board <doi:10.14284/170>)
+-    through 'worrms', with a per-prey log of how each name was matched, or by
+-    joining a lineage table supplied by the user. Records identified only to a
++    through 'worrms', or the GBIF Backbone Taxonomy for terrestrial and
++    freshwater prey, with a per-prey log of how each name was matched, or by
++    joining a lineage table supplied by the user. Wide sample-by-taxon tables
++    and lineage strings from DNA metabarcoding pipelines can be reshaped into
++    the same format, with sequence reads summarized as relative read
++    abundance. Records identified only to a
+     coarse rank are kept and shown as an explicit unidentified category below
+     that rank, so every ring of the resulting sunburst accounts for all the
+     material examined. Diet is summarized as shares of prey records, numbers
+@@ -52,4 +56,4 @@ LazyData: true
+ Language: en-US
+ Roxygen: list(markdown = TRUE)
+ NeedsCompilation: no
+-Config/roxygen2/version: 8.1.0
++Config/roxygen2/version: 8.1.1
+diff --git a/NAMESPACE b/NAMESPACE
+index ed2ef2c..693722a 100644
+--- a/NAMESPACE
++++ b/NAMESPACE
+@@ -10,10 +10,12 @@ export(dv_cache_clear)
+ export(dv_deploy)
+ export(dv_digestion_diagnostic)
+ export(dv_fo_table)
++export(dv_from_wide)
+ export(dv_lineage_check)
+ export(dv_matrix)
+ export(dv_palette)
+ export(dv_palette_tree)
++export(dv_parse_lineage)
+ export(dv_prepare)
+ export(dv_prey_accumulation)
+ export(dv_rank_table)
+@@ -23,6 +25,7 @@ export(dv_spec)
+ export(dv_species_card_assets)
+ export(dv_summary)
+ export(dv_sunburst)
++export(dv_taxonomy_gbif)
+ export(dv_taxonomy_report)
+ export(dv_taxonomy_worms)
+ export(dv_threshold_sweep)
+diff --git a/NEWS.md b/NEWS.md
+index b35e4ba..8ee2dca 100644
+--- a/NEWS.md
++++ b/NEWS.md
+@@ -1,3 +1,26 @@
++# DietView (development version)
++
++## Beyond stomach contents
++
++* `dv_prepare(taxonomy = "gbif")` and the new `dv_taxonomy_gbif()` resolve prey
++  against the GBIF Backbone Taxonomy (all kingdoms), for terrestrial and
++  freshwater diets. Same rules as WoRMS: key, exact name, then fuzzy name, a
++  per-prey provenance log, an on-disk cache and `dv_taxonomy_report()`. GBIF
++  adds two review flags: `"higherrank"` matches and `low_confidence`. No new
++  dependency.
++* `dv_parse_lineage()` splits lineage strings from metabarcoding pipelines
++  (QIIME 2, DADA2, SILVA, MIDORI, BOLD, BLAST) into rank columns, so the
++  reference taxonomy used for assignment (NCBI, SILVA, BOLD...) can be kept
++  with `taxonomy = "columns"`.
++* `dv_from_wide()` reshapes wide sample-by-taxon tables (ASV/OTU tables, catch
++  compositions) into the long format and joins sample metadata.
++* `dv_spec(weight_type = )`: `"mass"` (default), `"reads"` (pooled read share)
++  or `"rra"` (relative read abundance, the mean over samples of per-sample read
++  proportions). Labels of the weight views follow.
++* `dv_cache_clear()` gains `source = c("all", "worms", "gbif")`.
++* New article: "Beyond stomachs: DNA metabarcoding, scats and other
++  compositional data".
++
+ # DietView 0.1.0
+ 
+ * Initial CRAN release.
+diff --git a/R/dv_adapters.R b/R/dv_adapters.R
+new file mode 100644
+index 0000000..65052e6
+--- /dev/null
++++ b/R/dv_adapters.R
+@@ -0,0 +1,253 @@
++#' Split a lineage string into rank columns
++#'
++#' Metabarcoding pipelines (QIIME 2, DADA2, mothur, SILVA, Greengenes, MIDORI,
++#' BOLD, a BLAST against GenBank) report each sequence's taxonomy as one
++#' string, such as `"k__Animalia; p__Arthropoda; c__Copepoda; g__Calanus;
++#' s__finmarchicus"`. `dv_parse_lineage()` splits that string into one column
++#' per rank, so the data can be prepared with `dv_prepare(taxonomy =
++#' "columns")`, keeping the reference taxonomy the sequences were assigned
++#' with (NCBI, SILVA, BOLD ...), or only the deepest name can be passed on to
++#' WoRMS or GBIF.
++#'
++#' Two layouts are read:
++#' \itemize{
++#'   \item **prefixed** - each field starts with a rank code (`k__`, `d__`,
++#'     `p__`, `c__`, `o__`, `f__`, `g__`, `s__`; also `k:`/`p:` and
++#'     `kingdom:`); fields are placed by their code, so missing ranks are
++#'     allowed. `d__` (domain) is ignored unless `"domain"` is a rank;
++#'   \item **positional** - plain names in rank order (`"Animalia;Arthropoda;
++#'     ..."`); the i-th field goes to the i-th rank of `ranks`.
++#' }
++#' `format = "auto"` uses prefixed when most strings carry rank codes. For
++#' positional strings, give `ranks` in the order of the fields: MIDORI and
++#' NCBI lineages start with a superkingdom, not a kingdom, so use e.g.
++#' `ranks = c("domain", "phylum", "class", "order", "family", "genus",
++#' "species")` and the same `ranks` in [dv_spec()].
++#' Placeholders such as an empty field, `"NA"`, `"unassigned"`,
++#' `"unclassified"`, `"uncultured"`, `"unidentified"`, `"unknown"`,
++#' `"metagenome"` or a species written `"Genus sp."` become `NA`, so the
++#' record is shown as unidentified at that rank. Trailing NCBI tax IDs
++#' (`"Calanus_6836"`) and underscores (`"Calanus_finmarchicus"`) are cleaned,
++#' and a species given as an epithet only (`s__finmarchicus`) is completed with
++#' its genus.
++#'
++#' @param data A data.frame.
++#' @param col Name of the column holding the lineage string.
++#' @param ranks Ranks to create, coarse to fine (default the seven flagship
++#'   ranks). For positional strings they must follow the order of the fields.
++#' @param sep Field separator (default `";"`).
++#' @param format `"auto"` (default), `"prefixed"` or `"positional"`.
++#' @param name_col If not `NULL` (default `"prey_name"`), a column with the
++#'   deepest identified name is added (or overwritten), ready for
++#'   `dv_spec(prey_name = )`.
++#' @param placeholders Lower-case values treated as "not identified".
++#' @return `data` with one column per rank (and `name_col`).
++#' @seealso [dv_from_wide()] to reshape a sample-by-taxon table first.
++#' @examples
++#' x <- data.frame(asv = c("a1", "a2", "a3"), taxonomy = c(
++#'   paste("k__Animalia; p__Arthropoda; c__Copepoda; o__Calanoida;",
++#'         "f__Calanidae; g__Calanus; s__finmarchicus"),
++#'   "k__Animalia; p__Chordata; c__Actinopteri; o__; f__; g__; s__",
++#'   "Unassigned"))
++#' dv_parse_lineage(x, "taxonomy")
++#' # plain names in rank order, as in many BLAST or BOLD outputs
++#' y <- data.frame(lin = paste("Animalia;Arthropoda;Malacostraca;Euphausiacea",
++#'                             "Euphausiidae;Meganyctiphanes",
++#'                             "Meganyctiphanes norvegica", sep = ";"))
++#' dv_parse_lineage(y, "lin")
++#' @export
++dv_parse_lineage <- function(data, col,
++                             ranks = c("kingdom", "phylum", "class", "order",
++                                       "family", "genus", "species"),
++                             sep = ";",
++                             format = c("auto", "prefixed", "positional"),
++                             name_col = "prey_name",
++                             placeholders = c("", "na", "nan", "none", "null",
++                                              "unassigned", "unclassified",
++                                              "uncultured", "unidentified",
++                                              "unknown", "metagenome",
++                                              "environmental sample")) {
++  format <- match.arg(format)
++  data <- as.data.frame(data, stringsAsFactors = FALSE)
++  if (!col %in% names(data)) stop("Column `", col, "` is not in `data`.", call. = FALSE)
++  s <- as.character(data[[col]])
++  fields <- lapply(strsplit(ifelse(is.na(s), "", s), sep, fixed = TRUE), trimws)
++
++  code_re <- "^([A-Za-z]+)(__|:)(.*)$"
++  if (format == "auto") {
++    has_code <- vapply(fields, function(f) length(f) > 0 &&
++                         mean(grepl(code_re, f)) >= 0.5, logical(1))
++    format <- if (mean(has_code[nzchar(s) & !is.na(s)]) >= 0.5) "prefixed" else "positional"
++  }
++  codes <- c(d = "domain", domain = "domain", k = "kingdom", kingdom = "kingdom",
++             p = "phylum", phylum = "phylum", c = "class", class = "class",
++             o = "order", order = "order", f = "family", family = "family",
++             g = "genus", genus = "genus", s = "species", species = "species")
++
++  clean <- function(v) {
++    v <- sub("_[0-9]+$", "", v)                    # MIDORI / NCBI "Calanus_6836"
++    v <- trimws(gsub("_", " ", v))
++    v <- gsub("\\s+", " ", v)
++    v[tolower(v) %in% placeholders |
++        grepl("^(uncultured|unidentified|unclassified|unknown)\\b", v, ignore.case = TRUE)] <- NA
++    v
++  }
++
++  n <- length(s)
++  out <- matrix(NA_character_, n, length(ranks), dimnames = list(NULL, ranks))
++  for (i in seq_len(n)) {
++    f <- fields[[i]]
++    f <- f[nzchar(f) | format == "positional"]
++    if (!length(f)) next
++    if (format == "prefixed") {
++      m <- regmatches(f, regexec(code_re, f))
++      for (x in m) {
++        if (length(x) < 4) next
++        r <- codes[tolower(x[2])]
++        if (!is.na(r) && r %in% ranks) out[i, r] <- x[4]
++      }
++    } else {
++      k <- min(length(f), length(ranks))
++      out[i, seq_len(k)] <- f[seq_len(k)]
++    }
++  }
++  for (j in seq_along(ranks)) out[, j] <- clean(out[, j])
++
++  if ("species" %in% ranks) {
++    sp <- out[, "species"]
++    # "Genus sp." / "Genus spp." / "Genus cf." are not species
++    sp[grepl("\\s(sp|spp|cf|aff|nr)\\.?(\\s|$)", sp)] <- NA
++    if ("genus" %in% ranks) {
++      g <- out[, "genus"]
++      epithet <- !is.na(sp) & !grepl(" ", sp) & !is.na(g) & grepl("^[a-z]", sp)
++      sp[epithet] <- paste(g[epithet], sp[epithet])
++    }
++    out[, "species"] <- sp
++  }
++
++  for (r in ranks) data[[r]] <- out[, r]
++  if (!is.null(name_col)) {
++    deepest <- rep(NA_character_, n)
++    for (r in ranks) deepest <- ifelse(!is.na(out[, r]), out[, r], deepest)
++    data[[name_col]] <- deepest
++  }
++  data
++}
++
++#' Reshape a wide sample-by-taxon table into DietView's long format
++#'
++#' DNA metabarcoding (ASV/OTU tables), catch composition and many survey
++#' tables come wide: one row per taxon and one column per sample, or the
++#' reverse. `dv_from_wide()` turns them into the long table DietView expects,
++#' one row per taxon in a sample, and joins the sample metadata (predator,
++#' covariates) so the result goes straight into [dv_spec()] and
++#' [dv_prepare()].
++#'
++#' Records with a zero or missing value are dropped (`drop_zero = TRUE`), as
++#' a prey absent from a sample is not a prey record. With `collapse_by`, the
++#' values of the rows that share a sample and the same `collapse_by` columns
++#' (e.g. several ASVs assigned to the same species) are summed into one
++#' record, so that shares of prey records and %FO count a taxon once per
++#' sample.
++#'
++#' @param x A data.frame.
++#' @param taxa_in `"rows"` (default; one row per taxon, one column per sample,
++#'   the usual ASV/OTU table) or `"columns"` (one row per sample, one column
++#'   per taxon).
++#' @param id_cols Columns that are not counts: with `taxa_in = "rows"`, the
++#'   columns describing the taxon (ASV id, lineage string, rank columns ...);
++#'   with `taxa_in = "columns"`, the columns describing the sample. Every
++#'   other column is read as counts.
++#' @param sample_col Name of the sample column in the result (with
++#'   `taxa_in = "columns"`, it must be one of `id_cols`). Use it as
++#'   `dv_spec(stomach = )`.
++#' @param value_col Name of the value column in the result (e.g. `"reads"`),
++#'   for `dv_spec(weight = )` or `dv_spec(count = )`.
++#' @param taxon_col With `taxa_in = "columns"`, the name of the column that
++#'   receives the taxon names (the former column names).
++#' @param meta Optional data.frame of sample metadata (predator, date, area,
++#'   ...), joined by `sample_col`. A sample without metadata is kept, with a
++#'   warning.
++#' @param drop_zero Drop records whose value is 0 or missing (default `TRUE`).
++#' @param collapse_by Optional columns defining one prey; rows sharing a
++#'   sample and these columns are summed into one record.
++#' @return A long data.frame: the taxon columns, `sample_col`, `value_col` and
++#'   the metadata columns.
++#' @seealso [dv_parse_lineage()] to split a lineage string into ranks.
++#' @examples
++#' # an ASV table: one row per ASV, one column per scat sample
++#' asv <- data.frame(
++#'   asv = c("a1", "a2", "a3"),
++#'   taxonomy = c("k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__Gadus;s__morhua",
++#'                "k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__Gadus;s__morhua",
++#'                "k__Animalia;p__Arthropoda;c__Malacostraca;o__Euphausiacea;f__;g__;s__"),
++#'   S1 = c(120, 30, 0), S2 = c(0, 0, 400))
++#' meta <- data.frame(sample = c("S1", "S2"), predator = "grey seal",
++#'                    season = c("winter", "summer"))
++#' long <- dv_from_wide(asv, id_cols = c("asv", "taxonomy"), meta = meta,
++#'                      collapse_by = "taxonomy")
++#' long <- dv_parse_lineage(long, "taxonomy")
++#' spec <- dv_spec(predator = "predator", stomach = "sample",
++#'                 prey_name = "prey_name", weight = "reads",
++#'                 weight_type = "rra", covariates = "season")
++#' prep <- dv_prepare(long, spec, taxonomy = "columns", verbose = FALSE)
++#' dv_rank_table(dv_tree(prep), "Phylum")
++#' @export
++dv_from_wide <- function(x, taxa_in = c("rows", "columns"), id_cols,
++                         sample_col = "sample", value_col = "reads",
++                         taxon_col = "prey_name", meta = NULL,
++                         drop_zero = TRUE, collapse_by = NULL) {
++  taxa_in <- match.arg(taxa_in)
++  x <- as.data.frame(x, stringsAsFactors = FALSE, check.names = FALSE)
++  miss <- setdiff(id_cols, names(x))
++  if (length(miss)) stop("`id_cols` not in `x`: ", paste(miss, collapse = ", "), call. = FALSE)
++  if (taxa_in == "columns" && !sample_col %in% id_cols)
++    stop("With taxa_in = 'columns', `sample_col` (`", sample_col,
++         "`) must be one of `id_cols`.", call. = FALSE)
++  val_cols <- setdiff(names(x), id_cols)
++  if (!length(val_cols)) stop("No count columns left once `id_cols` are set aside.", call. = FALSE)
++  bad <- val_cols[!vapply(x[val_cols], function(v)
++    is.numeric(v) || all(is.na(suppressWarnings(as.numeric(v))) == is.na(v)), logical(1))]
++  if (length(bad))
++    stop("These columns are not counts (add them to `id_cols`?): ",
++         paste(utils::head(bad, 5), collapse = ", "), call. = FALSE)
++
++  key_name <- if (taxa_in == "rows") sample_col else taxon_col
++  long <- do.call(rbind, lapply(val_cols, function(v) {
++    d <- x[, id_cols, drop = FALSE]
++    d[[key_name]] <- v
++    d[[value_col]] <- suppressWarnings(as.numeric(x[[v]]))
++    d
++  }))
++  if (drop_zero) long <- long[!is.na(long[[value_col]]) & long[[value_col]] != 0, , drop = FALSE]
++
++  if (!is.null(collapse_by)) {
++    miss <- setdiff(collapse_by, names(long))
++    if (length(miss)) stop("`collapse_by` not in the data: ", paste(miss, collapse = ", "),
++                           call. = FALSE)
++    grp <- unique(c(sample_col, collapse_by))
++    g <- interaction(long[grp], drop = TRUE, lex.order = TRUE)
++    first <- !duplicated(g)
++    tot <- tapply(long[[value_col]], g, sum, na.rm = TRUE)
++    long <- long[first, c(grp, value_col), drop = FALSE]
++    long[[value_col]] <- as.numeric(tot[as.character(g[first])])
++  }
++
++  if (!is.null(meta)) {
++    meta <- as.data.frame(meta, stringsAsFactors = FALSE)
++    if (!sample_col %in% names(meta))
++      stop("`meta` must contain the sample column `", sample_col, "`.", call. = FALSE)
++    if (anyDuplicated(meta[[sample_col]]))
++      stop("`meta` must have one row per sample.", call. = FALSE)
++    absent <- setdiff(unique(as.character(long[[sample_col]])), as.character(meta[[sample_col]]))
++    if (length(absent))
++      warning(length(absent), " sample(s) have no row in `meta` (e.g. ",
++              paste(utils::head(absent, 3), collapse = ", "),
++              "); their metadata are missing.", call. = FALSE)
++    extra <- setdiff(names(meta), c(sample_col, names(long)))
++    idx <- match(as.character(long[[sample_col]]), as.character(meta[[sample_col]]))
++    for (m in extra) long[[m]] <- meta[[m]][idx]
++  }
++  rownames(long) <- NULL
++  long
++}
+diff --git a/R/dv_app.R b/R/dv_app.R
+index 7f4a9bc..c373b7b 100644
+--- a/R/dv_app.R
++++ b/R/dv_app.R
+@@ -103,7 +103,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
+         shiny::radioButtons("mode", "Size wedges by",
+                             stats::setNames(c("occurrence", "weight", "count"),
+                                             c(rec_lab,
+-                                              "Weight (% of total weight)",
++                                              .dv_wlabels(spec$weight_type)$mode,
+                                               "Number of distinct prey items"))),
+         shiny::selectInput("resolution", "Reporting resolution", choices = res_choices),
+         shiny::conditionalPanel(
+@@ -194,7 +194,8 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
+       dv_palette_tree(dv_build_tree(prep_res()$data, ranks = ranks))
+     })
+     tree <- shiny::reactive(
+-      dv_build_tree(recs(), ranks = ranks, weight_col = spec$weight, count_col = ccol)
++      dv_build_tree(recs(), ranks = ranks, weight_col = spec$weight, count_col = ccol,
++                    weight_type = spec$weight_type %||% "mass")
+     )
+     facets <- shiny::reactive({
+       if (identical(input$facet, "(none)")) return(NULL)
+@@ -219,6 +220,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
+         .dv_sunburst_facets(
+           recs(), ranks = ranks,
+           weight_col = spec$weight, count_col = ccol,
++          weight_type = spec$weight_type %||% "mass",
+           facet_col = fc, mode = input$mode, colors = colors(), na_strata = na_strata,
+           stomach_col = spec$stomach, min_stomachs = min_stomachs,
+           title = paste0(input$predator, " - ",
+diff --git a/R/dv_build_html.R b/R/dv_build_html.R
+index c91d326..80eb2f3 100644
+--- a/R/dv_build_html.R
++++ b/R/dv_build_html.R
+@@ -117,7 +117,10 @@ dv_build_html <- function(prep, output,
+ 
+   # one node dictionary and one palette, from the pooled tree of the whole prep:
+   # every panel's tree is a subset of it, so a taxon has one color everywhere
+-  pooled <- dv_build_tree(d, ranks = ranks, weight_col = wcol, count_col = ccol)
++  wtype <- spec$weight_type %||% "mass"
++  wl <- .dv_wlabels(wtype)
++  pooled <- dv_build_tree(d, ranks = ranks, weight_col = wcol, count_col = ccol,
++                          weight_type = wtype)
+   colors <- dv_palette_tree(pooled)
+   nodes <- list(
+     id     = pooled$id,
+@@ -136,8 +139,8 @@ dv_build_html <- function(prep, output,
+                       value = rec_lab, digits = NULL,
+                       share = if (currency == "numbers") "Numerical share at this rank (%N)"
+                               else "Share of all records at this rank"),
+-    weight = list(title = "Weight (% of total weight)", color = "#d62728",
+-                  value = "Weight", digits = 1L, share = "Weight share at this rank"),
++    weight = list(title = wl$title, color = "#d62728",
++                  value = wl$value, digits = wl$digits, share = wl$share),
+     count = list(title = "Distinct prey items", color = "#2c3e50",
+                  value = "Distinct prey items", digits = NULL, share = NULL)
+   )
+@@ -149,7 +152,8 @@ dv_build_html <- function(prep, output,
+   subset_of <- function(recs, key) {
+     k <- match(key, reg$keys)
+     if (!is.na(k)) return(k - 1L)
+-    tr <- dv_build_tree(recs, ranks = ranks, weight_col = wcol, count_col = ccol)
++    tr <- dv_build_tree(recs, ranks = ranks, weight_col = wcol, count_col = ccol,
++                        weight_type = wtype)
+     idx <- match(tr$id, pooled$id)
+     reg$subsets[[length(reg$subsets) + 1L]] <- list(
+       n = idx - 1L, o = tr$value_occ, w = signif(tr$value_w, 6),
+@@ -323,7 +327,7 @@ dv_build_html <- function(prep, output,
+                  m[c("value", "digits", "share")],
+                  function(x) if (is.null(x)) NULL else jsonlite::unbox(x))),
+                subsets = reg$subsets, views = reg$views)
+-  body <- htmltools::tagList(.dv_home(title, cards, currency, bands), htmltools::tagList(tabs))
++  body <- htmltools::tagList(.dv_home(title, cards, currency, bands, wtype), htmltools::tagList(tabs))
+   .dv_write_dashboard(body, data, output, title, self_contained)
+   invisible(output)
+ }
+@@ -467,11 +471,12 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
+ "
+ 
+ .dv_home <- function(title, cards, currency = "records",
+-                     bands = c("occurrence", "weight", "count")) {
++                     bands = c("occurrence", "weight", "count"),
++                     weight_type = "mass") {
+   band_txt <- c(
+     occurrence = if (currency == "numbers") "individuals (% of all individuals)"
+                  else "prey records (% of all records)",
+-    weight = "weight (% of total weight)",
++    weight = .dv_wlabels(weight_type)$home,
+     count = "distinct prey items")[bands]
+   band_txt <- if (length(band_txt) > 1)
+     paste(paste(band_txt[-length(band_txt)], collapse = ", "), "and", band_txt[length(band_txt)])
+diff --git a/R/dv_metrics.R b/R/dv_metrics.R
+index 59881f9..f428e41 100644
+--- a/R/dv_metrics.R
++++ b/R/dv_metrics.R
+@@ -35,9 +35,12 @@
+ #' @param weight_col Name of the weight column (or `NULL` -> zero weight).
+ #' @param count_col Name of a count column (or `NULL`: each record counts once).
+ #' @param rank_labels Optional display labels for the ranks.
++#' @param weight_type What `weight_col` measures (`"mass"`, `"reads"` or
++#'   `"rra"`; see [dv_spec()]). It only changes the labels of the weight views
++#'   and is stored as the attribute `weight_type`.
+ #' @return A `dietview_tree` data.frame: `id, label, parent, rank, value_item,
+-#'   value_occ, value_w, pct_occ, pct_w`, with the attribute `currency`
+-#'   (`"records"`, or `"numbers"` when `count_col` is given).
++#'   value_occ, value_w, pct_occ, pct_w`, with the attributes `currency`
++#'   (`"records"`, or `"numbers"` when `count_col` is given) and `weight_type`.
+ #' @examples
+ #' # the standard set-up: public ICES data, non-food items and nematodes dropped
+ #' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
+@@ -60,11 +63,16 @@
+ #' @export
+ dv_build_tree <- function(df, ranks,
+                           weight_col = NULL, count_col = NULL,
+-                          rank_labels = NULL) {
++                          rank_labels = NULL, weight_type = "mass") {
++  weight_type <- match.arg(weight_type, c("mass", "reads", "rra"))
+   df <- as.data.frame(df)
+   if (is.null(rank_labels)) rank_labels <- .dv_titlecase(ranks)
+   n <- nrow(df)
+-  if (n == 0) return(.dv_empty_tree())
++  if (n == 0) {
++    tree <- .dv_empty_tree()
++    attr(tree, "weight_type") <- weight_type
++    return(tree)
++  }
+ 
+   if (!is.null(count_col) && !count_col %in% names(df))
+     stop("The count column `", count_col, "` is not in the data.", call. = FALSE)
+@@ -131,6 +139,7 @@ dv_build_tree <- function(df, ranks,
+ 
+   class(tree) <- c("dietview_tree", "data.frame")
+   attr(tree, "currency") <- if (is.null(count_col)) "records" else "numbers"
++  attr(tree, "weight_type") <- weight_type
+   tree
+ }
+ 
+@@ -211,7 +220,8 @@ dv_tree <- function(prep, currency = c("records", "numbers")) {
+   stopifnot(inherits(prep, "dietview_prep"))
+   currency <- match.arg(currency)
+   dv_build_tree(prep$data, prep$ranks, weight_col = prep$spec$weight,
+-                count_col = .dv_count_col(prep$spec, prep$data, currency))
++                count_col = .dv_count_col(prep$spec, prep$data, currency),
++                weight_type = prep$spec$weight_type %||% "mass")
+ }
+ 
+ # Internal: the count column to use for a currency ("records" -> NULL), with
+@@ -230,3 +240,18 @@ dv_tree <- function(prep, currency = c("records", "numbers")) {
+             "it will not appear in this view.", call. = FALSE)
+   cc
+ }
++
++# Internal: labels of the weight views for each weight_type.
++.dv_wlabels <- function(type = "mass") {
++  switch(type %||% "mass",
++    reads = list(title = "Reads (% of all reads)", value = "Reads",
++                 share = "Read share at this rank", home = "reads (% of all reads)",
++                 digits = 0L, mode = "Reads (% of all reads)"),
++    rra = list(title = "Relative read abundance (mean RRA over samples)",
++               value = "Summed sample proportions", share = "Mean RRA at this rank",
++               home = "relative read abundance (mean RRA over samples)",
++               digits = 2L, mode = "Relative read abundance (RRA)"),
++    list(title = "Weight (% of total weight)", value = "Weight",
++         share = "Weight share at this rank", home = "weight (% of total weight)",
++         digits = 1L, mode = "Weight (% of total weight)"))
++}
+diff --git a/R/dv_prepare.R b/R/dv_prepare.R
+index 77e5eca..3f468ec 100644
+--- a/R/dv_prepare.R
++++ b/R/dv_prepare.R
+@@ -4,15 +4,19 @@
+ #' lineage for the declared ranks. The taxonomy can come from:
+ #' \itemize{
+ #'   \item `"columns"` - the rank columns are already in `data`;
+-#'   \item `"worms"`   - fetch the lineage from WoRMS by AphiaID/name;
++#'   \item `"worms"`   - fetch the lineage from WoRMS by AphiaID/name (marine
++#'     prey; see [dv_taxonomy_worms()]);
++#'   \item `"gbif"`    - fetch the lineage from the GBIF Backbone Taxonomy by
++#'     GBIF taxon key/name (all kingdoms, terrestrial and freshwater prey; see
++#'     [dv_taxonomy_gbif()]);
+ #'   \item `"table"`   - join a lineage table you supply via `lineage`;
+ #'   \item `"auto"`    - use columns if present, else `lineage` if given, else WoRMS.
+ #' }
+ #' Ranks that cannot be resolved are kept as `NA` and later shown as an explicit
+ #' unidentified category below the deepest identified rank -- never dropped.
+ #'
+-#' With `taxonomy = "worms"`, each record is keyed by its AphiaID when it has
+-#' one and by its own prey name otherwise, so records without an AphiaID never
++#' With `taxonomy = "worms"` or `"gbif"`, each record is keyed by its AphiaID
++#' (or GBIF taxon key) when it has one and by its own prey name otherwise, so records without an AphiaID never
+ #' share a lineage by accident. Records with neither key stay fully
+ #' unidentified, with a warning.
+ #'
+@@ -34,13 +38,16 @@
+ #'
+ #' @param data A data.frame (the long diet table).
+ #' @param spec A `dietview_spec` from [dv_spec()].
+-#' @param taxonomy One of "auto", "columns", "worms", "table".
++#' @param taxonomy One of "auto", "columns", "worms", "gbif", "table". `"auto"`
++#'   never picks `"gbif"`: ask for it explicitly.
+ #' @param lineage For `taxonomy = "table"`: a data.frame with a key column
+ #'   (`prey_id` or `prey_name`, matching your spec) plus one column per rank.
+-#' @param fuzzy For `taxonomy = "worms"`: when the exact name fails, try WoRMS
++#' @param fuzzy For `taxonomy = "worms"` or `"gbif"`: when the exact name fails, try WoRMS
+ #'   TAXAMATCH fuzzy matching (default `TRUE`). Fuzzy hits are flagged, never
+ #'   silent - review them with [dv_taxonomy_report()].
+-#' @param cache_dir Cache directory for the WoRMS path. `NULL` disables caching.
++#' @param kingdom For `taxonomy = "gbif"`: an optional kingdom hint, e.g.
++#'   `"Animalia"`. See [dv_taxonomy_gbif()].
++#' @param cache_dir Cache directory for the WoRMS and GBIF paths. `NULL` disables caching.
+ #' @param cache_max_age For the WoRMS path: cached lookups older than this many
+ #'   days are fetched again (default 180). See [dv_taxonomy_worms()].
+ #' @param strict_covariates Passed to [dv_validate()]: if `TRUE` (default) a
+@@ -75,9 +82,11 @@
+ #' @param verbose Print progress and the validation summary.
+ #' @return An object of class `dietview_prep`: a list with `data`, `spec` (minus
+ #'   any dropped covariates), `ranks`, `taxonomy_source` (the taxonomy path
+-#'   actually used) and `taxonomy_log`. When `taxonomy = "worms"`,
++#'   actually used) and `taxonomy_log`. When `taxonomy = "worms"` or `"gbif"`,
+ #'   `taxonomy_log` is the per-prey provenance table, with the attributes
+-#'   `retrieved` (time of the run) and `worrms_version`; otherwise it is `NULL`.
++#'   `retrieved` (time of the run), `source` (`"WoRMS"` or `"GBIF Backbone"`)
++#'   and, for WoRMS, `worrms_version`; otherwise it is `NULL`. Its ID column is
++#'   `aphia_used` for WoRMS and `gbif_key` for GBIF.
+ #'   The attribute `lineage_gaps` is a named integer vector: the number of
+ #'   records whose rank was filled as a lineage gap, per rank. With `stomachs`,
+ #'   the list also holds `stomachs`: the examined stomachs, with their stomach,
+@@ -106,9 +115,10 @@
+ #' }
+ #' @export
+ dv_prepare <- function(data, spec,
+-                       taxonomy = c("auto", "columns", "worms", "table"),
++                       taxonomy = c("auto", "columns", "worms", "gbif", "table"),
+                        lineage = NULL,
+                        fuzzy = TRUE,
++                       kingdom = NULL,
+                        cache_dir = tools::R_user_dir("DietView", "cache"),
+                        cache_max_age = 180,
+                        strict_covariates = TRUE,
+@@ -168,7 +178,7 @@ dv_prepare <- function(data, spec,
+               "); their records are treated as fully unidentified.", call. = FALSE)
+     for (r in ranks) data[[r]] <- lineage[[r]][idx]
+ 
+-  } else if (taxonomy == "worms") {
++  } else if (taxonomy %in% c("worms", "gbif")) {
+     n <- nrow(data)
+     rec_id <- if (!is.null(spec$prey_id) && spec$prey_id %in% names(data))
+       suppressWarnings(as.integer(as.character(data[[spec$prey_id]]))) else rep(NA_integer_, n)
+@@ -183,9 +193,15 @@ dv_prepare <- function(data, spec,
+     keys  <- data.frame(key = rec_key[first], prey_id = rec_id[first],
+                         prey_name = rec_nm[first], stringsAsFactors = FALSE)
+ 
+-    keys <- dv_taxonomy_worms(keys, ranks = ranks, cache_dir = cache_dir,
+-                              fuzzy = fuzzy, cache_max_age = cache_max_age,
+-                              verbose = verbose)
++    keys <- if (taxonomy == "worms")
++      dv_taxonomy_worms(keys, ranks = ranks, cache_dir = cache_dir,
++                        fuzzy = fuzzy, cache_max_age = cache_max_age,
++                        verbose = verbose)
++    else
++      dv_taxonomy_gbif(keys, ranks = ranks, cache_dir = cache_dir,
++                       fuzzy = fuzzy, kingdom = kingdom,
++                       cache_max_age = cache_max_age, verbose = verbose)
++    id_col <- if (taxonomy == "worms") "aphia_used" else "gbif_key"
+     idx <- match(rec_key, keys$key)              # records without a key stay NA
+     for (r in ranks) data[[r]] <- keys[[r]][idx]
+ 
+@@ -200,7 +216,7 @@ dv_prepare <- function(data, spec,
+       match_type   = keys$match_type,
+       name_check   = keys$name_check,
+       matched_name = keys$matched_name,
+-      aphia_used   = keys$aphia_used,
++      used_id      = keys[[id_col]],
+       n_candidates = keys$n_candidates,
+       homonym      = keys$homonym,
+       lineage_ok   = keys$lineage_ok,
+@@ -208,12 +224,19 @@ dv_prepare <- function(data, spec,
+       n_records    = as.integer(table(key_f)),
+       stringsAsFactors = FALSE
+     )
++    names(tax_log)[names(tax_log) == "used_id"] <- id_col
++    if (taxonomy == "gbif") {
++      tax_log$confidence     <- keys$confidence
++      tax_log$low_confidence <- keys$low_confidence
++    }
+     tax_log <- cbind(tax_log, keys[, ranks, drop = FALSE])
+-    attr(tax_log, "retrieved")      <- format(Sys.time(), "%Y-%m-%d %H:%M %Z")
+-    attr(tax_log, "worrms_version") <- as.character(utils::packageVersion("worrms"))
++    attr(tax_log, "retrieved") <- format(Sys.time(), "%Y-%m-%d %H:%M %Z")
++    attr(tax_log, "source")    <- if (taxonomy == "worms") "WoRMS" else "GBIF Backbone"
++    if (taxonomy == "worms")
++      attr(tax_log, "worrms_version") <- as.character(utils::packageVersion("worrms"))
+ 
+     n_nokey <- sum(is.na(rec_key))
+-    if (n_nokey) warning(n_nokey, " record(s) have neither an AphiaID nor a prey ",
++    if (n_nokey) warning(n_nokey, " record(s) have neither a prey ID nor a prey ",
+                          "name; they are kept as fully unidentified.", call. = FALSE)
+   }
+ 
+@@ -229,12 +252,19 @@ dv_prepare <- function(data, spec,
+     n_gap <- attr(data, "lineage_gaps"); attr(data, "lineage_gaps") <- NULL
+     if (verbose && sum(n_gap) > 0) {
+       nz <- n_gap[n_gap > 0]
+-      message("Filled ", sum(n_gap), " lineage gap(s) (rank absent in WoRMS): ",
++      message("Filled ", sum(n_gap), " lineage gap(s) (rank absent in the taxonomy): ",
+               paste0(names(nz), "=", nz, collapse = ", "),
+               ". They are shown as '<parent> (no <rank>)', not as unidentified.")
+     }
+   }
+ 
++  if (identical(spec$weight_type, "rra") && !is.null(spec$weight)) {
++    ra <- .dv_add_rra(data, spec)
++    data <- ra$data; spec <- ra$spec
++    if (verbose) message("Reads turned into relative read abundance per sample (column `",
++                         spec$weight, "`).")
++  }
++
+   out <- list(data = data, spec = spec, ranks = ranks,
+               taxonomy_source = taxonomy, taxonomy_log = tax_log,
+               stomachs = .dv_prep_stomachs(stomachs, spec, data, empty_col))
+@@ -272,9 +302,10 @@ dv_prepare <- function(data, spec,
+   data
+ }
+ 
+-# Match types written by dv_taxonomy_worms(), in display order.
++# Match types written by dv_taxonomy_worms() and dv_taxonomy_gbif(), in display
++# order ("higherrank" is GBIF only).
+ .DV_MATCH_TYPES <- c("id", "id_synonym", "id_unchecked", "id_fallback_name",
+-                     "exact", "fuzzy", "unresolved")
++                     "exact", "fuzzy", "higherrank", "unresolved")
+ 
+ #' @export
+ print.dietview_prep <- function(x, ...) {
+@@ -390,3 +421,24 @@ print.dietview_prep <- function(x, ...) {
+                ifelse(!flagged | st$empty_flag %in% TRUE, "empty", "unknown"))
+   st
+ }
++
++# Internal: reads -> per-sample proportions (relative read abundance). The new
++# column replaces `weight` in the spec; the raw reads column is kept as
++# `weight_raw`. Samples whose reads sum to 0 contribute nothing, with a warning.
++.dv_add_rra <- function(data, spec) {
++  raw <- spec$weight
++  v <- .dv_as_num(data[[raw]]); v[is.na(v)] <- 0
++  sid <- as.character(data[[spec$stomach]])
++  tot <- stats::ave(v, sid, FUN = sum)
++  zero <- unique(sid[tot == 0])
++  if (length(zero))
++    warning(length(zero), " sample(s) have no reads (e.g. ",
++            paste(utils::head(zero, 3), collapse = ", "),
++            "); they contribute nothing to the relative read abundance.", call. = FALSE)
++  new <- "rra"
++  while (new %in% names(data)) new <- paste0(new, "_")
++  data[[new]] <- ifelse(tot > 0, v / tot, 0)
++  spec$weight_raw <- raw
++  spec$weight <- new
++  list(data = data, spec = spec)
++}
+diff --git a/R/dv_script.R b/R/dv_script.R
+index b1807e9..4924840 100644
+--- a/R/dv_script.R
++++ b/R/dv_script.R
+@@ -81,14 +81,19 @@ dv_script <- function(prep, predator = NULL,
+   dq <- function(x) paste(deparse(x, width.cutoff = 500L), collapse = "")
+ 
+   spec_args <- spec[c("predator", "predator_latin", "stomach", "prey_id", "prey_name",
+-                      "weight", "count", "digestion", "covariates", "ranks")]
++                      "weight", "count", "digestion", "covariates", "ranks",
++                      "weight_type")]
++  if (identical(spec_args$weight_type, "mass")) spec_args$weight_type <- NULL
+   spec_args <- spec_args[!vapply(spec_args, function(v) is.null(v) || !length(v), logical(1))]
+   spec_lines <- paste0("#   ", names(spec_args), " = ",
+                        vapply(spec_args, dq, character(1)))
+ 
+   tax <- prep$taxonomy_source %||% "unknown"
+   log <- prep$taxonomy_log
+-  tax_note <- if (!is.null(log))
++  tax_note <- if (!is.null(log) && identical(attr(log, "source"), "GBIF Backbone"))
++    sprintf("# Taxonomy: GBIF Backbone Taxonomy, retrieved %s",
++            attr(log, "retrieved") %||% "?")
++  else if (!is.null(log))
+     sprintf("# Taxonomy: WoRMS via worrms %s, retrieved %s",
+             attr(log, "worrms_version") %||% "?", attr(log, "retrieved") %||% "?")
+   else sprintf("# Taxonomy source: %s", tax)
+diff --git a/R/dv_spec.R b/R/dv_spec.R
+index 15a35c1..3c42484 100644
+--- a/R/dv_spec.R
++++ b/R/dv_spec.R
+@@ -24,6 +24,20 @@
+ #' @param predator_latin Optional column with the predator Latin name (used to
+ #'   look up identification photos when [dv_build_html()] is given a
+ #'   `photo_source`).
++#' @param weight_type What the `weight` column measures:
++#'   \itemize{
++#'     \item `"mass"` (default): prey mass; the weight views show %W;
++#'     \item `"reads"`: sequence reads (DNA metabarcoding); the weight views
++#'       show the pooled share of all reads;
++#'     \item `"rra"`: sequence reads, turned into relative read abundance by
++#'       [dv_prepare()]: the reads of each sample (the `stomach` column) are
++#'       divided by the sample total, so every sample weighs the same and the
++#'       weight share at a rank is the mean RRA over samples (Deagle et al.
++#'       2019, Molecular Ecology 28: 391-406). The raw reads are kept and the
++#'       proportions are added as a new column.
++#'   }
++#'   With reads, `stomach` is still the sampling unit (a stomach, a scat, a
++#'   pellet, a sample); `count` and `digestion` are usually absent.
+ #'
+ #' @return An object of class `dietview_spec`.
+ #' @examples
+@@ -47,16 +61,21 @@ dv_spec <- function(predator, stomach,
+                     covariates = character(0),
+                     ranks = c("kingdom", "phylum", "class", "order",
+                               "family", "genus", "species"),
+-                    predator_latin = NULL) {
++                    predator_latin = NULL,
++                    weight_type = c("mass", "reads", "rra")) {
+   if (is.null(prey_name) && is.null(prey_id)) {
+     stop("Provide at least one of `prey_name` or `prey_id`.", call. = FALSE)
+   }
++  weight_type <- match.arg(weight_type)
++  if (weight_type != "mass" && is.null(weight))
++    stop("weight_type = '", weight_type, "' needs the `weight` column (the reads).",
++         call. = FALSE)
+   structure(
+     list(predator = predator, stomach = stomach,
+          prey_name = prey_name, prey_id = prey_id,
+          weight = weight, count = count, digestion = digestion,
+          covariates = covariates, ranks = ranks,
+-         predator_latin = predator_latin),
++         predator_latin = predator_latin, weight_type = weight_type),
+     class = "dietview_spec"
+   )
+ }
+diff --git a/R/dv_sunburst.R b/R/dv_sunburst.R
+index 274da18..31d52e1 100644
+--- a/R/dv_sunburst.R
++++ b/R/dv_sunburst.R
+@@ -33,7 +33,8 @@
+ #'   gaps appear as unidentified (`"NA"`) nodes. Build the tree from a
+ #'   `dietview_prep`, or with [dv_tree()], to get the gap labels.
+ #' @param mode One of "occurrence" (default), "weight", "count".
+-#' @param ranks,weight_col,count_col Passed to [dv_build_tree()] if `x` is raw.
++#' @param ranks,weight_col,count_col,weight_type Passed to [dv_build_tree()]
++#'   if `x` is raw (a tree carries its own `weight_type`).
+ #' @param colors Optional named color vector, keyed by node `id` (as from
+ #'   [dv_palette_tree()]) or by taxon label (as from [dv_palette()]); ids are
+ #'   looked up first. Default: [dv_palette_tree()] of the tree drawn, one hue
+@@ -70,7 +71,7 @@ dv_sunburst <- function(x,
+                         mode = c("occurrence", "weight", "count"),
+                         ranks = NULL, weight_col = NULL, count_col = NULL,
+                         colors = NULL, rotation = 90,
+-                        title = "", subtitle = "") {
++                        title = "", subtitle = "", weight_type = "mass") {
+   mode <- match.arg(mode)
+ 
+   tree <- if (inherits(x, "dietview_tree")) {
+@@ -80,7 +81,8 @@ dv_sunburst <- function(x,
+       x,
+       ranks = ranks,
+       weight_col = weight_col,
+-      count_col = count_col
++      count_col = count_col,
++      weight_type = weight_type
+     )
+   }
+ 
+@@ -145,11 +147,14 @@ dv_sunburst <- function(x,
+       "<br><b>Prey records:</b> ", tree$value_occ,
+       "<br><b>Share of all records at this rank:</b> ", .dv_pct_fmt(tree$pct_occ)
+     ),
+-    weight = paste0(
+-      head,
+-      "<br><b>Weight:</b> ", formatC(tree$value_w, format = "f", digits = 1),
+-      "<br><b>Weight share at this rank:</b> ", .dv_pct_fmt(tree$pct_w)
+-    )
++    weight = {
++      wl <- .dv_wlabels(attr(tree, "weight_type"))
++      paste0(
++        head,
++        "<br><b>", wl$value, ":</b> ", formatC(tree$value_w, format = "f", digits = wl$digits),
++        "<br><b>", wl$share, ":</b> ", .dv_pct_fmt(tree$pct_w)
++      )
++    }
+   )
+   list(tree = tree, size = size_vals)
+ }
+@@ -166,7 +171,8 @@ dv_sunburst <- function(x,
+                                 count_col = NULL, facet_col,
+                                 mode = "occurrence", colors = NULL,
+                                 rotation = 90, title = "", na_strata = "drop",
+-                                stomach_col = NULL, min_stomachs = 0) {
++                                stomach_col = NULL, min_stomachs = 0,
++                                weight_type = "mass") {
+   if (na_strata == "drop") {
+     for (fc in facet_col) {
+       v <- as.character(records[[fc]])
+@@ -206,7 +212,8 @@ dv_sunburst <- function(x,
+     few <- nrow(ce$sub) > 0L && !is.na(n_st) && n_st < min_stomachs
+     if (nrow(ce$sub) > 0L && !few) {
+       tr <- dv_build_tree(ce$sub, ranks = ranks,
+-                          weight_col = weight_col, count_col = count_col)
++                          weight_col = weight_col, count_col = count_col,
++                          weight_type = weight_type)
+       pp <- .dv_sb_prep(tr, mode, colors)
+       fig <- plotly::add_trace(
+         fig,
+diff --git a/R/dv_taxonomy.R b/R/dv_taxonomy.R
+index 00aa1ee..2c5dd44 100644
+--- a/R/dv_taxonomy.R
++++ b/R/dv_taxonomy.R
+@@ -384,14 +384,16 @@ dv_taxonomy_worms <- function(keys,
+   invisible(isTRUE(ok))
+ }
+ 
+-#' Delete the WoRMS lookup cache
++#' Delete the WoRMS and GBIF lookup caches
+ #'
+-#' [dv_prepare()] and [dv_taxonomy_worms()] keep successful WoRMS lookups in a
+-#' cache file, by default in `tools::R_user_dir("DietView", "cache")`. Expired
++#' [dv_prepare()], [dv_taxonomy_worms()] and [dv_taxonomy_gbif()] keep
++#' successful lookups in cache files (one per source), by default in `tools::R_user_dir("DietView", "cache")`. Expired
+ #' entries are removed automatically; this function deletes the whole cache,
+ #' and the cache directory too if nothing else is left in it.
+ #'
+ #' @param cache_dir The cache directory, as given to [dv_prepare()].
++#' @param source Which cache to delete: `"all"` (default), `"worms"` or
++#'   `"gbif"`.
+ #' @return `TRUE` if a cache file was deleted, `FALSE` otherwise, invisibly.
+ #' @examples
+ #' # a cache in a temporary folder, so the example leaves nothing behind
+@@ -401,10 +403,14 @@ dv_taxonomy_worms <- function(keys,
+ #' dv_cache_clear(dir)
+ #' dir.exists(dir)
+ #' @export
+-dv_cache_clear <- function(cache_dir = tools::R_user_dir("DietView", "cache")) {
+-  f <- file.path(cache_dir, .DV_CACHE_FILE)
+-  had <- file.exists(f)
+-  if (had) unlink(f)
++dv_cache_clear <- function(cache_dir = tools::R_user_dir("DietView", "cache"),
++                           source = c("all", "worms", "gbif")) {
++  source <- match.arg(source)
++  files <- switch(source, all = c(.DV_CACHE_FILE, .DV_GBIF_CACHE_FILE),
++                  worms = .DV_CACHE_FILE, gbif = .DV_GBIF_CACHE_FILE)
++  f <- file.path(cache_dir, files)
++  had <- any(file.exists(f))
++  unlink(f[file.exists(f)])
+   if (dir.exists(cache_dir) &&
+       !length(list.files(cache_dir, all.files = TRUE, no.. = TRUE)))
+     unlink(cache_dir, recursive = TRUE)
+@@ -490,8 +496,9 @@ dv_cache_clear <- function(cache_dir = tools::R_user_dir("DietView", "cache")) {
+ # human eye. Columns missing from the log count as "no problem".
+ .dv_review_rows <- function(log) {
+   col <- function(nm) if (is.null(log[[nm]])) rep(NA, nrow(log)) else log[[nm]]
+-  keep <- col("match_type") %in% c("fuzzy", "unresolved", "id_synonym", "id_unchecked",
+-                                    "id_fallback_name") |
++  keep <- col("match_type") %in% c("fuzzy", "higherrank", "unresolved", "id_synonym",
++                                    "id_unchecked", "id_fallback_name") |
++    col("low_confidence") %in% TRUE |
+     col("name_check") %in% "differs" |
+     col("lineage_ok") %in% FALSE |
+     col("homonym") %in% TRUE
+@@ -513,7 +520,10 @@ dv_cache_clear <- function(cache_dir = tools::R_user_dir("DietView", "cache")) {
+ #' enrichment, then correct anything wrong by supplying a lineage table
+ #' (`dv_prepare(taxonomy = "table")`) or fixing the source names.
+ #'
+-#' @param prep A `dietview_prep` produced with `taxonomy = "worms"`.
++#' @param prep A `dietview_prep` produced with `taxonomy = "worms"` or
++#'   `"gbif"`. For GBIF, matches at a coarser rank than the name
++#'   (`"higherrank"`) and matches below the confidence threshold
++#'   (`low_confidence`) are also listed for review.
+ #' @param which Which rows to return: "review" (every doubtful row listed above,
+ #'   the default), "fuzzy", "unresolved", or "all".
+ #' @param file Optional CSV path to write the report to.
+@@ -550,7 +560,8 @@ dv_taxonomy_report <- function(prep,
+   stopifnot(inherits(prep, "dietview_prep"))
+   log <- prep$taxonomy_log
+   if (is.null(log)) {
+-    stop("No taxonomy log: this object was not prepared with taxonomy = 'worms'.",
++    stop("No taxonomy log: this object was not prepared with taxonomy = 'worms' ",
++         "or 'gbif'.",
+          call. = FALSE)
+   }
+   out <- switch(which,
+diff --git a/R/dv_taxonomy_gbif.R b/R/dv_taxonomy_gbif.R
+new file mode 100644
+index 0000000..21696a0
+--- /dev/null
++++ b/R/dv_taxonomy_gbif.R
+@@ -0,0 +1,331 @@
++#' Resolve prey to the GBIF Backbone Taxonomy (key, exact name, then fuzzy)
++#'
++#' The terrestrial and freshwater counterpart of [dv_taxonomy_worms()]: matches
++#' each unique prey to the GBIF Backbone Taxonomy, which covers all kingdoms,
++#' and returns its lineage for the declared ranks. It follows the same rules
++#' and returns the same provenance columns, so [dv_prepare()],
++#' [dv_taxonomy_report()] and the rest of the package treat both sources alike.
++#' Matching proceeds in this order:
++#' \enumerate{
++#'   \item **id** - a GBIF taxon key is already known (`prey_id`). Its record
++#'     is read: a synonym is followed to its accepted taxon (`"id_synonym"`)
++#'     and the prey name stored with it is compared with the GBIF name
++#'     (`name_check`). If the record cannot be read, the key is left
++#'     unresolved for now (`"id_unchecked"`, `lineage_ok = FALSE`). A key GBIF
++#'     does not know falls back to the prey name (`"id_fallback_name"`);
++#'   \item **exact** - the GBIF species-match service finds the name as
++#'     written;
++#'   \item **fuzzy** - (if `fuzzy = TRUE`) the service proposes a close name,
++#'     which can rescue a misspelling;
++#'   \item **higherrank** - the name itself is unknown but a coarser taxon in it
++#'     is (e.g. the genus of an unknown species); the lineage stops at that
++#'     rank, so the record shows as unidentified below it. A step up to a
++#'     kingdom alone (what GBIF answers for "Plastic" with `kingdom =
++#'     "Animalia"`) is treated as no match;
++#'   \item **unresolved** - nothing matched; all ranks stay `NA`.
++#' }
++#' A name can belong to several taxa (Polychaeta is a class of worms and a
++#' genus of flies). GBIF then steps up to their shared ancestor, or gives no
++#' match. DietView looks at the alternatives GBIF lists: when exactly one of
++#' them is an exact match to an accepted name (in `kingdom`, if given), it is
++#' taken; when several are, the conservative GBIF answer is kept and the prey
++#' is flagged as a possible `homonym`, to be settled by a lineage table.
++#' A name matched as a synonym gets the classification of its accepted taxon.
++#' Every match type other than `"id"` and `"exact"`, a name that differs from
++#' the GBIF name, a match below `min_confidence` and a possible homonym are
++#' listed by [dv_taxonomy_report()] for review.
++#'
++#' The GBIF Backbone has no class for some groups (ray-finned fishes, for
++#' instance, sit directly under Chordata). With `dv_prepare(gaps = "label")`,
++#' the default, such a missing rank is filled as `"Chordata (no class)"`
++#' instead of looking unidentified.
++#'
++#' Needs internet access to `api.gbif.org` and no extra package. Successful
++#' lookups are cached to disk, in their own file next to the WoRMS cache, with
++#' the same expiry rules (`cache_max_age`); failed lookups are never cached and
++#' are retried on the next run, `getOption("DietView.gbif_retries", 3)` times
++#' per request with a 1, 2, 4 ... second backoff.
++#'
++#' @param keys Data.frame with columns `prey_id` (GBIF taxon key, may be `NA`)
++#'   and `prey_name` (may be `NA`); one row per unique prey. Other columns are
++#'   kept.
++#' @param ranks Ranks to keep (default the seven flagship ranks). GBIF returns
++#'   kingdom, phylum, class, order, family, genus and species; any other rank
++#'   stays `NA`.
++#' @param cache_dir Directory for the on-disk cache. `NULL` disables caching.
++#' @param fuzzy If `TRUE` (default), accept fuzzy matches. `FALSE` asks GBIF
++#'   for strict matching only.
++#' @param kingdom Optional kingdom hint passed to GBIF (e.g. `"Animalia"`),
++#'   which helps with names shared by a plant and an animal genus.
++#' @param min_confidence GBIF confidence (0-100) below which a match is listed
++#'   for review (default 90). The match is kept.
++#' @param cache_max_age Maximum age, in days, of a cached lookup (default 180).
++#' @param verbose Print progress.
++#' @return `keys` with one column per rank plus `gbif_key`, `match_type`
++#'   ("id", "id_synonym", "id_unchecked", "id_fallback_name", "exact",
++#'   "fuzzy", "higherrank", "unresolved"), `name_check`, `matched_name`,
++#'   `confidence`, `n_candidates` (exact-name candidates GBIF listed),
++#'   `homonym`, `lineage_ok`, `retrieved` and `low_confidence`.
++#' @seealso [dv_taxonomy_worms()] for marine prey; [dv_parse_lineage()] when
++#'   the lineage already comes with the data (e.g. from a metabarcoding
++#'   pipeline).
++#' @examples
++#' \dontrun{
++#' # needs internet access
++#' keys <- data.frame(prey_id   = c(NA, 8084280),
++#'                    prey_name = c("Crangon vulgaris", "Gadus morhua"))
++#' dv_taxonomy_gbif(keys)
++#' }
++#' @export
++dv_taxonomy_gbif <- function(keys,
++                             ranks = c("kingdom", "phylum", "class", "order",
++                                       "family", "genus", "species"),
++                             cache_dir = tools::R_user_dir("DietView", "cache"),
++                             fuzzy = TRUE,
++                             kingdom = NULL,
++                             min_confidence = 90,
++                             cache_max_age = 180,
++                             verbose = TRUE) {
++  keys <- as.data.frame(keys, stringsAsFactors = FALSE)
++  n <- nrow(keys)
++  if (is.null(keys$prey_id))   keys$prey_id   <- rep(NA, n)
++  if (is.null(keys$prey_name)) keys$prey_name <- rep(NA_character_, n)
++  for (r in ranks) keys[[r]] <- rep(NA_character_, n)
++  keys$gbif_key     <- rep(NA_integer_, n)
++  keys$match_type   <- rep("unresolved", n)
++  keys$name_check   <- rep(NA_character_, n)
++  keys$matched_name <- rep(NA_character_, n)
++  keys$confidence   <- rep(NA_integer_, n)
++  keys$n_candidates <- rep(NA_integer_, n)
++  keys$homonym      <- rep(FALSE, n)
++  keys$lineage_ok   <- rep(NA, n)
++  keys$retrieved    <- rep(NA_character_, n)
++
++  # ---- cache (same format and rules as the WoRMS cache) ----------------------
++  now <- Sys.time()
++  cache <- list(); dirty <- FALSE
++  if (!is.null(cache_dir)) {
++    dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
++    cache_file <- file.path(cache_dir, .DV_GBIF_CACHE_FILE)
++    cache <- .dv_cache_read(cache_file)
++    n_read <- length(cache)
++    cache <- .dv_cache_prune(cache, now, cache_max_age)
++    dirty <- length(cache) != n_read || isTRUE(attr(cache, "unreadable"))
++    on.exit(if (dirty) .dv_cache_write(cache, cache_file), add = TRUE)
++  }
++  cache_get <- function(key) {
++    e <- cache[[key]]
++    if (!is.list(e) || is.null(e$t)) return(NULL)
++    if (is.finite(cache_max_age) &&
++        as.numeric(difftime(now, e$t, units = "days")) > cache_max_age) return(NULL)
++    e
++  }
++  cache_set <- function(key, v) { cache[[key]] <<- list(v = v, t = now); dirty <<- TRUE }
++  retries <- max(0L, as.integer(getOption("DietView.gbif_retries", 3L)))
++
++  # one taxon record -> lineage for the requested ranks
++  lineage_of <- function(x) {
++    out <- stats::setNames(rep(NA_character_, length(ranks)), ranks)
++    for (r in intersect(ranks, .DV_GBIF_RANKS)) {
++      v <- x[[r]]
++      if (!is.null(v) && length(v) == 1L && !is.na(v) && nzchar(v)) out[[r]] <- as.character(v)
++    }
++    out
++  }
++  # the accepted name at the matched rank (a synonym's own name is not it)
++  accepted_name <- function(x) {
++    rk <- tolower(x$rank %||% "")
++    v <- if (rk %in% .DV_GBIF_RANKS) x[[rk]] else NULL
++    if (!is.null(v) && !is.na(v)) as.character(v) else as.character(x$canonicalName %||% NA)
++  }
++
++  # ---- 1. records of known keys ----------------------------------------------
++  # result per key: list(status = "ok" | "unknown" | "failed", ...)
++  by_key <- function(k) {
++    ck <- paste0("gid:", k)
++    hit <- cache_get(ck)
++    if (!is.null(hit)) return(c(hit$v, list(status = "ok", t = hit$t)))
++    r <- .dv_gbif_try(sprintf("%s/species/%s", .DV_GBIF_API, k), retries)
++    if (isTRUE(r$failed)) return(list(status = "failed"))
++    if (isTRUE(r$not_found) || is.null(r$value$key)) return(list(status = "unknown"))
++    x <- r$value
++    # a key from another checklist: use its Backbone counterpart
++    if (!identical(x$datasetKey, .DV_GBIF_BACKBONE) && !is.null(x$nubKey) &&
++        !identical(as.integer(x$nubKey), as.integer(k))) {
++      r <- .dv_gbif_try(sprintf("%s/species/%s", .DV_GBIF_API, x$nubKey), retries)
++      if (isTRUE(r$failed)) return(list(status = "failed"))
++      if (isTRUE(r$not_found) || is.null(r$value$key)) return(list(status = "unknown"))
++      x <- r$value
++    }
++    acc <- x$acceptedKey %||% x$key
++    v <- list(name = as.character(x$canonicalName %||% NA),
++              used = as.integer(acc),
++              synonym = !is.null(x$acceptedKey) && !identical(as.integer(x$acceptedKey), as.integer(x$key)),
++              matched = accepted_name(x),
++              lineage = lineage_of(x))
++    cache_set(ck, v)
++    c(v, list(status = "ok", t = now))
++  }
++
++  # ---- 2. names -> species-match service -------------------------------------
++  name_key <- function(nm) paste0("gnm:", tolower(nm), if (fuzzy) ":f" else ":s",
++                                  ":", tolower(kingdom %||% ""))
++  by_name <- function(nm) {
++    hit <- cache_get(name_key(nm))
++    if (!is.null(hit)) return(c(hit$v, list(status = "ok", t = hit$t)))
++    q <- paste0("name=", utils::URLencode(nm, reserved = TRUE), "&verbose=true",
++                if (!fuzzy) "&strict=true",
++                if (!is.null(kingdom)) paste0("&kingdom=", utils::URLencode(kingdom, reserved = TRUE)))
++    r <- .dv_gbif_try(sprintf("%s/species/match?%s", .DV_GBIF_API, q), retries)
++    if (isTRUE(r$failed)) return(list(status = "failed"))
++    x <- if (isTRUE(r$not_found)) list(matchType = "NONE") else r$value
++    mt <- toupper(x$matchType %||% "NONE")
++    note <- as.character(x$note %||% "")
++    # exact, accepted candidates among the answer and its alternatives: one
++    # such candidate is taken even when GBIF itself stepped up to a shared
++    # ancestor (e.g. "Isopoda", an accepted order and a synonym genus); two or
++    # more are a homonym, and the conservative answer of GBIF is kept
++    cands <- c(list(x), x$alternatives %||% list())
++    exact <- Filter(function(a) identical(toupper(a$matchType %||% ""), "EXACT") &&
++                      !is.null(a$usageKey), cands)
++    exact <- exact[!duplicated(vapply(exact, function(a) as.character(a$usageKey), ""))]
++    acc <- Filter(function(a) toupper(a$status %||% "ACCEPTED") %in% c("ACCEPTED", "DOUBTFUL"),
++                  exact)
++    if (!is.null(kingdom))
++      acc <- Filter(function(a) identical(tolower(a$kingdom %||% ""), tolower(kingdom)), acc)
++    if (mt %in% c("HIGHERRANK", "NONE") && length(acc) == 1L) {
++      x <- acc[[1]]; mt <- "EXACT"
++    }
++    homonym <- length(acc) >= 2L || grepl("multiple equal", note, ignore.case = TRUE)
++    n_cand <- if (length(exact)) length(exact) else NA_integer_
++    v <- if (mt == "NONE" || is.null(x$usageKey)) {
++      list(type = "unresolved", used = NA_integer_, matched = NA_character_,
++           confidence = suppressWarnings(as.integer(x$confidence %||% NA)),
++           homonym = homonym, n_candidates = n_cand, lineage = NULL)
++    } else {
++      list(type = switch(mt, EXACT = "exact", FUZZY = "fuzzy",
++                         HIGHERRANK = "higherrank", "fuzzy"),
++           used = as.integer(x$acceptedUsageKey %||% x$usageKey),
++           matched = accepted_name(x),
++           confidence = suppressWarnings(as.integer(x$confidence %||% NA)),
++           homonym = homonym, n_candidates = n_cand,
++           lineage = lineage_of(x))
++    }
++    if (!fuzzy && v$type == "fuzzy") v$type <- "unresolved"
++    # stepping up to a kingdom says nothing the name did not (e.g. "Plastic",
++    # or "Unidentified material" with kingdom = "Animalia"): no match
++    if (v$type == "higherrank" && identical(toupper(x$rank %||% ""), "KINGDOM"))
++      v <- list(type = "unresolved", used = NA_integer_, matched = NA_character_,
++                confidence = v$confidence, homonym = v$homonym,
++                n_candidates = v$n_candidates, lineage = NULL)
++    cache_set(name_key(nm), v)          # a "no match" answer is final, and cached
++    c(v, list(status = "ok", t = now))
++  }
++
++  # ---- resolve -----------------------------------------------------------------
++  id_in   <- suppressWarnings(as.integer(as.character(keys$prey_id)))
++  name_in <- trimws(as.character(keys$prey_name))
++  has_name <- !is.na(name_in) & nzchar(name_in)
++  ids <- unique(id_in[!is.na(id_in)])
++  if (verbose && length(ids)) message(" GBIF records: ", length(ids), " key(s)")
++  rec <- stats::setNames(lapply(ids, by_key), as.character(ids))
++  unknown_id <- !is.na(id_in) &
++    vapply(as.character(id_in), function(k) identical(rec[[k]]$status, "unknown"), logical(1))
++  todo_names <- unique(name_in[has_name & (is.na(id_in) | unknown_id)])
++  if (verbose && length(todo_names)) message(" GBIF names: ", length(todo_names), " name(s)")
++  nms <- stats::setNames(lapply(todo_names, by_name), todo_names)
++
++  n_fail <- 0L
++  set_lineage <- function(i, lin, t) {
++    if (is.null(lin)) return(invisible())
++    for (r in ranks) keys[[r]][i] <<- lin[[r]]
++    keys$retrieved[i] <<- format(t, "%Y-%m-%d")
++  }
++  for (i in seq_len(n)) {
++    use_name <- FALSE
++    if (!is.na(id_in[i])) {
++      x <- rec[[as.character(id_in[i])]]
++      if (x$status == "ok") {
++        keys$gbif_key[i]     <- x$used
++        keys$match_type[i]   <- if (isTRUE(x$synonym)) "id_synonym" else "id"
++        keys$matched_name[i] <- x$matched
++        keys$lineage_ok[i]   <- TRUE
++        if (has_name[i] && !is.na(x$name))
++          keys$name_check[i] <- if (tolower(name_in[i]) == tolower(x$name)) "agrees" else "differs"
++        set_lineage(i, x$lineage, x$t)
++      } else if (x$status == "failed") {
++        keys$gbif_key[i]   <- id_in[i]
++        keys$match_type[i] <- "id_unchecked"
++        keys$lineage_ok[i] <- FALSE
++        n_fail <- n_fail + 1L
++      } else {
++        use_name <- has_name[i]
++      }
++    } else {
++      use_name <- has_name[i]
++    }
++    if (use_name) {
++      x <- nms[[name_in[i]]]
++      if (x$status == "failed") {
++        keys$lineage_ok[i] <- FALSE
++        n_fail <- n_fail + 1L
++        next
++      }
++      keys$homonym[i]      <- isTRUE(x$homonym)
++      keys$confidence[i]   <- x$confidence
++      keys$n_candidates[i] <- as.integer(x$n_candidates %||% NA_integer_)
++      if (x$type == "unresolved") next
++      keys$gbif_key[i]     <- x$used
++      keys$match_type[i]   <- if (!is.na(id_in[i])) "id_fallback_name" else x$type
++      keys$matched_name[i] <- x$matched
++      keys$lineage_ok[i]   <- TRUE
++      set_lineage(i, x$lineage, x$t)
++    }
++  }
++  keys$low_confidence <- !is.na(keys$confidence) & keys$confidence < min_confidence &
++    keys$match_type != "unresolved"
++
++  if (n_fail)
++    warning(n_fail, " prey key(s) could not be looked up in GBIF (network or server ",
++            "error). They are left unresolved for now and were not cached; run again ",
++            "to retry, and see dv_taxonomy_report().", call. = FALSE)
++  if (verbose) {
++    tb <- table(factor(keys$match_type, levels = .DV_MATCH_TYPES))
++    message("GBIF matching: ", paste(sprintf("%s=%d", names(tb), as.integer(tb)),
++                                     collapse = ", "))
++    if (nrow(.dv_review_rows(keys)) > 0)
++      message("  -> review with dv_taxonomy_report(prep)")
++  }
++  keys
++}
++
++.DV_GBIF_API       <- "https://api.gbif.org/v1"
++.DV_GBIF_BACKBONE  <- "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
++.DV_GBIF_CACHE_FILE <- "gbif_lineage.rds"
++.DV_GBIF_RANKS     <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
++
++# Internal: GET a GBIF URL and parse the JSON. Kept apart so tests can mock it.
++# Returns the parsed list, or signals an error whose message carries the HTTP
++# status when there is one.
++.dv_gbif_get <- function(u) {
++  con <- url(u, headers = c("User-Agent" = paste0("DietView/",
++                                                  utils::packageVersion("DietView"))))
++  on.exit(close(con))
++  txt <- paste(readLines(con, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
++  jsonlite::fromJSON(txt, simplifyVector = FALSE)
++}
++
++# Internal: one GBIF request with retries. A 400/404 answer ("no such key") is
++# final; anything else is retried with backoff. Returns list(value =),
++# list(not_found = TRUE) or list(failed = TRUE, error =).
++.dv_gbif_try <- function(u, retries = 0L) {
++  res <- NULL
++  for (a in 0:retries) {
++    if (a > 0L) .dv_sleep(2^(a - 1L))
++    res <- tryCatch(list(value = .dv_gbif_get(u)),
++                    error = function(e) e, warning = function(w) w)
++    if (!inherits(res, "condition")) return(res)
++    if (grepl("\\b(400|404)\\b", conditionMessage(res))) return(list(not_found = TRUE))
++  }
++  list(failed = TRUE, error = conditionMessage(res))
++}
+diff --git a/_pkgdown.yml b/_pkgdown.yml
+index 21306c9..537c598 100644
+--- a/_pkgdown.yml
++++ b/_pkgdown.yml
+@@ -48,6 +48,8 @@ navbar:
+         href: articles/known-diet.html
+       - text: Resolving prey taxonomy with WoRMS
+         href: articles/taxonomy-worms.html
++      - text: "Beyond stomachs: DNA metabarcoding, scats and other compositional data"
++        href: articles/other-data.html
+       - text: Exploring and aggregating diet data
+         href: articles/exploration.html
+       - text: "-------"
+@@ -89,14 +91,24 @@ reference:
+   - dv_spec
+   - dv_validate
+ 
++- title: 1b · Bring other data shapes
++  desc: >
++    Reshape wide sample-by-taxon tables (ASV/OTU tables, catch compositions)
++    into the long format, and split pipeline lineage strings into rank columns.
++  contents:
++  - dv_from_wide
++  - dv_parse_lineage
++
+ - title: 2 · Attach taxonomy
+   desc: >
+-    Resolve prey to the WoRMS classification (or join your own lineage table),
++    Resolve prey to the WoRMS classification (marine), the GBIF Backbone
++    (all kingdoms), or join your own lineage table,
+     keeping unresolved prey as an explicit unidentified category and logging
+     every match for review.
+   contents:
+   - dv_prepare
+   - dv_taxonomy_worms
++  - dv_taxonomy_gbif
+   - dv_taxonomy_report
+   - dv_lineage_check
+   - dv_cache_clear
+diff --git a/man/DietView-package.Rd b/man/DietView-package.Rd
+index e19dba9..13de1bc 100644
+--- a/man/DietView-package.Rd
++++ b/man/DietView-package.Rd
+@@ -33,11 +33,11 @@ Useful links:
+ 
+ }
+ \author{
+-\strong{Maintainer}: Sosthène A. V. Akia \email{akiasosthene@gmail.com}
++\strong{Maintainer}: Sosth<U+00E8>ne A. V. Akia \email{akiasosthene@gmail.com}
+ 
+ Authors:
+ \itemize{
+-  \item Sosthène A. V. Akia \email{akiasosthene@gmail.com}
++  \item Sosth<U+00E8>ne A. V. Akia \email{akiasosthene@gmail.com}
+ }
+ 
+ Other contributors:
+diff --git a/man/dv_build_tree.Rd b/man/dv_build_tree.Rd
+index 82ec01d..bc479ad 100644
+--- a/man/dv_build_tree.Rd
++++ b/man/dv_build_tree.Rd
+@@ -9,7 +9,8 @@ dv_build_tree(
+   ranks,
+   weight_col = NULL,
+   count_col = NULL,
+-  rank_labels = NULL
++  rank_labels = NULL,
++  weight_type = "mass"
+ )
+ }
+ \arguments{
+@@ -22,10 +23,14 @@ dv_build_tree(
+ \item{count_col}{Name of a count column (or \code{NULL}: each record counts once).}
+ 
+ \item{rank_labels}{Optional display labels for the ranks.}
++
++\item{weight_type}{What \code{weight_col} measures (\code{"mass"}, \code{"reads"} or
++\code{"rra"}; see \code{\link[=dv_spec]{dv_spec()}}). It only changes the labels of the weight views
++and is stored as the attribute \code{weight_type}.}
+ }
+ \value{
+-A \code{dietview_tree} data.frame: \verb{id, label, parent, rank, value_item, value_occ, value_w, pct_occ, pct_w}, with the attribute \code{currency}
+-(\code{"records"}, or \code{"numbers"} when \code{count_col} is given).
++A \code{dietview_tree} data.frame: \verb{id, label, parent, rank, value_item, value_occ, value_w, pct_occ, pct_w}, with the attributes \code{currency}
++(\code{"records"}, or \code{"numbers"} when \code{count_col} is given) and \code{weight_type}.
+ }
+ \description{
+ Aggregates a set of records into a node table spanning all ranks.
+diff --git a/man/dv_cache_clear.Rd b/man/dv_cache_clear.Rd
+index e21ca9b..76e6f0d 100644
+--- a/man/dv_cache_clear.Rd
++++ b/man/dv_cache_clear.Rd
+@@ -2,19 +2,25 @@
+ % Please edit documentation in R/dv_taxonomy.R
+ \name{dv_cache_clear}
+ \alias{dv_cache_clear}
+-\title{Delete the WoRMS lookup cache}
++\title{Delete the WoRMS and GBIF lookup caches}
+ \usage{
+-dv_cache_clear(cache_dir = tools::R_user_dir("DietView", "cache"))
++dv_cache_clear(
++  cache_dir = tools::R_user_dir("DietView", "cache"),
++  source = c("all", "worms", "gbif")
++)
+ }
+ \arguments{
+ \item{cache_dir}{The cache directory, as given to \code{\link[=dv_prepare]{dv_prepare()}}.}
++
++\item{source}{Which cache to delete: \code{"all"} (default), \code{"worms"} or
++\code{"gbif"}.}
+ }
+ \value{
+ \code{TRUE} if a cache file was deleted, \code{FALSE} otherwise, invisibly.
+ }
+ \description{
+-\code{\link[=dv_prepare]{dv_prepare()}} and \code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}} keep successful WoRMS lookups in a
+-cache file, by default in \code{tools::R_user_dir("DietView", "cache")}. Expired
++\code{\link[=dv_prepare]{dv_prepare()}}, \code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}} and \code{\link[=dv_taxonomy_gbif]{dv_taxonomy_gbif()}} keep
++successful lookups in cache files (one per source), by default in \code{tools::R_user_dir("DietView", "cache")}. Expired
+ entries are removed automatically; this function deletes the whole cache,
+ and the cache directory too if nothing else is left in it.
+ }
+diff --git a/man/dv_from_wide.Rd b/man/dv_from_wide.Rd
+new file mode 100644
+index 0000000..643780f
+--- /dev/null
++++ b/man/dv_from_wide.Rd
+@@ -0,0 +1,91 @@
++% Generated by roxygen2: do not edit by hand
++% Please edit documentation in R/dv_adapters.R
++\name{dv_from_wide}
++\alias{dv_from_wide}
++\title{Reshape a wide sample-by-taxon table into DietView's long format}
++\usage{
++dv_from_wide(
++  x,
++  taxa_in = c("rows", "columns"),
++  id_cols,
++  sample_col = "sample",
++  value_col = "reads",
++  taxon_col = "prey_name",
++  meta = NULL,
++  drop_zero = TRUE,
++  collapse_by = NULL
++)
++}
++\arguments{
++\item{x}{A data.frame.}
++
++\item{taxa_in}{\code{"rows"} (default; one row per taxon, one column per sample,
++the usual ASV/OTU table) or \code{"columns"} (one row per sample, one column
++per taxon).}
++
++\item{id_cols}{Columns that are not counts: with \code{taxa_in = "rows"}, the
++columns describing the taxon (ASV id, lineage string, rank columns ...);
++with \code{taxa_in = "columns"}, the columns describing the sample. Every
++other column is read as counts.}
++
++\item{sample_col}{Name of the sample column in the result (with
++\code{taxa_in = "columns"}, it must be one of \code{id_cols}). Use it as
++\code{dv_spec(stomach = )}.}
++
++\item{value_col}{Name of the value column in the result (e.g. \code{"reads"}),
++for \code{dv_spec(weight = )} or \code{dv_spec(count = )}.}
++
++\item{taxon_col}{With \code{taxa_in = "columns"}, the name of the column that
++receives the taxon names (the former column names).}
++
++\item{meta}{Optional data.frame of sample metadata (predator, date, area,
++...), joined by \code{sample_col}. A sample without metadata is kept, with a
++warning.}
++
++\item{drop_zero}{Drop records whose value is 0 or missing (default \code{TRUE}).}
++
++\item{collapse_by}{Optional columns defining one prey; rows sharing a
++sample and these columns are summed into one record.}
++}
++\value{
++A long data.frame: the taxon columns, \code{sample_col}, \code{value_col} and
++the metadata columns.
++}
++\description{
++DNA metabarcoding (ASV/OTU tables), catch composition and many survey
++tables come wide: one row per taxon and one column per sample, or the
++reverse. \code{dv_from_wide()} turns them into the long table DietView expects,
++one row per taxon in a sample, and joins the sample metadata (predator,
++covariates) so the result goes straight into \code{\link[=dv_spec]{dv_spec()}} and
++\code{\link[=dv_prepare]{dv_prepare()}}.
++}
++\details{
++Records with a zero or missing value are dropped (\code{drop_zero = TRUE}), as
++a prey absent from a sample is not a prey record. With \code{collapse_by}, the
++values of the rows that share a sample and the same \code{collapse_by} columns
++(e.g. several ASVs assigned to the same species) are summed into one
++record, so that shares of prey records and \%FO count a taxon once per
++sample.
++}
++\examples{
++# an ASV table: one row per ASV, one column per scat sample
++asv <- data.frame(
++  asv = c("a1", "a2", "a3"),
++  taxonomy = c("k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__Gadus;s__morhua",
++               "k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__Gadus;s__morhua",
++               "k__Animalia;p__Arthropoda;c__Malacostraca;o__Euphausiacea;f__;g__;s__"),
++  S1 = c(120, 30, 0), S2 = c(0, 0, 400))
++meta <- data.frame(sample = c("S1", "S2"), predator = "grey seal",
++                   season = c("winter", "summer"))
++long <- dv_from_wide(asv, id_cols = c("asv", "taxonomy"), meta = meta,
++                     collapse_by = "taxonomy")
++long <- dv_parse_lineage(long, "taxonomy")
++spec <- dv_spec(predator = "predator", stomach = "sample",
++                prey_name = "prey_name", weight = "reads",
++                weight_type = "rra", covariates = "season")
++prep <- dv_prepare(long, spec, taxonomy = "columns", verbose = FALSE)
++dv_rank_table(dv_tree(prep), "Phylum")
++}
++\seealso{
++\code{\link[=dv_parse_lineage]{dv_parse_lineage()}} to split a lineage string into ranks.
++}
+diff --git a/man/dv_parse_lineage.Rd b/man/dv_parse_lineage.Rd
+new file mode 100644
+index 0000000..51428a2
+--- /dev/null
++++ b/man/dv_parse_lineage.Rd
+@@ -0,0 +1,83 @@
++% Generated by roxygen2: do not edit by hand
++% Please edit documentation in R/dv_adapters.R
++\name{dv_parse_lineage}
++\alias{dv_parse_lineage}
++\title{Split a lineage string into rank columns}
++\usage{
++dv_parse_lineage(
++  data,
++  col,
++  ranks = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
++  sep = ";",
++  format = c("auto", "prefixed", "positional"),
++  name_col = "prey_name",
++  placeholders = c("", "na", "nan", "none", "null", "unassigned", "unclassified",
++    "uncultured", "unidentified", "unknown", "metagenome", "environmental sample")
++)
++}
++\arguments{
++\item{data}{A data.frame.}
++
++\item{col}{Name of the column holding the lineage string.}
++
++\item{ranks}{Ranks to create, coarse to fine (default the seven flagship
++ranks). For positional strings they must follow the order of the fields.}
++
++\item{sep}{Field separator (default \code{";"}).}
++
++\item{format}{\code{"auto"} (default), \code{"prefixed"} or \code{"positional"}.}
++
++\item{name_col}{If not \code{NULL} (default \code{"prey_name"}), a column with the
++deepest identified name is added (or overwritten), ready for
++\code{dv_spec(prey_name = )}.}
++
++\item{placeholders}{Lower-case values treated as "not identified".}
++}
++\value{
++\code{data} with one column per rank (and \code{name_col}).
++}
++\description{
++Metabarcoding pipelines (QIIME 2, DADA2, mothur, SILVA, Greengenes, MIDORI,
++BOLD, a BLAST against GenBank) report each sequence's taxonomy as one
++string, such as \code{"k__Animalia; p__Arthropoda; c__Copepoda; g__Calanus; s__finmarchicus"}. \code{dv_parse_lineage()} splits that string into one column
++per rank, so the data can be prepared with \code{dv_prepare(taxonomy = "columns")}, keeping the reference taxonomy the sequences were assigned
++with (NCBI, SILVA, BOLD ...), or only the deepest name can be passed on to
++WoRMS or GBIF.
++}
++\details{
++Two layouts are read:
++\itemize{
++\item \strong{prefixed} - each field starts with a rank code (\code{k__}, \code{d__},
++\code{p__}, \code{c__}, \code{o__}, \code{f__}, \code{g__}, \code{s__}; also \verb{k:}/\verb{p:} and
++\verb{kingdom:}); fields are placed by their code, so missing ranks are
++allowed. \code{d__} (domain) is ignored unless \code{"domain"} is a rank;
++\item \strong{positional} - plain names in rank order (\code{"Animalia;Arthropoda; ..."}); the i-th field goes to the i-th rank of \code{ranks}.
++}
++\code{format = "auto"} uses prefixed when most strings carry rank codes. For
++positional strings, give \code{ranks} in the order of the fields: MIDORI and
++NCBI lineages start with a superkingdom, not a kingdom, so use e.g.
++\code{ranks = c("domain", "phylum", "class", "order", "family", "genus", "species")} and the same \code{ranks} in \code{\link[=dv_spec]{dv_spec()}}.
++Placeholders such as an empty field, \code{"NA"}, \code{"unassigned"},
++\code{"unclassified"}, \code{"uncultured"}, \code{"unidentified"}, \code{"unknown"},
++\code{"metagenome"} or a species written \code{"Genus sp."} become \code{NA}, so the
++record is shown as unidentified at that rank. Trailing NCBI tax IDs
++(\code{"Calanus_6836"}) and underscores (\code{"Calanus_finmarchicus"}) are cleaned,
++and a species given as an epithet only (\code{s__finmarchicus}) is completed with
++its genus.
++}
++\examples{
++x <- data.frame(asv = c("a1", "a2", "a3"), taxonomy = c(
++  paste("k__Animalia; p__Arthropoda; c__Copepoda; o__Calanoida;",
++        "f__Calanidae; g__Calanus; s__finmarchicus"),
++  "k__Animalia; p__Chordata; c__Actinopteri; o__; f__; g__; s__",
++  "Unassigned"))
++dv_parse_lineage(x, "taxonomy")
++# plain names in rank order, as in many BLAST or BOLD outputs
++y <- data.frame(lin = paste("Animalia;Arthropoda;Malacostraca;Euphausiacea",
++                            "Euphausiidae;Meganyctiphanes",
++                            "Meganyctiphanes norvegica", sep = ";"))
++dv_parse_lineage(y, "lin")
++}
++\seealso{
++\code{\link[=dv_from_wide]{dv_from_wide()}} to reshape a sample-by-taxon table first.
++}
+diff --git a/man/dv_prepare.Rd b/man/dv_prepare.Rd
+index ad930b0..1a54bb2 100644
+--- a/man/dv_prepare.Rd
++++ b/man/dv_prepare.Rd
+@@ -7,9 +7,10 @@
+ dv_prepare(
+   data,
+   spec,
+-  taxonomy = c("auto", "columns", "worms", "table"),
++  taxonomy = c("auto", "columns", "worms", "gbif", "table"),
+   lineage = NULL,
+   fuzzy = TRUE,
++  kingdom = NULL,
+   cache_dir = tools::R_user_dir("DietView", "cache"),
+   cache_max_age = 180,
+   strict_covariates = TRUE,
+@@ -24,16 +25,20 @@ dv_prepare(
+ 
+ \item{spec}{A \code{dietview_spec} from \code{\link[=dv_spec]{dv_spec()}}.}
+ 
+-\item{taxonomy}{One of "auto", "columns", "worms", "table".}
++\item{taxonomy}{One of "auto", "columns", "worms", "gbif", "table". \code{"auto"}
++never picks \code{"gbif"}: ask for it explicitly.}
+ 
+ \item{lineage}{For \code{taxonomy = "table"}: a data.frame with a key column
+ (\code{prey_id} or \code{prey_name}, matching your spec) plus one column per rank.}
+ 
+-\item{fuzzy}{For \code{taxonomy = "worms"}: when the exact name fails, try WoRMS
++\item{fuzzy}{For \code{taxonomy = "worms"} or \code{"gbif"}: when the exact name fails, try WoRMS
+ TAXAMATCH fuzzy matching (default \code{TRUE}). Fuzzy hits are flagged, never
+ silent - review them with \code{\link[=dv_taxonomy_report]{dv_taxonomy_report()}}.}
+ 
+-\item{cache_dir}{Cache directory for the WoRMS path. \code{NULL} disables caching.}
++\item{kingdom}{For \code{taxonomy = "gbif"}: an optional kingdom hint, e.g.
++\code{"Animalia"}. See \code{\link[=dv_taxonomy_gbif]{dv_taxonomy_gbif()}}.}
++
++\item{cache_dir}{Cache directory for the WoRMS and GBIF paths. \code{NULL} disables caching.}
+ 
+ \item{cache_max_age}{For the WoRMS path: cached lookups older than this many
+ days are fetched again (default 180). See \code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}}.}
+@@ -76,9 +81,11 @@ it \code{NA}, so its records sit under the unidentified node of that rank.}
+ \value{
+ An object of class \code{dietview_prep}: a list with \code{data}, \code{spec} (minus
+ any dropped covariates), \code{ranks}, \code{taxonomy_source} (the taxonomy path
+-actually used) and \code{taxonomy_log}. When \code{taxonomy = "worms"},
++actually used) and \code{taxonomy_log}. When \code{taxonomy = "worms"} or \code{"gbif"},
+ \code{taxonomy_log} is the per-prey provenance table, with the attributes
+-\code{retrieved} (time of the run) and \code{worrms_version}; otherwise it is \code{NULL}.
++\code{retrieved} (time of the run), \code{source} (\code{"WoRMS"} or \code{"GBIF Backbone"})
++and, for WoRMS, \code{worrms_version}; otherwise it is \code{NULL}. Its ID column is
++\code{aphia_used} for WoRMS and \code{gbif_key} for GBIF.
+ The attribute \code{lineage_gaps} is a named integer vector: the number of
+ records whose rank was filled as a lineage gap, per rank. With \code{stomachs},
+ the list also holds \code{stomachs}: the examined stomachs, with their stomach,
+@@ -89,7 +96,11 @@ Validates the long table with \code{\link[=dv_validate]{dv_validate()}} and atta
+ lineage for the declared ranks. The taxonomy can come from:
+ \itemize{
+ \item \code{"columns"} - the rank columns are already in \code{data};
+-\item \code{"worms"}   - fetch the lineage from WoRMS by AphiaID/name;
++\item \code{"worms"}   - fetch the lineage from WoRMS by AphiaID/name (marine
++prey; see \code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}});
++\item \code{"gbif"}    - fetch the lineage from the GBIF Backbone Taxonomy by
++GBIF taxon key/name (all kingdoms, terrestrial and freshwater prey; see
++\code{\link[=dv_taxonomy_gbif]{dv_taxonomy_gbif()}});
+ \item \code{"table"}   - join a lineage table you supply via \code{lineage};
+ \item \code{"auto"}    - use columns if present, else \code{lineage} if given, else WoRMS.
+ }
+@@ -97,8 +108,8 @@ Ranks that cannot be resolved are kept as \code{NA} and later shown as an explic
+ unidentified category below the deepest identified rank -- never dropped.
+ }
+ \details{
+-With \code{taxonomy = "worms"}, each record is keyed by its AphiaID when it has
+-one and by its own prey name otherwise, so records without an AphiaID never
++With \code{taxonomy = "worms"} or \code{"gbif"}, each record is keyed by its AphiaID
++(or GBIF taxon key) when it has one and by its own prey name otherwise, so records without an AphiaID never
+ share a lineage by accident. Records with neither key stay fully
+ unidentified, with a warning.
+ 
+diff --git a/man/dv_spec.Rd b/man/dv_spec.Rd
+index 71844b4..127a5cc 100644
+--- a/man/dv_spec.Rd
++++ b/man/dv_spec.Rd
+@@ -14,7 +14,8 @@ dv_spec(
+   digestion = NULL,
+   covariates = character(0),
+   ranks = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
+-  predator_latin = NULL
++  predator_latin = NULL,
++  weight_type = c("mass", "reads", "rra")
+ )
+ }
+ \arguments{
+@@ -47,6 +48,21 @@ columns, keep the default; otherwise they are filled by \code{\link[=dv_prepare]
+ \item{predator_latin}{Optional column with the predator Latin name (used to
+ look up identification photos when \code{\link[=dv_build_html]{dv_build_html()}} is given a
+ \code{photo_source}).}
++
++\item{weight_type}{What the \code{weight} column measures:
++\itemize{
++\item \code{"mass"} (default): prey mass; the weight views show \%W;
++\item \code{"reads"}: sequence reads (DNA metabarcoding); the weight views
++show the pooled share of all reads;
++\item \code{"rra"}: sequence reads, turned into relative read abundance by
++\code{\link[=dv_prepare]{dv_prepare()}}: the reads of each sample (the \code{stomach} column) are
++divided by the sample total, so every sample weighs the same and the
++weight share at a rank is the mean RRA over samples (Deagle et al.
++2019, Molecular Ecology 28: 391-406). The raw reads are kept and the
++proportions are added as a new column.
++}
++With reads, \code{stomach} is still the sampling unit (a stomach, a scat, a
++pellet, a sample); \code{count} and \code{digestion} are usually absent.}
+ }
+ \value{
+ An object of class \code{dietview_spec}.
+diff --git a/man/dv_sunburst.Rd b/man/dv_sunburst.Rd
+index e23d04e..09d6e24 100644
+--- a/man/dv_sunburst.Rd
++++ b/man/dv_sunburst.Rd
+@@ -13,7 +13,8 @@ dv_sunburst(
+   colors = NULL,
+   rotation = 90,
+   title = "",
+-  subtitle = ""
++  subtitle = "",
++  weight_type = "mass"
+ )
+ }
+ \arguments{
+@@ -26,7 +27,8 @@ gaps appear as unidentified (\code{"NA"}) nodes. Build the tree from a
+ 
+ \item{mode}{One of "occurrence" (default), "weight", "count".}
+ 
+-\item{ranks, weight_col, count_col}{Passed to \code{\link[=dv_build_tree]{dv_build_tree()}} if \code{x} is raw.}
++\item{ranks, weight_col, count_col, weight_type}{Passed to \code{\link[=dv_build_tree]{dv_build_tree()}}
++if \code{x} is raw (a tree carries its own \code{weight_type}).}
+ 
+ \item{colors}{Optional named color vector, keyed by node \code{id} (as from
+ \code{\link[=dv_palette_tree]{dv_palette_tree()}}) or by taxon label (as from \code{\link[=dv_palette]{dv_palette()}}); ids are
+diff --git a/man/dv_taxonomy_gbif.Rd b/man/dv_taxonomy_gbif.Rd
+new file mode 100644
+index 0000000..4965c25
+--- /dev/null
++++ b/man/dv_taxonomy_gbif.Rd
+@@ -0,0 +1,108 @@
++% Generated by roxygen2: do not edit by hand
++% Please edit documentation in R/dv_taxonomy_gbif.R
++\name{dv_taxonomy_gbif}
++\alias{dv_taxonomy_gbif}
++\title{Resolve prey to the GBIF Backbone Taxonomy (key, exact name, then fuzzy)}
++\usage{
++dv_taxonomy_gbif(
++  keys,
++  ranks = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
++  cache_dir = tools::R_user_dir("DietView", "cache"),
++  fuzzy = TRUE,
++  kingdom = NULL,
++  min_confidence = 90,
++  cache_max_age = 180,
++  verbose = TRUE
++)
++}
++\arguments{
++\item{keys}{Data.frame with columns \code{prey_id} (GBIF taxon key, may be \code{NA})
++and \code{prey_name} (may be \code{NA}); one row per unique prey. Other columns are
++kept.}
++
++\item{ranks}{Ranks to keep (default the seven flagship ranks). GBIF returns
++kingdom, phylum, class, order, family, genus and species; any other rank
++stays \code{NA}.}
++
++\item{cache_dir}{Directory for the on-disk cache. \code{NULL} disables caching.}
++
++\item{fuzzy}{If \code{TRUE} (default), accept fuzzy matches. \code{FALSE} asks GBIF
++for strict matching only.}
++
++\item{kingdom}{Optional kingdom hint passed to GBIF (e.g. \code{"Animalia"}),
++which helps with names shared by a plant and an animal genus.}
++
++\item{min_confidence}{GBIF confidence (0-100) below which a match is listed
++for review (default 90). The match is kept.}
++
++\item{cache_max_age}{Maximum age, in days, of a cached lookup (default 180).}
++
++\item{verbose}{Print progress.}
++}
++\value{
++\code{keys} with one column per rank plus \code{gbif_key}, \code{match_type}
++("id", "id_synonym", "id_unchecked", "id_fallback_name", "exact",
++"fuzzy", "higherrank", "unresolved"), \code{name_check}, \code{matched_name},
++\code{confidence}, \code{n_candidates} (exact-name candidates GBIF listed),
++\code{homonym}, \code{lineage_ok}, \code{retrieved} and \code{low_confidence}.
++}
++\description{
++The terrestrial and freshwater counterpart of \code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}}: matches
++each unique prey to the GBIF Backbone Taxonomy, which covers all kingdoms,
++and returns its lineage for the declared ranks. It follows the same rules
++and returns the same provenance columns, so \code{\link[=dv_prepare]{dv_prepare()}},
++\code{\link[=dv_taxonomy_report]{dv_taxonomy_report()}} and the rest of the package treat both sources alike.
++Matching proceeds in this order:
++\enumerate{
++\item \strong{id} - a GBIF taxon key is already known (\code{prey_id}). Its record
++is read: a synonym is followed to its accepted taxon (\code{"id_synonym"})
++and the prey name stored with it is compared with the GBIF name
++(\code{name_check}). If the record cannot be read, the key is left
++unresolved for now (\code{"id_unchecked"}, \code{lineage_ok = FALSE}). A key GBIF
++does not know falls back to the prey name (\code{"id_fallback_name"});
++\item \strong{exact} - the GBIF species-match service finds the name as
++written;
++\item \strong{fuzzy} - (if \code{fuzzy = TRUE}) the service proposes a close name,
++which can rescue a misspelling;
++\item \strong{higherrank} - the name itself is unknown but a coarser taxon in it
++is (e.g. the genus of an unknown species); the lineage stops at that
++rank, so the record shows as unidentified below it. A step up to a
++kingdom alone (what GBIF answers for "Plastic" with \code{kingdom = "Animalia"}) is treated as no match;
++\item \strong{unresolved} - nothing matched; all ranks stay \code{NA}.
++}
++A name can belong to several taxa (Polychaeta is a class of worms and a
++genus of flies). GBIF then steps up to their shared ancestor, or gives no
++match. DietView looks at the alternatives GBIF lists: when exactly one of
++them is an exact match to an accepted name (in \code{kingdom}, if given), it is
++taken; when several are, the conservative GBIF answer is kept and the prey
++is flagged as a possible \code{homonym}, to be settled by a lineage table.
++A name matched as a synonym gets the classification of its accepted taxon.
++Every match type other than \code{"id"} and \code{"exact"}, a name that differs from
++the GBIF name, a match below \code{min_confidence} and a possible homonym are
++listed by \code{\link[=dv_taxonomy_report]{dv_taxonomy_report()}} for review.
++}
++\details{
++The GBIF Backbone has no class for some groups (ray-finned fishes, for
++instance, sit directly under Chordata). With \code{dv_prepare(gaps = "label")},
++the default, such a missing rank is filled as \code{"Chordata (no class)"}
++instead of looking unidentified.
++
++Needs internet access to \code{api.gbif.org} and no extra package. Successful
++lookups are cached to disk, in their own file next to the WoRMS cache, with
++the same expiry rules (\code{cache_max_age}); failed lookups are never cached and
++are retried on the next run, \code{getOption("DietView.gbif_retries", 3)} times
++per request with a 1, 2, 4 ... second backoff.
++}
++\examples{
++\dontrun{
++# needs internet access
++keys <- data.frame(prey_id   = c(NA, 8084280),
++                   prey_name = c("Crangon vulgaris", "Gadus morhua"))
++dv_taxonomy_gbif(keys)
++}
++}
++\seealso{
++\code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}} for marine prey; \code{\link[=dv_parse_lineage]{dv_parse_lineage()}} when
++the lineage already comes with the data (e.g. from a metabarcoding
++pipeline).
++}
+diff --git a/man/dv_taxonomy_report.Rd b/man/dv_taxonomy_report.Rd
+index 92e70e8..e305f07 100644
+--- a/man/dv_taxonomy_report.Rd
++++ b/man/dv_taxonomy_report.Rd
+@@ -11,7 +11,10 @@ dv_taxonomy_report(
+ )
+ }
+ \arguments{
+-\item{prep}{A \code{dietview_prep} produced with \code{taxonomy = "worms"}.}
++\item{prep}{A \code{dietview_prep} produced with \code{taxonomy = "worms"} or
++\code{"gbif"}. For GBIF, matches at a coarser rank than the name
++(\code{"higherrank"}) and matches below the confidence threshold
++(\code{low_confidence}) are also listed for review.}
+ 
+ \item{which}{Which rows to return: "review" (every doubtful row listed above,
+ the default), "fuzzy", "unresolved", or "all".}
+diff --git a/tests/testthat/test-adapters.R b/tests/testthat/test-adapters.R
+new file mode 100644
+index 0000000..7eea8e7
+--- /dev/null
++++ b/tests/testthat/test-adapters.R
+@@ -0,0 +1,98 @@
++test_that("dv_parse_lineage reads prefixed strings, placeholders and epithets", {
++  x <- data.frame(lin = c(
++    "k__Animalia; p__Arthropoda; c__Copepoda; o__Calanoida; f__Calanidae; g__Calanus; s__finmarchicus",
++    "k__Animalia; p__Chordata; c__Actinopteri; o__; f__; g__; s__",
++    "d__Eukaryota;k__Animalia;p__Mollusca;c__uncultured;g__Loligo;s__Loligo sp.",
++    "Unassigned", NA), stringsAsFactors = FALSE)
++  out <- dv_parse_lineage(x, "lin")
++  expect_equal(out$species, c("Calanus finmarchicus", NA, NA, NA, NA))
++  expect_equal(out$class, c("Copepoda", "Actinopteri", NA, NA, NA))
++  expect_equal(out$genus[3], "Loligo")
++  expect_true(is.na(out$order[3]))           # absent field, not shifted
++  expect_equal(out$kingdom[3], "Animalia")   # d__ ignored without a domain rank
++  expect_equal(out$prey_name, c("Calanus finmarchicus", "Actinopteri", "Loligo", NA, NA))
++})
++
++test_that("dv_parse_lineage reads positional strings with NCBI tax IDs", {
++  y <- data.frame(lin = c(
++    "Eukaryota_2759;Arthropoda_6656;Hexanauplia_72037;Calanoida_6833;Calanidae_6834;Calanus_6836;Calanus_finmarchicus_6837",
++    "Animalia;Chordata;Actinopteri;Gadiformes;Gadidae;Gadus;Gadus sp."))
++  out <- dv_parse_lineage(y, "lin", ranks = c("domain", "phylum", "class", "order",
++                                              "family", "genus", "species"))
++  expect_equal(out$domain[1], "Eukaryota")
++  expect_equal(out$species, c("Calanus finmarchicus", NA))
++  expect_equal(out$prey_name, c("Calanus finmarchicus", "Gadus"))
++  expect_error(dv_parse_lineage(y, "nope"), "not in `data`")
++})
++
++test_that("dv_from_wide pivots ASV tables, joins metadata and collapses", {
++  asv <- data.frame(asv = c("a1", "a2", "a3"), tax = c("t1", "t1", "t2"),
++                    S1 = c(120, 30, 0), S2 = c(0, NA, 400), stringsAsFactors = FALSE)
++  meta <- data.frame(sample = c("S1", "S2"), predator = "seal", season = c("w", "s"))
++  long <- dv_from_wide(asv, id_cols = c("asv", "tax"), meta = meta)
++  expect_equal(nrow(long), 3)                       # zeros and NA dropped
++  expect_equal(long$reads, c(120, 30, 400))
++  expect_equal(long$season, c("w", "w", "s"))
++  col <- dv_from_wide(asv, id_cols = c("asv", "tax"), collapse_by = "tax")
++  expect_equal(col$reads[col$sample == "S1"], 150)
++  expect_false("asv" %in% names(col))
++  expect_warning(dv_from_wide(asv, id_cols = c("asv", "tax"), meta = meta[1, ]),
++                 "no row in `meta`")
++  expect_error(dv_from_wide(asv, id_cols = "asv"), "not counts")
++})
++
++test_that("dv_from_wide reads samples in rows", {
++  w <- data.frame(sample = c("S1", "S2"), predator = "cod",
++                  `Calanus finmarchicus` = c(3, 0), Euphausiacea = c(1, 2),
++                  check.names = FALSE)
++  long <- dv_from_wide(w, taxa_in = "columns", id_cols = c("sample", "predator"),
++                       value_col = "n")
++  expect_equal(long$prey_name, c("Calanus finmarchicus", "Euphausiacea", "Euphausiacea"))
++  expect_equal(long$n, c(3, 1, 2))
++  expect_error(dv_from_wide(w, taxa_in = "columns", id_cols = "predator"),
++               "must be one of `id_cols`")
++})
++
++test_that("weight_type = 'rra' gives the mean relative read abundance", {
++  d <- data.frame(pred = "seal", sample = c("S1", "S2", "S3", "S3"),
++                  prey = c("A", "B", "A", "B"), reads = c(150, 400, 10, 30),
++                  phylum = c("Chordata", "Arthropoda", "Chordata", "Arthropoda"))
++  spec <- dv_spec(predator = "pred", stomach = "sample", prey_name = "prey",
++                  weight = "reads", weight_type = "rra", ranks = "phylum")
++  prep <- dv_prepare(d, spec, taxonomy = "columns", verbose = FALSE)
++  expect_equal(prep$spec$weight, "rra")
++  expect_equal(prep$spec$weight_raw, "reads")
++  expect_true("reads" %in% names(prep$data))
++  tr <- dv_tree(prep)
++  expect_equal(attr(tr, "weight_type"), "rra")
++  # (0 + 1 + 0.75) / 3 samples
++  expect_equal(tr$pct_w[tr$label == "Arthropoda"], 100 * 1.75 / 3)
++  hov <- .dv_sb_prep(tr, "weight")$tree$hovertext
++  expect_match(hov[1], "Mean RRA at this rank")
++  # pooled reads instead: 430 / 590
++  spec2 <- dv_spec(predator = "pred", stomach = "sample", prey_name = "prey",
++                   weight = "reads", weight_type = "reads", ranks = "phylum")
++  tr2 <- dv_tree(dv_prepare(d, spec2, taxonomy = "columns", verbose = FALSE))
++  expect_equal(tr2$pct_w[tr2$label == "Arthropoda"], 100 * 430 / 590)
++  expect_match(.dv_sb_prep(tr2, "weight")$tree$hovertext[1], "Read share")
++  expect_error(dv_spec(predator = "p", stomach = "s", prey_name = "n",
++                       weight_type = "rra"), "needs the `weight` column")
++})
++
++test_that("samples without reads are reported", {
++  d <- data.frame(pred = "seal", sample = c("S1", "S2"), prey = "A",
++                  reads = c(5, 0), phylum = "Chordata")
++  spec <- dv_spec(predator = "pred", stomach = "sample", prey_name = "prey",
++                  weight = "reads", weight_type = "rra", ranks = "phylum")
++  expect_warning(dv_prepare(d, spec, taxonomy = "columns", verbose = FALSE),
++                 "have no reads")
++})
++
++test_that("the default weight type keeps the mass labels", {
++  d <- data.frame(pred = "cod", st = "s1", prey = "A", w = 2, phylum = "Chordata")
++  spec <- dv_spec(predator = "pred", stomach = "st", prey_name = "prey", weight = "w",
++                  ranks = "phylum")
++  expect_equal(spec$weight_type, "mass")
++  tr <- dv_tree(dv_prepare(d, spec, taxonomy = "columns", verbose = FALSE))
++  expect_match(.dv_sb_prep(tr, "weight")$tree$hovertext[1], "Weight share")
++})
+diff --git a/tests/testthat/test-taxonomy-gbif.R b/tests/testthat/test-taxonomy-gbif.R
+new file mode 100644
+index 0000000..45094b1
+--- /dev/null
++++ b/tests/testthat/test-taxonomy-gbif.R
+@@ -0,0 +1,166 @@
++# Offline GBIF: .dv_gbif_get() is replaced by a lookup in canned answers that
++# copy the shape of the GBIF v1 API (species/{key} and species/match).
++
++gbif_answers <- list(
++  "species/2222204" = list(key = 2222204L, nubKey = 2222204L,
++    datasetKey = "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c",
++    canonicalName = "Crangon vulgaris", rank = "SPECIES", acceptedKey = 2222188L,
++    kingdom = "Animalia", phylum = "Arthropoda", class = "Malacostraca",
++    order = "Decapoda", family = "Crangonidae", genus = "Crangon",
++    species = "Crangon crangon"),
++  "species/8084280" = list(key = 8084280L, nubKey = 8084280L,
++    datasetKey = "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c",
++    canonicalName = "Gadus morhua", rank = "SPECIES",
++    kingdom = "Animalia", phylum = "Chordata", order = "Gadiformes",
++    family = "Gadidae", genus = "Gadus", species = "Gadus morhua"),
++  "name=Gadus%20morua" = list(usageKey = 8084280L, canonicalName = "Gadus morhua",
++    rank = "SPECIES", status = "ACCEPTED", confidence = 96L, matchType = "FUZZY",
++    kingdom = "Animalia", phylum = "Chordata", order = "Gadiformes",
++    family = "Gadidae", genus = "Gadus", species = "Gadus morhua"),
++  "name=Gadus%20morhua" = list(usageKey = 8084280L, canonicalName = "Gadus morhua",
++    rank = "SPECIES", status = "ACCEPTED", confidence = 99L, matchType = "EXACT",
++    kingdom = "Animalia", phylum = "Chordata", order = "Gadiformes",
++    family = "Gadidae", genus = "Gadus", species = "Gadus morhua"),
++  "name=Crangon%20vulgaris" = list(usageKey = 2222204L, acceptedUsageKey = 2222188L,
++    canonicalName = "Crangon vulgaris", rank = "SPECIES", status = "SYNONYM",
++    confidence = 98L, matchType = "EXACT", kingdom = "Animalia",
++    phylum = "Arthropoda", class = "Malacostraca", order = "Decapoda",
++    family = "Crangonidae", genus = "Crangon", species = "Crangon crangon"),
++  "name=Pandalus%20xenus" = list(usageKey = 2222352L, canonicalName = "Pandalus",
++    rank = "GENUS", status = "ACCEPTED", confidence = 80L, matchType = "HIGHERRANK",
++    kingdom = "Animalia", phylum = "Arthropoda", class = "Malacostraca",
++    order = "Decapoda", family = "Pandalidae", genus = "Pandalus"),
++  "name=Zzzz%20qqq" = list(confidence = 100L, matchType = "NONE"),
++  "name=Isopoda" = list(usageKey = 54L, canonicalName = "Arthropoda", rank = "PHYLUM",
++    status = "ACCEPTED", confidence = 92L, matchType = "HIGHERRANK",
++    kingdom = "Animalia", phylum = "Arthropoda",
++    alternatives = list(
++      list(usageKey = 643L, canonicalName = "Isopoda", rank = "ORDER",
++           status = "ACCEPTED", matchType = "EXACT", confidence = 92L,
++           kingdom = "Animalia", phylum = "Arthropoda", class = "Malacostraca",
++           order = "Isopoda"),
++      list(usageKey = 3253116L, canonicalName = "Isopoda", rank = "GENUS",
++           status = "SYNONYM", matchType = "EXACT", confidence = 92L,
++           kingdom = "Animalia", phylum = "Arthropoda", class = "Arachnida"))),
++  "name=Polychaeta" = list(usageKey = 1L, canonicalName = "Animalia", rank = "KINGDOM",
++    status = "ACCEPTED", confidence = 92L, matchType = "HIGHERRANK",
++    kingdom = "Animalia",
++    alternatives = list(
++      list(usageKey = 256L, canonicalName = "Polychaeta", rank = "CLASS",
++           status = "ACCEPTED", matchType = "EXACT", kingdom = "Animalia",
++           phylum = "Annelida", class = "Polychaeta"),
++      list(usageKey = 1464857L, canonicalName = "Polychaeta", rank = "GENUS",
++           status = "ACCEPTED", matchType = "EXACT", kingdom = "Animalia",
++           phylum = "Arthropoda", class = "Insecta", genus = "Polychaeta"))),
++  "name=Twin" = list(confidence = 100L, matchType = "NONE",
++                     note = "Multiple equal matches for Twin")
++)
++
++local_gbif <- function(answers = gbif_answers, fail = character(0),
++                       calls = NULL, .env = parent.frame()) {
++  testthat::local_mocked_bindings(
++    .dv_gbif_get = function(u) {
++      if (!is.null(calls)) calls$n <- calls$n + 1L
++      key <- sub("^.*/v1/", "", u)
++      key <- sub("^species/match\\?", "", key)
++      key <- sub("&.*$", "", key)
++      if (key %in% fail) stop("cannot open URL: HTTP status was '503 Service Unavailable'")
++      a <- answers[[key]]
++      if (is.null(a)) stop("cannot open URL: HTTP status was '404 Not Found'")
++      a
++    },
++    .dv_sleep = function(seconds) invisible(NULL),
++    .package = "DietView", .env = .env)
++}
++
++test_that("GBIF resolves keys, synonyms, exact, fuzzy, higher-rank and no match", {
++  local_gbif()
++  keys <- data.frame(
++    prey_id   = c(NA, NA, NA, NA, 2222204, 99999999, NA),
++    prey_name = c("Gadus morua", "Crangon vulgaris", "Pandalus xenus", "Zzzz qqq",
++                  "Crangon vulgaris", "Gadus morhua", NA),
++    stringsAsFactors = FALSE)
++  out <- dv_taxonomy_gbif(keys, cache_dir = NULL, verbose = FALSE)
++  expect_equal(out$match_type, c("fuzzy", "exact", "higherrank", "unresolved",
++                                 "id_synonym", "id_fallback_name", "unresolved"))
++  expect_equal(out$gbif_key, c(8084280L, 2222188L, 2222352L, NA, 2222188L, 8084280L, NA))
++  # synonyms get the accepted classification and name
++  expect_equal(out$species[c(2, 5)], c("Crangon crangon", "Crangon crangon"))
++  expect_equal(out$matched_name[2], "Crangon crangon")
++  expect_equal(out$name_check[5], "agrees")
++  # a higher-rank match stops at that rank
++  expect_equal(out$genus[3], "Pandalus")
++  expect_true(is.na(out$species[3]))
++  expect_true(out$low_confidence[3])
++  # no class in the GBIF Backbone for gadids
++  expect_true(is.na(out$class[1]))
++  expect_true(all(is.na(unlist(out[4, c("kingdom", "species")]))))
++})
++
++test_that("strict matching turns fuzzy hits into unresolved", {
++  local_gbif()
++  out <- dv_taxonomy_gbif(data.frame(prey_name = "Gadus morua"), cache_dir = NULL,
++                          fuzzy = FALSE, verbose = FALSE)
++  expect_equal(out$match_type, "unresolved")
++})
++
++test_that("GBIF homonyms are flagged and failures are reported, not cached", {
++  local_gbif(fail = "name=Gadus%20morhua")
++  dir <- withr::local_tempdir()
++  expect_warning(
++    out <- dv_taxonomy_gbif(data.frame(prey_name = c("Twin", "Gadus morhua")),
++                            cache_dir = dir, verbose = FALSE),
++    "could not be looked up in GBIF")
++  expect_true(out$homonym[1])
++  expect_equal(out$match_type, c("unresolved", "unresolved"))
++  expect_false(out$lineage_ok[2])
++  cache <- readRDS(file.path(dir, "gbif_lineage.rds"))
++  expect_false(any(grepl("gadus morhua", names(cache))))
++})
++
++test_that("successful GBIF lookups are served from the cache", {
++  calls <- new.env(); calls$n <- 0L
++  local_gbif(calls = calls)
++  dir <- withr::local_tempdir()
++  k <- data.frame(prey_name = c("Gadus morhua", "Crangon vulgaris"))
++  a <- dv_taxonomy_gbif(k, cache_dir = dir, verbose = FALSE)
++  n1 <- calls$n
++  b <- dv_taxonomy_gbif(k, cache_dir = dir, verbose = FALSE)
++  expect_equal(calls$n, n1)
++  expect_equal(a$species, b$species)
++  expect_true(dv_cache_clear(dir, source = "gbif"))
++  expect_false(dir.exists(dir))
++})
++
++test_that("dv_prepare(taxonomy = 'gbif') builds the log, the report and gap labels", {
++  local_gbif()
++  d <- data.frame(pred = "cod", st = c("s1", "s1", "s2", "s3"),
++                  prey = c("Gadus morhua", "Crangon vulgaris", "Pandalus xenus", "Zzzz qqq"),
++                  w = c(10, 2, 1, 0.5), stringsAsFactors = FALSE)
++  spec <- dv_spec(predator = "pred", stomach = "st", prey_name = "prey", weight = "w")
++  prep <- dv_prepare(d, spec, taxonomy = "gbif", cache_dir = NULL, verbose = FALSE)
++  expect_equal(prep$taxonomy_source, "gbif")
++  expect_equal(attr(prep$taxonomy_log, "source"), "GBIF Backbone")
++  expect_true(all(c("gbif_key", "confidence", "low_confidence") %in% names(prep$taxonomy_log)))
++  expect_false("aphia_used" %in% names(prep$taxonomy_log))
++  # the class gap of gadids is labelled, not left unidentified
++  expect_equal(prep$data$class[1], "Chordata (no class)")
++  rev <- dv_taxonomy_report(prep)
++  expect_setequal(rev$prey_name, c("Pandalus xenus", "Zzzz qqq"))
++  tree <- dv_tree(prep)
++  expect_equal(sum(tree$pct_occ[tree$rank == "Species"]), 100)
++  expect_match(paste(unclass(dv_script(prep)), collapse = "\n"), "GBIF Backbone")
++})
++
++test_that("one exact accepted alternative is taken; several are a homonym", {
++  local_gbif()
++  out <- dv_taxonomy_gbif(data.frame(prey_name = c("Isopoda", "Polychaeta")),
++                          cache_dir = NULL, verbose = FALSE)
++  expect_equal(out$match_type, c("exact", "unresolved"))
++  expect_equal(out$order[1], "Isopoda")
++  expect_equal(out$class[1], "Malacostraca")
++  expect_false(out$homonym[1])
++  expect_true(out$homonym[2])
++  expect_equal(out$n_candidates, c(2L, 2L))
++  expect_true(is.na(out$kingdom[2]))        # a kingdom alone is no match
++})
+diff --git a/vignettes/articles/other-data.Rmd b/vignettes/articles/other-data.Rmd
+new file mode 100644
+index 0000000..24709b3
+--- /dev/null
++++ b/vignettes/articles/other-data.Rmd
+@@ -0,0 +1,169 @@
++---
++title: "Beyond stomachs: DNA metabarcoding, scats and other compositional data"
++output: rmarkdown::html_vignette
++vignette: >
++  %\VignetteIndexEntry{Beyond stomachs: DNA metabarcoding, scats and other compositional data}
++  %\VignetteEngine{knitr::rmarkdown}
++  %\VignetteEncoding{UTF-8}
++---
++
++```{r, include = FALSE}
++knitr::opts_chunk$set(collapse = TRUE, comment = "#>", warning = FALSE, message = FALSE)
++```
++
++DietView was written for stomach contents, but what it needs is more general:
++a taxon name with a quantity, inside a sampling unit, with covariates. The
++same structure describes diet from DNA metabarcoding of scats or gut contents,
++pellets and regurgitates, catch composition from a survey haul, or a benthic
++grab. This article shows the three pieces that bring such data in:
++
++* `dv_from_wide()` reshapes a wide sample-by-taxon table into the long format;
++* `dv_parse_lineage()` splits the lineage strings that pipelines report into
++  rank columns;
++* `dv_spec(weight_type = )` says what the quantity is, so sequence reads are
++  summarized as relative read abundance rather than as a mass.
++
++For prey outside the marine realm, `dv_prepare(taxonomy = "gbif")` resolves
++names against the GBIF Backbone Taxonomy with the same rules and the same
++review log as WoRMS.
++
++```{r setup}
++library(DietView)
++```
++
++## 1. A metabarcoding table
++
++A typical output of a metabarcoding pipeline is one row per ASV, a taxonomy
++string, and one column of read counts per sample. Here are six ASVs from four
++seal scats (made-up numbers):
++
++```{r asv}
++asv <- data.frame(
++  asv = paste0("ASV", 1:6),
++  taxonomy = c(
++    "k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__Gadus;s__morhua",
++    "k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__Gadus;s__morhua",
++    "k__Animalia;p__Chordata;c__Actinopteri;o__Clupeiformes;f__Clupeidae;g__Clupea;s__harengus",
++    "k__Animalia;p__Chordata;c__Actinopteri;o__Pleuronectiformes;f__;g__;s__",
++    "k__Animalia;p__Mollusca;c__Cephalopoda;o__Myopsida;f__Loliginidae;g__Loligo;s__Loligo sp.",
++    "Unassigned"),
++  scat1 = c(5200, 800, 0, 300, 0, 40),
++  scat2 = c(0, 0, 6100, 0, 900, 0),
++  scat3 = c(1500, 0, 1500, 0, 0, 10),
++  scat4 = c(0, 0, 0, 2500, 2500, 0))
++meta <- data.frame(sample = paste0("scat", 1:4), predator = "grey seal",
++                   season = c("winter", "winter", "summer", "summer"))
++```
++
++### Reshape and parse
++
++`dv_from_wide()` turns it into one row per ASV in a sample, drops the zeros and
++joins the sample metadata. ASV1 and ASV2 carry the same taxonomy;
++`collapse_by = "taxonomy"` sums them, so that a taxon counts once per sample in
++the shares of records and in %FO:
++
++```{r long}
++long <- dv_from_wide(asv, id_cols = c("asv", "taxonomy"), meta = meta,
++                     collapse_by = "taxonomy")
++long <- dv_parse_lineage(long, "taxonomy")
++long[, c("sample", "reads", "order", "genus", "species", "prey_name")]
++```
++
++The empty fields (`f__`), the placeholder `Unassigned` and `Loligo sp.` become
++`NA`: these records stay in the tree, as the explicit unidentified category
++below the deepest rank they reached, exactly as a stomach item identified only
++to order.
++
++### Reads are not biomass
++
++Sequence reads measure DNA, not prey mass: digestion, tissue type and primer
++bias all distort the link (Deagle et al. 2019). DietView therefore never
++labels reads as weight. Two summaries are offered:
++
++* `weight_type = "reads"`: the share of all reads (pooled), which lets the
++  samples with most reads dominate;
++* `weight_type = "rra"`: the relative read abundance. The reads of each sample
++  are divided by its total before summing, so every sample weighs the same and
++  the share at a rank is the mean RRA over samples.
++
++The shares of prey records stay available and, with one record per taxon and
++sample, are the occurrence-based view; `dv_fo_table()` gives the classical
++frequency of occurrence over samples.
++
++```{r prep}
++spec <- dv_spec(predator = "predator", stomach = "sample",
++                prey_name = "prey_name", weight = "reads",
++                weight_type = "rra", covariates = "season")
++prep <- dv_prepare(long, spec, taxonomy = "columns", verbose = FALSE)
++tree <- dv_tree(prep)
++dv_rank_table(tree, "Order")
++dv_fo_table(prep, rank = "order")
++```
++
++`pct_w` is the mean RRA. Each figure and dashboard labels it as such:
++
++```{r sunburst, eval = FALSE}
++dv_sunburst(tree, mode = "weight", title = "Grey seal scats (RRA)")
++dv_build_html(prep, output = "seal_scats.html", cross = list("season"))
++```
++
++## 2. Which taxonomy?
++
++Three routes, by what the data already carry:
++
++| The data carry | Use | Why |
++|---|---|---|
++| A lineage string from the assignment step | `dv_parse_lineage()` then `taxonomy = "columns"` | Keeps the reference taxonomy the sequences were assigned with (NCBI, SILVA, BOLD), and needs no network. |
++| Prey names, marine prey | `taxonomy = "worms"` | WoRMS is the authority for marine taxa. |
++| Prey names, terrestrial or freshwater prey | `taxonomy = "gbif"` | The GBIF Backbone covers all kingdoms. |
++
++The names produced by `dv_parse_lineage()` can also be sent to WoRMS or GBIF,
++to harmonize a metabarcoding data set with stomach data classified there:
++
++```{r gbif, eval = FALSE}
++prep_gbif <- dv_prepare(long, spec, taxonomy = "gbif", kingdom = "Animalia")
++dv_taxonomy_report(prep_gbif)
++```
++
++GBIF matches are logged like WoRMS matches, with two extra review flags:
++`"higherrank"` (the name is unknown to GBIF, but a coarser taxon in it is
++known, so the lineage stops there) and `low_confidence`. The GBIF Backbone has
++no class for some groups (ray-finned fishes sit directly under Chordata); the
++default `gaps = "label"` fills that rank as `"Chordata (no class)"` rather
++than counting the records as unidentified.
++
++## 3. Other compositional data
++
++Catch composition, plankton or benthos tables often come with samples in rows
++and taxa in columns. `taxa_in = "columns"` reads that layout:
++
++```{r catch}
++haul <- data.frame(haul = c("H1", "H2"), stratum = c("401", "402"),
++                   `Gadus morhua` = c(12.4, 0), `Clupea harengus` = c(30.1, 55.0),
++                   check.names = FALSE)
++catch <- dv_from_wide(haul, taxa_in = "columns", id_cols = c("haul", "stratum"),
++                      sample_col = "haul", value_col = "kg")
++catch
++```
++
++Then declare the haul as the sampling unit, the stratum as the "predator" (or
++as a covariate, with a constant predator column), and the weight in kg as a
++mass. Everything downstream (sunbursts, covariate strata, the dashboard)
++works unchanged.
++
++## 4. What does not fit
++
++Stable isotopes and fatty acids do not identify prey: mixing models
++(MixSIAR, simmr, QFASA) estimate the contributions of a few source groups
++chosen by the analyst, with posterior uncertainty. A sunburst of posterior
++means would hide that uncertainty and the shallow, often functional, grouping
++of the sources. DietView is not meant for those outputs; it can, however, hold
++the stomach or DNA data from the same predators on one taxonomic backbone, the
++reference against which isotope-based diets are often compared.
++
++## References
++
++Deagle, B. E., Thomas, A. C., McInnes, J. C., Clarke, L. J., Vesterinen,
++E. J., Clare, E. L., Kartzinel, T. R., & Eveson, J. P. (2019). Counting with
++DNA in metabarcoding studies: How should we convert sequence reads to dietary
++data? *Molecular Ecology*, 28(2), 391-406.

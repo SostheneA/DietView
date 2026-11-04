@@ -10,8 +10,12 @@ Description: Builds interactive, hierarchical views of predator diet from a
     long table of stomach-content records, one row per prey record. Prey are
     placed in a taxonomic hierarchy either by querying the World Register of
     Marine Species ('WoRMS'; WoRMS Editorial Board <doi:10.14284/170>)
-    through 'worrms', with a per-prey log of how each name was matched, or by
-    joining a lineage table supplied by the user. Records identified only to a
+    through 'worrms', or the GBIF Backbone Taxonomy for terrestrial and
+    freshwater prey, with a per-prey log of how each name was matched, or by
+    joining a lineage table supplied by the user. Wide sample-by-taxon tables
+    and lineage strings from DNA metabarcoding pipelines can be reshaped into
+    the same format, with sequence reads summarized as relative read
+    abundance. Records identified only to a
     coarse rank are kept and shown as an explicit unidentified category below
     that rank, so every ring of the resulting sunburst accounts for all the
     material examined. Diet is summarized as shares of prey records, numbers
@@ -52,4 +56,4 @@ LazyData: true
 Language: en-US
 Roxygen: list(markdown = TRUE)
 NeedsCompilation: no
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1

@@ -48,6 +48,8 @@ navbar:
         href: articles/known-diet.html
       - text: Resolving prey taxonomy with WoRMS
         href: articles/taxonomy-worms.html
+      - text: "Beyond stomachs: DNA metabarcoding, scats and other compositional data"
+        href: articles/other-data.html
       - text: Exploring and aggregating diet data
         href: articles/exploration.html
       - text: "-------"
@@ -89,14 +91,24 @@ reference:
   - dv_spec
   - dv_validate
 
+- title: 1b · Bring other data shapes
+  desc: >
+    Reshape wide sample-by-taxon tables (ASV/OTU tables, catch compositions)
+    into the long format, and split pipeline lineage strings into rank columns.
+  contents:
+  - dv_from_wide
+  - dv_parse_lineage
+
 - title: 2 · Attach taxonomy
   desc: >
-    Resolve prey to the WoRMS classification (or join your own lineage table),
+    Resolve prey to the WoRMS classification (marine), the GBIF Backbone
+    (all kingdoms), or join your own lineage table,
     keeping unresolved prey as an explicit unidentified category and logging
     every match for review.
   contents:
   - dv_prepare
   - dv_taxonomy_worms
+  - dv_taxonomy_gbif
   - dv_taxonomy_report
   - dv_lineage_check
   - dv_cache_clear

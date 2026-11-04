@@ -11,7 +11,10 @@ dv_taxonomy_report(
 )
 }
 \arguments{
-\item{prep}{A \code{dietview_prep} produced with \code{taxonomy = "worms"}.}
+\item{prep}{A \code{dietview_prep} produced with \code{taxonomy = "worms"} or
+\code{"gbif"}. For GBIF, matches at a coarser rank than the name
+(\code{"higherrank"}) and matches below the confidence threshold
+(\code{low_confidence}) are also listed for review.}
 
 \item{which}{Which rows to return: "review" (every doubtful row listed above,
 the default), "fuzzy", "unresolved", or "all".}

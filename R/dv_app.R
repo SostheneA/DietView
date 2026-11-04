@@ -103,7 +103,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
         shiny::radioButtons("mode", "Size wedges by",
                             stats::setNames(c("occurrence", "weight", "count"),
                                             c(rec_lab,
-                                              "Weight (% of total weight)",
+                                              .dv_wlabels(spec$weight_type)$mode,
                                               "Number of distinct prey items"))),
         shiny::selectInput("resolution", "Reporting resolution", choices = res_choices),
         shiny::conditionalPanel(
@@ -194,7 +194,8 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
       dv_palette_tree(dv_build_tree(prep_res()$data, ranks = ranks))
     })
     tree <- shiny::reactive(
-      dv_build_tree(recs(), ranks = ranks, weight_col = spec$weight, count_col = ccol)
+      dv_build_tree(recs(), ranks = ranks, weight_col = spec$weight, count_col = ccol,
+                    weight_type = spec$weight_type %||% "mass")
     )
     facets <- shiny::reactive({
       if (identical(input$facet, "(none)")) return(NULL)
@@ -219,6 +220,7 @@ run_dietview <- function(prep, currency = c("records", "numbers"),
         .dv_sunburst_facets(
           recs(), ranks = ranks,
           weight_col = spec$weight, count_col = ccol,
+          weight_type = spec$weight_type %||% "mass",
           facet_col = fc, mode = input$mode, colors = colors(), na_strata = na_strata,
           stomach_col = spec$stomach, min_stomachs = min_stomachs,
           title = paste0(input$predator, " - ",

@@ -384,14 +384,16 @@ dv_taxonomy_worms <- function(keys,
   invisible(isTRUE(ok))
 }
 
-#' Delete the WoRMS lookup cache
+#' Delete the WoRMS and GBIF lookup caches
 #'
-#' [dv_prepare()] and [dv_taxonomy_worms()] keep successful WoRMS lookups in a
-#' cache file, by default in `tools::R_user_dir("DietView", "cache")`. Expired
+#' [dv_prepare()], [dv_taxonomy_worms()] and [dv_taxonomy_gbif()] keep
+#' successful lookups in cache files (one per source), by default in `tools::R_user_dir("DietView", "cache")`. Expired
 #' entries are removed automatically; this function deletes the whole cache,
 #' and the cache directory too if nothing else is left in it.
 #'
 #' @param cache_dir The cache directory, as given to [dv_prepare()].
+#' @param source Which cache to delete: `"all"` (default), `"worms"` or
+#'   `"gbif"`.
 #' @return `TRUE` if a cache file was deleted, `FALSE` otherwise, invisibly.
 #' @examples
 #' # a cache in a temporary folder, so the example leaves nothing behind
@@ -401,10 +403,14 @@ dv_taxonomy_worms <- function(keys,
 #' dv_cache_clear(dir)
 #' dir.exists(dir)
 #' @export
-dv_cache_clear <- function(cache_dir = tools::R_user_dir("DietView", "cache")) {
-  f <- file.path(cache_dir, .DV_CACHE_FILE)
-  had <- file.exists(f)
-  if (had) unlink(f)
+dv_cache_clear <- function(cache_dir = tools::R_user_dir("DietView", "cache"),
+                           source = c("all", "worms", "gbif")) {
+  source <- match.arg(source)
+  files <- switch(source, all = c(.DV_CACHE_FILE, .DV_GBIF_CACHE_FILE),
+                  worms = .DV_CACHE_FILE, gbif = .DV_GBIF_CACHE_FILE)
+  f <- file.path(cache_dir, files)
+  had <- any(file.exists(f))
+  unlink(f[file.exists(f)])
   if (dir.exists(cache_dir) &&
       !length(list.files(cache_dir, all.files = TRUE, no.. = TRUE)))
     unlink(cache_dir, recursive = TRUE)
@@ -490,8 +496,9 @@ dv_cache_clear <- function(cache_dir = tools::R_user_dir("DietView", "cache")) {
 # human eye. Columns missing from the log count as "no problem".
 .dv_review_rows <- function(log) {
   col <- function(nm) if (is.null(log[[nm]])) rep(NA, nrow(log)) else log[[nm]]
-  keep <- col("match_type") %in% c("fuzzy", "unresolved", "id_synonym", "id_unchecked",
-                                    "id_fallback_name") |
+  keep <- col("match_type") %in% c("fuzzy", "higherrank", "unresolved", "id_synonym",
+                                    "id_unchecked", "id_fallback_name") |
+    col("low_confidence") %in% TRUE |
     col("name_check") %in% "differs" |
     col("lineage_ok") %in% FALSE |
     col("homonym") %in% TRUE
@@ -513,7 +520,10 @@ dv_cache_clear <- function(cache_dir = tools::R_user_dir("DietView", "cache")) {
 #' enrichment, then correct anything wrong by supplying a lineage table
 #' (`dv_prepare(taxonomy = "table")`) or fixing the source names.
 #'
-#' @param prep A `dietview_prep` produced with `taxonomy = "worms"`.
+#' @param prep A `dietview_prep` produced with `taxonomy = "worms"` or
+#'   `"gbif"`. For GBIF, matches at a coarser rank than the name
+#'   (`"higherrank"`) and matches below the confidence threshold
+#'   (`low_confidence`) are also listed for review.
 #' @param which Which rows to return: "review" (every doubtful row listed above,
 #'   the default), "fuzzy", "unresolved", or "all".
 #' @param file Optional CSV path to write the report to.
@@ -550,7 +560,8 @@ dv_taxonomy_report <- function(prep,
   stopifnot(inherits(prep, "dietview_prep"))
   log <- prep$taxonomy_log
   if (is.null(log)) {
-    stop("No taxonomy log: this object was not prepared with taxonomy = 'worms'.",
+    stop("No taxonomy log: this object was not prepared with taxonomy = 'worms' ",
+         "or 'gbif'.",
          call. = FALSE)
   }
   out <- switch(which,
