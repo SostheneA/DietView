@@ -2,19 +2,25 @@
 % Please edit documentation in R/dv_taxonomy.R
 \name{dv_cache_clear}
 \alias{dv_cache_clear}
-\title{Delete the WoRMS lookup cache}
+\title{Delete the WoRMS and GBIF lookup caches}
 \usage{
-dv_cache_clear(cache_dir = tools::R_user_dir("DietView", "cache"))
+dv_cache_clear(
+  cache_dir = tools::R_user_dir("DietView", "cache"),
+  source = c("all", "worms", "gbif")
+)
 }
 \arguments{
 \item{cache_dir}{The cache directory, as given to \code{\link[=dv_prepare]{dv_prepare()}}.}
+
+\item{source}{Which cache to delete: \code{"all"} (default), \code{"worms"} or
+\code{"gbif"}.}
 }
 \value{
 \code{TRUE} if a cache file was deleted, \code{FALSE} otherwise, invisibly.
 }
 \description{
-\code{\link[=dv_prepare]{dv_prepare()}} and \code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}} keep successful WoRMS lookups in a
-cache file, by default in \code{tools::R_user_dir("DietView", "cache")}. Expired
+\code{\link[=dv_prepare]{dv_prepare()}}, \code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}} and \code{\link[=dv_taxonomy_gbif]{dv_taxonomy_gbif()}} keep
+successful lookups in cache files (one per source), by default in \code{tools::R_user_dir("DietView", "cache")}. Expired
 entries are removed automatically; this function deletes the whole cache,
 and the cache directory too if nothing else is left in it.
 }

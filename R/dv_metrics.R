@@ -35,9 +35,12 @@
 #' @param weight_col Name of the weight column (or `NULL` -> zero weight).
 #' @param count_col Name of a count column (or `NULL`: each record counts once).
 #' @param rank_labels Optional display labels for the ranks.
+#' @param weight_type What `weight_col` measures (`"mass"`, `"reads"` or
+#'   `"rra"`; see [dv_spec()]). It only changes the labels of the weight views
+#'   and is stored as the attribute `weight_type`.
 #' @return A `dietview_tree` data.frame: `id, label, parent, rank, value_item,
-#'   value_occ, value_w, pct_occ, pct_w`, with the attribute `currency`
-#'   (`"records"`, or `"numbers"` when `count_col` is given).
+#'   value_occ, value_w, pct_occ, pct_w`, with the attributes `currency`
+#'   (`"records"`, or `"numbers"` when `count_col` is given) and `weight_type`.
 #' @examples
 #' # the standard set-up: public ICES data, non-food items and nematodes dropped
 #' phylum <- ices_lineage$phylum[match(ices_diet$prey_aphia_id, ices_lineage$prey_aphia_id)]
@@ -60,11 +63,16 @@
 #' @export
 dv_build_tree <- function(df, ranks,
                           weight_col = NULL, count_col = NULL,
-                          rank_labels = NULL) {
+                          rank_labels = NULL, weight_type = "mass") {
+  weight_type <- match.arg(weight_type, c("mass", "reads", "rra"))
   df <- as.data.frame(df)
   if (is.null(rank_labels)) rank_labels <- .dv_titlecase(ranks)
   n <- nrow(df)
-  if (n == 0) return(.dv_empty_tree())
+  if (n == 0) {
+    tree <- .dv_empty_tree()
+    attr(tree, "weight_type") <- weight_type
+    return(tree)
+  }
 
   if (!is.null(count_col) && !count_col %in% names(df))
     stop("The count column `", count_col, "` is not in the data.", call. = FALSE)
@@ -131,6 +139,7 @@ dv_build_tree <- function(df, ranks,
 
   class(tree) <- c("dietview_tree", "data.frame")
   attr(tree, "currency") <- if (is.null(count_col)) "records" else "numbers"
+  attr(tree, "weight_type") <- weight_type
   tree
 }
 
@@ -211,7 +220,8 @@ dv_tree <- function(prep, currency = c("records", "numbers")) {
   stopifnot(inherits(prep, "dietview_prep"))
   currency <- match.arg(currency)
   dv_build_tree(prep$data, prep$ranks, weight_col = prep$spec$weight,
-                count_col = .dv_count_col(prep$spec, prep$data, currency))
+                count_col = .dv_count_col(prep$spec, prep$data, currency),
+                weight_type = prep$spec$weight_type %||% "mass")
 }
 
 # Internal: the count column to use for a currency ("records" -> NULL), with
@@ -229,4 +239,19 @@ dv_tree <- function(prep, currency = c("records", "numbers")) {
             "numbers currency; unidentified material usually has no count, so ",
             "it will not appear in this view.", call. = FALSE)
   cc
+}
+
+# Internal: labels of the weight views for each weight_type.
+.dv_wlabels <- function(type = "mass") {
+  switch(type %||% "mass",
+    reads = list(title = "Reads (% of all reads)", value = "Reads",
+                 share = "Read share at this rank", home = "reads (% of all reads)",
+                 digits = 0L, mode = "Reads (% of all reads)"),
+    rra = list(title = "Relative read abundance (mean RRA over samples)",
+               value = "Summed sample proportions", share = "Mean RRA at this rank",
+               home = "relative read abundance (mean RRA over samples)",
+               digits = 2L, mode = "Relative read abundance (RRA)"),
+    list(title = "Weight (% of total weight)", value = "Weight",
+         share = "Weight share at this rank", home = "weight (% of total weight)",
+         digits = 1L, mode = "Weight (% of total weight)"))
 }

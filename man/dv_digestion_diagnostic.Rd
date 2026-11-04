@@ -46,3 +46,7 @@ prep_cod <- dv_prepare(cod, spec, taxonomy = "table", lineage = ices_lineage,
 # see ?ices_diet
 head(dv_digestion_diagnostic(prep_cod))
 }
+\seealso{
+\code{\link[=dv_resolution]{dv_resolution()}} for the same summary by any grouping, without
+digestion stages.
+}

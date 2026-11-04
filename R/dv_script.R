@@ -81,14 +81,20 @@ dv_script <- function(prep, predator = NULL,
   dq <- function(x) paste(deparse(x, width.cutoff = 500L), collapse = "")
 
   spec_args <- spec[c("predator", "predator_latin", "stomach", "prey_id", "prey_name",
-                      "weight", "count", "digestion", "covariates", "ranks")]
+                      "weight", "count", "digestion", "covariates", "ranks",
+                      "weight_type", "unit_label")]
+  if (identical(spec_args$weight_type, "mass")) spec_args$weight_type <- NULL
+  if (identical(spec_args$unit_label, "stomach")) spec_args$unit_label <- NULL
   spec_args <- spec_args[!vapply(spec_args, function(v) is.null(v) || !length(v), logical(1))]
   spec_lines <- paste0("#   ", names(spec_args), " = ",
                        vapply(spec_args, dq, character(1)))
 
   tax <- prep$taxonomy_source %||% "unknown"
   log <- prep$taxonomy_log
-  tax_note <- if (!is.null(log))
+  tax_note <- if (!is.null(log) && identical(attr(log, "source"), "GBIF Backbone"))
+    sprintf("# Taxonomy: GBIF Backbone Taxonomy, retrieved %s",
+            attr(log, "retrieved") %||% "?")
+  else if (!is.null(log))
     sprintf("# Taxonomy: WoRMS via worrms %s, retrieved %s",
             attr(log, "worrms_version") %||% "?", attr(log, "retrieved") %||% "?")
   else sprintf("# Taxonomy source: %s", tax)

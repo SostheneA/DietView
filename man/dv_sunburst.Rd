@@ -13,7 +13,8 @@ dv_sunburst(
   colors = NULL,
   rotation = 90,
   title = "",
-  subtitle = ""
+  subtitle = "",
+  weight_type = "mass"
 )
 }
 \arguments{
@@ -26,7 +27,8 @@ gaps appear as unidentified (\code{"NA"}) nodes. Build the tree from a
 
 \item{mode}{One of "occurrence" (default), "weight", "count".}
 
-\item{ranks, weight_col, count_col}{Passed to \code{\link[=dv_build_tree]{dv_build_tree()}} if \code{x} is raw.}
+\item{ranks, weight_col, count_col, weight_type}{Passed to \code{\link[=dv_build_tree]{dv_build_tree()}}
+if \code{x} is raw (a tree carries its own \code{weight_type}).}
 
 \item{colors}{Optional named color vector, keyed by node \code{id} (as from
 \code{\link[=dv_palette_tree]{dv_palette_tree()}}) or by taxon label (as from \code{\link[=dv_palette]{dv_palette()}}); ids are

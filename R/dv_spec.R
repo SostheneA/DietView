@@ -24,6 +24,25 @@
 #' @param predator_latin Optional column with the predator Latin name (used to
 #'   look up identification photos when [dv_build_html()] is given a
 #'   `photo_source`).
+#' @param weight_type What the `weight` column measures:
+#'   \itemize{
+#'     \item `"mass"` (default): prey mass; the weight views show %W;
+#'     \item `"reads"`: sequence reads (DNA metabarcoding); the weight views
+#'       show the pooled share of all reads;
+#'     \item `"rra"`: sequence reads, turned into relative read abundance by
+#'       [dv_prepare()]: the reads of each sample (the `stomach` column) are
+#'       divided by the sample total, so every sample weighs the same and the
+#'       weight share at a rank is the mean RRA over samples (Deagle et al.
+#'       2019, Molecular Ecology 28: 391-406). The raw reads are kept and the
+#'       proportions are added as a new column.
+#'   }
+#'   With reads, `stomach` is still the sampling unit (a stomach, a scat, a
+#'   pellet, a sample); `count` and `digestion` are usually absent.
+#' @param unit_label What one `stomach` is, for messages, the dashboard and
+#'   the Shiny app: `"stomach"` (default), `"scat"`, `"sample"`, `"haul"`...
+#'   Give one word, or `c(singular, plural)` when the plural is not formed
+#'   with an "s". Argument and column names (`stomachs =`, `min_stomachs`,
+#'   `n_stomachs`) do not change.
 #'
 #' @return An object of class `dietview_spec`.
 #' @examples
@@ -47,16 +66,26 @@ dv_spec <- function(predator, stomach,
                     covariates = character(0),
                     ranks = c("kingdom", "phylum", "class", "order",
                               "family", "genus", "species"),
-                    predator_latin = NULL) {
+                    predator_latin = NULL,
+                    weight_type = c("mass", "reads", "rra"),
+                    unit_label = "stomach") {
   if (is.null(prey_name) && is.null(prey_id)) {
     stop("Provide at least one of `prey_name` or `prey_id`.", call. = FALSE)
   }
+  weight_type <- match.arg(weight_type)
+  if (!is.character(unit_label) || !length(unit_label) %in% 1:2 ||
+      anyNA(unit_label) || !all(nzchar(unit_label)))
+    stop("`unit_label` must be one word, or c(singular, plural).", call. = FALSE)
+  if (weight_type != "mass" && is.null(weight))
+    stop("weight_type = '", weight_type, "' needs the `weight` column (the reads).",
+         call. = FALSE)
   structure(
     list(predator = predator, stomach = stomach,
          prey_name = prey_name, prey_id = prey_id,
          weight = weight, count = count, digestion = digestion,
          covariates = covariates, ranks = ranks,
-         predator_latin = predator_latin),
+         predator_latin = predator_latin, weight_type = weight_type,
+         unit_label = unit_label),
     class = "dietview_spec"
   )
 }
@@ -168,7 +197,7 @@ dv_validate <- function(data, spec, strict_covariates = TRUE, quiet = FALSE) {
     if (k > 10) warning("The digestion column has ", k, " distinct values; a ",
                         "scoring scale usually has fewer than 10.", call. = FALSE)
   } else if (!quiet) {
-    message("No digestion column: the digestion diagnostic is disabled.")
+    message("No digestion column: the digestion diagnostic is disabled (dv_resolution() still works).")
   }
 
   # stomach IDs must be unique across predators
@@ -187,9 +216,10 @@ dv_validate <- function(data, spec, strict_covariates = TRUE, quiet = FALSE) {
                  n_single_record_stomachs = sum(st == 1),
                  n_missing_weight = n_w_missing, n_no_prey_key = sum(!has_key))
   if (!quiet)
-    message(sprintf("%d records from %d stomachs of %d predator(s); %d stomach(s) hold a single record; %s record(s) lack a weight.",
-                    report$n_records, report$n_stomachs, report$n_predators,
-                    report$n_single_record_stomachs,
+    message(sprintf("%d records from %d %s of %d predator(s); %d %s hold a single record; %s record(s) lack a weight.",
+                    report$n_records, report$n_stomachs, .dv_unit(spec, 2L),
+                    report$n_predators,
+                    report$n_single_record_stomachs, .dv_unit(spec, 2L),
                     if (is.na(n_w_missing)) "n/a" else n_w_missing))
   attr(data, "dv_spec")   <- spec
   attr(data, "dv_report") <- report

@@ -4,15 +4,19 @@
 #' lineage for the declared ranks. The taxonomy can come from:
 #' \itemize{
 #'   \item `"columns"` - the rank columns are already in `data`;
-#'   \item `"worms"`   - fetch the lineage from WoRMS by AphiaID/name;
+#'   \item `"worms"`   - fetch the lineage from WoRMS by AphiaID/name (marine
+#'     prey; see [dv_taxonomy_worms()]);
+#'   \item `"gbif"`    - fetch the lineage from the GBIF Backbone Taxonomy by
+#'     GBIF taxon key/name (all kingdoms, terrestrial and freshwater prey; see
+#'     [dv_taxonomy_gbif()]);
 #'   \item `"table"`   - join a lineage table you supply via `lineage`;
 #'   \item `"auto"`    - use columns if present, else `lineage` if given, else WoRMS.
 #' }
 #' Ranks that cannot be resolved are kept as `NA` and later shown as an explicit
 #' unidentified category below the deepest identified rank -- never dropped.
 #'
-#' With `taxonomy = "worms"`, each record is keyed by its AphiaID when it has
-#' one and by its own prey name otherwise, so records without an AphiaID never
+#' With `taxonomy = "worms"` or `"gbif"`, each record is keyed by its AphiaID
+#' (or GBIF taxon key) when it has one and by its own prey name otherwise, so records without an AphiaID never
 #' share a lineage by accident. Records with neither key stay fully
 #' unidentified, with a warning.
 #'
@@ -34,13 +38,16 @@
 #'
 #' @param data A data.frame (the long diet table).
 #' @param spec A `dietview_spec` from [dv_spec()].
-#' @param taxonomy One of "auto", "columns", "worms", "table".
+#' @param taxonomy One of "auto", "columns", "worms", "gbif", "table". `"auto"`
+#'   never picks `"gbif"`: ask for it explicitly.
 #' @param lineage For `taxonomy = "table"`: a data.frame with a key column
 #'   (`prey_id` or `prey_name`, matching your spec) plus one column per rank.
-#' @param fuzzy For `taxonomy = "worms"`: when the exact name fails, try WoRMS
+#' @param fuzzy For `taxonomy = "worms"` or `"gbif"`: when the exact name fails, try WoRMS
 #'   TAXAMATCH fuzzy matching (default `TRUE`). Fuzzy hits are flagged, never
 #'   silent - review them with [dv_taxonomy_report()].
-#' @param cache_dir Cache directory for the WoRMS path. `NULL` disables caching.
+#' @param kingdom For `taxonomy = "gbif"`: an optional kingdom hint, e.g.
+#'   `"Animalia"`. See [dv_taxonomy_gbif()].
+#' @param cache_dir Cache directory for the WoRMS and GBIF paths. `NULL` disables caching.
 #' @param cache_max_age For the WoRMS path: cached lookups older than this many
 #'   days are fetched again (default 180). See [dv_taxonomy_worms()].
 #' @param strict_covariates Passed to [dv_validate()]: if `TRUE` (default) a
@@ -75,9 +82,11 @@
 #' @param verbose Print progress and the validation summary.
 #' @return An object of class `dietview_prep`: a list with `data`, `spec` (minus
 #'   any dropped covariates), `ranks`, `taxonomy_source` (the taxonomy path
-#'   actually used) and `taxonomy_log`. When `taxonomy = "worms"`,
+#'   actually used) and `taxonomy_log`. When `taxonomy = "worms"` or `"gbif"`,
 #'   `taxonomy_log` is the per-prey provenance table, with the attributes
-#'   `retrieved` (time of the run) and `worrms_version`; otherwise it is `NULL`.
+#'   `retrieved` (time of the run), `source` (`"WoRMS"` or `"GBIF Backbone"`)
+#'   and, for WoRMS, `worrms_version`; otherwise it is `NULL`. Its ID column is
+#'   `aphia_used` for WoRMS and `gbif_key` for GBIF.
 #'   The attribute `lineage_gaps` is a named integer vector: the number of
 #'   records whose rank was filled as a lineage gap, per rank. With `stomachs`,
 #'   the list also holds `stomachs`: the examined stomachs, with their stomach,
@@ -106,9 +115,10 @@
 #' }
 #' @export
 dv_prepare <- function(data, spec,
-                       taxonomy = c("auto", "columns", "worms", "table"),
+                       taxonomy = c("auto", "columns", "worms", "gbif", "table"),
                        lineage = NULL,
                        fuzzy = TRUE,
+                       kingdom = NULL,
                        cache_dir = tools::R_user_dir("DietView", "cache"),
                        cache_max_age = 180,
                        strict_covariates = TRUE,
@@ -168,7 +178,7 @@ dv_prepare <- function(data, spec,
               "); their records are treated as fully unidentified.", call. = FALSE)
     for (r in ranks) data[[r]] <- lineage[[r]][idx]
 
-  } else if (taxonomy == "worms") {
+  } else if (taxonomy %in% c("worms", "gbif")) {
     n <- nrow(data)
     rec_id <- if (!is.null(spec$prey_id) && spec$prey_id %in% names(data))
       suppressWarnings(as.integer(as.character(data[[spec$prey_id]]))) else rep(NA_integer_, n)
@@ -183,9 +193,15 @@ dv_prepare <- function(data, spec,
     keys  <- data.frame(key = rec_key[first], prey_id = rec_id[first],
                         prey_name = rec_nm[first], stringsAsFactors = FALSE)
 
-    keys <- dv_taxonomy_worms(keys, ranks = ranks, cache_dir = cache_dir,
-                              fuzzy = fuzzy, cache_max_age = cache_max_age,
-                              verbose = verbose)
+    keys <- if (taxonomy == "worms")
+      dv_taxonomy_worms(keys, ranks = ranks, cache_dir = cache_dir,
+                        fuzzy = fuzzy, cache_max_age = cache_max_age,
+                        verbose = verbose)
+    else
+      dv_taxonomy_gbif(keys, ranks = ranks, cache_dir = cache_dir,
+                       fuzzy = fuzzy, kingdom = kingdom,
+                       cache_max_age = cache_max_age, verbose = verbose)
+    id_col <- if (taxonomy == "worms") "aphia_used" else "gbif_key"
     idx <- match(rec_key, keys$key)              # records without a key stay NA
     for (r in ranks) data[[r]] <- keys[[r]][idx]
 
@@ -200,7 +216,7 @@ dv_prepare <- function(data, spec,
       match_type   = keys$match_type,
       name_check   = keys$name_check,
       matched_name = keys$matched_name,
-      aphia_used   = keys$aphia_used,
+      used_id      = keys[[id_col]],
       n_candidates = keys$n_candidates,
       homonym      = keys$homonym,
       lineage_ok   = keys$lineage_ok,
@@ -208,12 +224,19 @@ dv_prepare <- function(data, spec,
       n_records    = as.integer(table(key_f)),
       stringsAsFactors = FALSE
     )
+    names(tax_log)[names(tax_log) == "used_id"] <- id_col
+    if (taxonomy == "gbif") {
+      tax_log$confidence     <- keys$confidence
+      tax_log$low_confidence <- keys$low_confidence
+    }
     tax_log <- cbind(tax_log, keys[, ranks, drop = FALSE])
-    attr(tax_log, "retrieved")      <- format(Sys.time(), "%Y-%m-%d %H:%M %Z")
-    attr(tax_log, "worrms_version") <- as.character(utils::packageVersion("worrms"))
+    attr(tax_log, "retrieved") <- format(Sys.time(), "%Y-%m-%d %H:%M %Z")
+    attr(tax_log, "source")    <- if (taxonomy == "worms") "WoRMS" else "GBIF Backbone"
+    if (taxonomy == "worms")
+      attr(tax_log, "worrms_version") <- as.character(utils::packageVersion("worrms"))
 
     n_nokey <- sum(is.na(rec_key))
-    if (n_nokey) warning(n_nokey, " record(s) have neither an AphiaID nor a prey ",
+    if (n_nokey) warning(n_nokey, " record(s) have neither a prey ID nor a prey ",
                          "name; they are kept as fully unidentified.", call. = FALSE)
   }
 
@@ -229,10 +252,17 @@ dv_prepare <- function(data, spec,
     n_gap <- attr(data, "lineage_gaps"); attr(data, "lineage_gaps") <- NULL
     if (verbose && sum(n_gap) > 0) {
       nz <- n_gap[n_gap > 0]
-      message("Filled ", sum(n_gap), " lineage gap(s) (rank absent in WoRMS): ",
+      message("Filled ", sum(n_gap), " lineage gap(s) (rank absent in the taxonomy): ",
               paste0(names(nz), "=", nz, collapse = ", "),
               ". They are shown as '<parent> (no <rank>)', not as unidentified.")
     }
+  }
+
+  if (identical(spec$weight_type, "rra") && !is.null(spec$weight)) {
+    ra <- .dv_add_rra(data, spec)
+    data <- ra$data; spec <- ra$spec
+    if (verbose) message("Reads turned into relative read abundance per sample (column `",
+                         spec$weight, "`).")
   }
 
   out <- list(data = data, spec = spec, ranks = ranks,
@@ -272,15 +302,16 @@ dv_prepare <- function(data, spec,
   data
 }
 
-# Match types written by dv_taxonomy_worms(), in display order.
+# Match types written by dv_taxonomy_worms() and dv_taxonomy_gbif(), in display
+# order ("higherrank" is GBIF only).
 .DV_MATCH_TYPES <- c("id", "id_synonym", "id_unchecked", "id_fallback_name",
-                     "exact", "fuzzy", "unresolved")
+                     "exact", "fuzzy", "higherrank", "unresolved")
 
 #' @export
 print.dietview_prep <- function(x, ...) {
   cat("<dietview_prep>\n")
   cat("  records   :", nrow(x$data), "\n")
-  cat("  stomachs  :", length(unique(x$data[[x$spec$stomach]])), "\n")
+  cat(sprintf("  %-10s:", .dv_unit(x$spec, 2L)), length(unique(x$data[[x$spec$stomach]])), "\n")
   cat("  predators :", length(unique(x$data[[x$spec$predator]])), "\n")
   cat("  ranks     :", paste(x$ranks, collapse = " > "), "\n")
   cat("  covariates:", paste(x$spec$covariates, collapse = ", "), "\n")
@@ -288,7 +319,7 @@ print.dietview_prep <- function(x, ...) {
     cat("  source    :", x$taxonomy_source, "\n")
   st <- .dv_stomach_status(x)
   if (!is.null(st))
-    cat("  examined  :", sum(st$status != "unknown"), "stomachs,",
+    cat("  examined  :", sum(st$status != "unknown"), paste0(.dv_unit(x$spec, 2L), ","),
         sum(st$status == "empty"), "empty",
         if (any(st$status == "unknown")) paste0("(", sum(st$status == "unknown"), " of unknown status)"),
         "\n")
@@ -389,4 +420,25 @@ print.dietview_prep <- function(x, ...) {
   st$status <- ifelse(has, "with_records",
                ifelse(!flagged | st$empty_flag %in% TRUE, "empty", "unknown"))
   st
+}
+
+# Internal: reads -> per-sample proportions (relative read abundance). The new
+# column replaces `weight` in the spec; the raw reads column is kept as
+# `weight_raw`. Samples whose reads sum to 0 contribute nothing, with a warning.
+.dv_add_rra <- function(data, spec) {
+  raw <- spec$weight
+  v <- .dv_as_num(data[[raw]]); v[is.na(v)] <- 0
+  sid <- as.character(data[[spec$stomach]])
+  tot <- stats::ave(v, sid, FUN = sum)
+  zero <- unique(sid[tot == 0])
+  if (length(zero))
+    warning(length(zero), " sample(s) have no reads (e.g. ",
+            paste(utils::head(zero, 3), collapse = ", "),
+            "); they contribute nothing to the relative read abundance.", call. = FALSE)
+  new <- "rra"
+  while (new %in% names(data)) new <- paste0(new, "_")
+  data[[new]] <- ifelse(tot > 0, v / tot, 0)
+  spec$weight_raw <- raw
+  spec$weight <- new
+  list(data = data, spec = spec)
 }

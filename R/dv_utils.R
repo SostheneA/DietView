@@ -156,3 +156,12 @@ dv_palette_tree <- function(tree, base_rank = 2L, palette = .DV_D3[c(TRUE, FALSE
   out[tree$label == "NA"] <- "#FFFFFF"
   stats::setNames(out, tree$id)
 }
+
+# Internal: the name of the sampling unit (spec$unit_label), singular (n = 1)
+# or plural (n = 2), optionally capitalized. Old specs without the field read
+# "stomach".
+.dv_unit <- function(spec, n = 2L, cap = FALSE) {
+  u <- spec$unit_label %||% "stomach"
+  out <- if (n == 1L) u[1] else if (length(u) >= 2L) u[2] else paste0(u[1], "s")
+  if (cap) paste0(toupper(substr(out, 1, 1)), substr(out, 2, nchar(out))) else out
+}

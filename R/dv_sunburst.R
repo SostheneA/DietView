@@ -33,7 +33,8 @@
 #'   gaps appear as unidentified (`"NA"`) nodes. Build the tree from a
 #'   `dietview_prep`, or with [dv_tree()], to get the gap labels.
 #' @param mode One of "occurrence" (default), "weight", "count".
-#' @param ranks,weight_col,count_col Passed to [dv_build_tree()] if `x` is raw.
+#' @param ranks,weight_col,count_col,weight_type Passed to [dv_build_tree()]
+#'   if `x` is raw (a tree carries its own `weight_type`).
 #' @param colors Optional named color vector, keyed by node `id` (as from
 #'   [dv_palette_tree()]) or by taxon label (as from [dv_palette()]); ids are
 #'   looked up first. Default: [dv_palette_tree()] of the tree drawn, one hue
@@ -70,7 +71,7 @@ dv_sunburst <- function(x,
                         mode = c("occurrence", "weight", "count"),
                         ranks = NULL, weight_col = NULL, count_col = NULL,
                         colors = NULL, rotation = 90,
-                        title = "", subtitle = "") {
+                        title = "", subtitle = "", weight_type = "mass") {
   mode <- match.arg(mode)
 
   tree <- if (inherits(x, "dietview_tree")) {
@@ -80,7 +81,8 @@ dv_sunburst <- function(x,
       x,
       ranks = ranks,
       weight_col = weight_col,
-      count_col = count_col
+      count_col = count_col,
+      weight_type = weight_type
     )
   }
 
@@ -145,11 +147,14 @@ dv_sunburst <- function(x,
       "<br><b>Prey records:</b> ", tree$value_occ,
       "<br><b>Share of all records at this rank:</b> ", .dv_pct_fmt(tree$pct_occ)
     ),
-    weight = paste0(
-      head,
-      "<br><b>Weight:</b> ", formatC(tree$value_w, format = "f", digits = 1),
-      "<br><b>Weight share at this rank:</b> ", .dv_pct_fmt(tree$pct_w)
-    )
+    weight = {
+      wl <- .dv_wlabels(attr(tree, "weight_type"))
+      paste0(
+        head,
+        "<br><b>", wl$value, ":</b> ", formatC(tree$value_w, format = "f", digits = wl$digits),
+        "<br><b>", wl$share, ":</b> ", .dv_pct_fmt(tree$pct_w)
+      )
+    }
   )
   list(tree = tree, size = size_vals)
 }
@@ -166,7 +171,8 @@ dv_sunburst <- function(x,
                                 count_col = NULL, facet_col,
                                 mode = "occurrence", colors = NULL,
                                 rotation = 90, title = "", na_strata = "drop",
-                                stomach_col = NULL, min_stomachs = 0) {
+                                stomach_col = NULL, min_stomachs = 0,
+                                weight_type = "mass", units = "stomachs") {
   if (na_strata == "drop") {
     for (fc in facet_col) {
       v <- as.character(records[[fc]])
@@ -206,7 +212,8 @@ dv_sunburst <- function(x,
     few <- nrow(ce$sub) > 0L && !is.na(n_st) && n_st < min_stomachs
     if (nrow(ce$sub) > 0L && !few) {
       tr <- dv_build_tree(ce$sub, ranks = ranks,
-                          weight_col = weight_col, count_col = count_col)
+                          weight_col = weight_col, count_col = count_col,
+                          weight_type = weight_type)
       pp <- .dv_sb_prep(tr, mode, colors)
       fig <- plotly::add_trace(
         fig,
@@ -222,8 +229,10 @@ dv_sunburst <- function(x,
     anns[[k]] <- list(
       text = paste0("<b>", ce$lab, "</b>",
                     if (nrow(ce$sub) == 0L) "<br><i>no records</i>"
-                    else if (few) paste0("<br>Stomachs (n) = ", n_st,
-                                         "<br><i>", .dv_few_msg(min_stomachs), "</i>")
+                    else if (few) paste0("<br>",
+                                         paste0(toupper(substr(units, 1, 1)), substring(units, 2)),
+                                         " (n) = ", n_st,
+                                         "<br><i>", .dv_few_msg(min_stomachs, units), "</i>")
                     else ""),
       x = (ce$col + 0.5) / n_col, y = 1 - ce$row / n_row,
       xref = "paper", yref = "paper",

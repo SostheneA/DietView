@@ -7,9 +7,10 @@
 dv_prepare(
   data,
   spec,
-  taxonomy = c("auto", "columns", "worms", "table"),
+  taxonomy = c("auto", "columns", "worms", "gbif", "table"),
   lineage = NULL,
   fuzzy = TRUE,
+  kingdom = NULL,
   cache_dir = tools::R_user_dir("DietView", "cache"),
   cache_max_age = 180,
   strict_covariates = TRUE,
@@ -24,16 +25,20 @@ dv_prepare(
 
 \item{spec}{A \code{dietview_spec} from \code{\link[=dv_spec]{dv_spec()}}.}
 
-\item{taxonomy}{One of "auto", "columns", "worms", "table".}
+\item{taxonomy}{One of "auto", "columns", "worms", "gbif", "table". \code{"auto"}
+never picks \code{"gbif"}: ask for it explicitly.}
 
 \item{lineage}{For \code{taxonomy = "table"}: a data.frame with a key column
 (\code{prey_id} or \code{prey_name}, matching your spec) plus one column per rank.}
 
-\item{fuzzy}{For \code{taxonomy = "worms"}: when the exact name fails, try WoRMS
+\item{fuzzy}{For \code{taxonomy = "worms"} or \code{"gbif"}: when the exact name fails, try WoRMS
 TAXAMATCH fuzzy matching (default \code{TRUE}). Fuzzy hits are flagged, never
 silent - review them with \code{\link[=dv_taxonomy_report]{dv_taxonomy_report()}}.}
 
-\item{cache_dir}{Cache directory for the WoRMS path. \code{NULL} disables caching.}
+\item{kingdom}{For \code{taxonomy = "gbif"}: an optional kingdom hint, e.g.
+\code{"Animalia"}. See \code{\link[=dv_taxonomy_gbif]{dv_taxonomy_gbif()}}.}
+
+\item{cache_dir}{Cache directory for the WoRMS and GBIF paths. \code{NULL} disables caching.}
 
 \item{cache_max_age}{For the WoRMS path: cached lookups older than this many
 days are fetched again (default 180). See \code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}}.}
@@ -76,9 +81,11 @@ it \code{NA}, so its records sit under the unidentified node of that rank.}
 \value{
 An object of class \code{dietview_prep}: a list with \code{data}, \code{spec} (minus
 any dropped covariates), \code{ranks}, \code{taxonomy_source} (the taxonomy path
-actually used) and \code{taxonomy_log}. When \code{taxonomy = "worms"},
+actually used) and \code{taxonomy_log}. When \code{taxonomy = "worms"} or \code{"gbif"},
 \code{taxonomy_log} is the per-prey provenance table, with the attributes
-\code{retrieved} (time of the run) and \code{worrms_version}; otherwise it is \code{NULL}.
+\code{retrieved} (time of the run), \code{source} (\code{"WoRMS"} or \code{"GBIF Backbone"})
+and, for WoRMS, \code{worrms_version}; otherwise it is \code{NULL}. Its ID column is
+\code{aphia_used} for WoRMS and \code{gbif_key} for GBIF.
 The attribute \code{lineage_gaps} is a named integer vector: the number of
 records whose rank was filled as a lineage gap, per rank. With \code{stomachs},
 the list also holds \code{stomachs}: the examined stomachs, with their stomach,
@@ -89,7 +96,11 @@ Validates the long table with \code{\link[=dv_validate]{dv_validate()}} and atta
 lineage for the declared ranks. The taxonomy can come from:
 \itemize{
 \item \code{"columns"} - the rank columns are already in \code{data};
-\item \code{"worms"}   - fetch the lineage from WoRMS by AphiaID/name;
+\item \code{"worms"}   - fetch the lineage from WoRMS by AphiaID/name (marine
+prey; see \code{\link[=dv_taxonomy_worms]{dv_taxonomy_worms()}});
+\item \code{"gbif"}    - fetch the lineage from the GBIF Backbone Taxonomy by
+GBIF taxon key/name (all kingdoms, terrestrial and freshwater prey; see
+\code{\link[=dv_taxonomy_gbif]{dv_taxonomy_gbif()}});
 \item \code{"table"}   - join a lineage table you supply via \code{lineage};
 \item \code{"auto"}    - use columns if present, else \code{lineage} if given, else WoRMS.
 }
@@ -97,8 +108,8 @@ Ranks that cannot be resolved are kept as \code{NA} and later shown as an explic
 unidentified category below the deepest identified rank -- never dropped.
 }
 \details{
-With \code{taxonomy = "worms"}, each record is keyed by its AphiaID when it has
-one and by its own prey name otherwise, so records without an AphiaID never
+With \code{taxonomy = "worms"} or \code{"gbif"}, each record is keyed by its AphiaID
+(or GBIF taxon key) when it has one and by its own prey name otherwise, so records without an AphiaID never
 share a lineage by accident. Records with neither key stay fully
 unidentified, with a warning.
 

@@ -117,7 +117,10 @@ dv_build_html <- function(prep, output,
 
   # one node dictionary and one palette, from the pooled tree of the whole prep:
   # every panel's tree is a subset of it, so a taxon has one color everywhere
-  pooled <- dv_build_tree(d, ranks = ranks, weight_col = wcol, count_col = ccol)
+  wtype <- spec$weight_type %||% "mass"
+  wl <- .dv_wlabels(wtype)
+  pooled <- dv_build_tree(d, ranks = ranks, weight_col = wcol, count_col = ccol,
+                          weight_type = wtype)
   colors <- dv_palette_tree(pooled)
   nodes <- list(
     id     = pooled$id,
@@ -136,8 +139,8 @@ dv_build_html <- function(prep, output,
                       value = rec_lab, digits = NULL,
                       share = if (currency == "numbers") "Numerical share at this rank (%N)"
                               else "Share of all records at this rank"),
-    weight = list(title = "Weight (% of total weight)", color = "#d62728",
-                  value = "Weight", digits = 1L, share = "Weight share at this rank"),
+    weight = list(title = wl$title, color = "#d62728",
+                  value = wl$value, digits = wl$digits, share = wl$share),
     count = list(title = "Distinct prey items", color = "#2c3e50",
                  value = "Distinct prey items", digits = NULL, share = NULL)
   )
@@ -149,7 +152,8 @@ dv_build_html <- function(prep, output,
   subset_of <- function(recs, key) {
     k <- match(key, reg$keys)
     if (!is.na(k)) return(k - 1L)
-    tr <- dv_build_tree(recs, ranks = ranks, weight_col = wcol, count_col = ccol)
+    tr <- dv_build_tree(recs, ranks = ranks, weight_col = wcol, count_col = ccol,
+                        weight_type = wtype)
     idx <- match(tr$id, pooled$id)
     reg$subsets[[length(reg$subsets) + 1L]] <- list(
       n = idx - 1L, o = tr$value_occ, w = signif(tr$value_w, 6),
@@ -174,7 +178,7 @@ dv_build_html <- function(prep, output,
   # no sunburst (and no data in the JSON)
   cell_panel <- function(sub, mode, view, key) {
     if (nstom(sub) < min_stomachs)
-      htmltools::tags$p(class = "dv-few", .dv_few_msg(min_stomachs))
+      htmltools::tags$p(class = "dv-few", .dv_few_msg(min_stomachs, .dv_unit(spec, 2L)))
     else panel(sub, mode, view, key)
   }
   # covariate values as panel labels: missing values become "NA" (shown) or
@@ -203,7 +207,7 @@ dv_build_html <- function(prep, output,
       htmltools::tags$div(
         style = cell_style(length(lv)),
         htmltools::tags$h5(paste0(cv, ": ", l)),
-        htmltools::tags$h6(paste("Stomachs (n) =", nstom(sub))),
+        htmltools::tags$h6(paste(.dv_unit(spec, 2L, TRUE), "(n) =", nstom(sub))),
         cell_panel(sub, mode, view, paste(view, cv, l, sep = "\r")))
     })
     htmltools::tagList(
@@ -222,7 +226,7 @@ dv_build_html <- function(prep, output,
         htmltools::tags$div(
           style = cell_style(length(il)),
           htmltools::tags$h5(paste0(inner, ": ", i)),
-          htmltools::tags$h6(paste("Stomachs (n) =", nstom(sub))),
+          htmltools::tags$h6(paste(.dv_unit(spec, 2L, TRUE), "(n) =", nstom(sub))),
           cell_panel(sub, mode, view, paste(view, inner, i, outer, o, sep = "\r")))
       })
       htmltools::tagList(
@@ -264,14 +268,14 @@ dv_build_html <- function(prep, output,
     id = "view_global", class = "dashboard-view",
     htmltools::tags$button(class = "btn-back", onclick = "showTab('view_home')", "\u2b05 Home"),
     htmltools::tags$h2("Global", style = "text-align:center;"),
-    htmltools::tags$h4(paste("Total stomachs:", nstom(d)), style = "text-align:center;color:#555;"),
+    htmltools::tags$h4(paste0("Total ", .dv_unit(spec, 2L), ": ", nstom(d)), style = "text-align:center;color:#555;"),
     lapply(bands, function(m) build_band(d, m, "view_global")))
   cards[["__g"]] <- do.call(htmltools::tags$div, c(
     list(class = "species-card", `data-order` = "0",
          style = "border:2px solid #1f77b4;background:#f0f8ff;"),
     card_open("view_global"),
     list(htmltools::tags$h3(class = "card-title", "\U0001F310 Global"),
-         htmltools::tags$p(class = "card-stat", htmltools::tags$b("Total stomachs: "), nstom(d)))))
+         htmltools::tags$p(class = "card-stat", htmltools::tags$b(paste0("Total ", .dv_unit(spec, 2L), ": ")), nstom(d)))))
 
   for (i in seq_along(preds)) {
     p <- preds[i]; recs <- d[which(as.character(d[[pcol]]) == p), ]
@@ -295,7 +299,7 @@ dv_build_html <- function(prep, output,
         htmltools::tags$div(
           class = "card-body",
           htmltools::tags$div(class = "card-stats",
-                              htmltools::tags$p(class = "card-stat", htmltools::tags$b("Total stomachs: "), nstom(recs)),
+                              htmltools::tags$p(class = "card-stat", htmltools::tags$b(paste0("Total ", .dv_unit(spec, 2L), ": ")), nstom(recs)),
                               len_line),
           if (!is.null(a$uri))
             htmltools::tags$div(
@@ -314,7 +318,7 @@ dv_build_html <- function(prep, output,
       id = view, class = "dashboard-view",
       htmltools::tags$button(class = "btn-back", onclick = "showTab('view_home')", "\u2b05 Home"),
       htmltools::tags$h2(p, style = "text-align:center;"),
-      htmltools::tags$h4(paste("Total stomachs:", nstom(recs)), style = "text-align:center;color:#555;"),
+      htmltools::tags$h4(paste0("Total ", .dv_unit(spec, 2L), ": ", nstom(recs)), style = "text-align:center;color:#555;"),
       lapply(bands, function(m) build_band(recs, m, view)))
   }
 
@@ -323,7 +327,7 @@ dv_build_html <- function(prep, output,
                  m[c("value", "digits", "share")],
                  function(x) if (is.null(x)) NULL else jsonlite::unbox(x))),
                subsets = reg$subsets, views = reg$views)
-  body <- htmltools::tagList(.dv_home(title, cards, currency, bands), htmltools::tagList(tabs))
+  body <- htmltools::tagList(.dv_home(title, cards, currency, bands, wtype), htmltools::tagList(tabs))
   .dv_write_dashboard(body, data, output, title, self_contained)
   invisible(output)
 }
@@ -467,11 +471,12 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
 "
 
 .dv_home <- function(title, cards, currency = "records",
-                     bands = c("occurrence", "weight", "count")) {
+                     bands = c("occurrence", "weight", "count"),
+                     weight_type = "mass") {
   band_txt <- c(
     occurrence = if (currency == "numbers") "individuals (% of all individuals)"
                  else "prey records (% of all records)",
-    weight = "weight (% of total weight)",
+    weight = .dv_wlabels(weight_type)$home,
     count = "distinct prey items")[bands]
   band_txt <- if (length(band_txt) > 1)
     paste(paste(band_txt[-length(band_txt)], collapse = ", "), "and", band_txt[length(band_txt)])
@@ -508,8 +513,8 @@ dv_deploy <- function(prep, file = "dietview_dashboard.html", dir, ...) {
 }
 
 # Internal: the line shown in place of a covariate panel with too few stomachs.
-.dv_few_msg <- function(min_stomachs)
-  paste0("Too few stomachs to show (minimum: ", format(min_stomachs), ")")
+.dv_few_msg <- function(min_stomachs, units = "stomachs")
+  paste0("Too few ", units, " to show (minimum: ", format(min_stomachs), ")")
 
 # Internal: the plotly.js bundle shipped with the plotly R package.
 .dv_plotly_js <- function() {

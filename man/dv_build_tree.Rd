@@ -9,7 +9,8 @@ dv_build_tree(
   ranks,
   weight_col = NULL,
   count_col = NULL,
-  rank_labels = NULL
+  rank_labels = NULL,
+  weight_type = "mass"
 )
 }
 \arguments{
@@ -22,10 +23,14 @@ dv_build_tree(
 \item{count_col}{Name of a count column (or \code{NULL}: each record counts once).}
 
 \item{rank_labels}{Optional display labels for the ranks.}
+
+\item{weight_type}{What \code{weight_col} measures (\code{"mass"}, \code{"reads"} or
+\code{"rra"}; see \code{\link[=dv_spec]{dv_spec()}}). It only changes the labels of the weight views
+and is stored as the attribute \code{weight_type}.}
 }
 \value{
-A \code{dietview_tree} data.frame: \verb{id, label, parent, rank, value_item, value_occ, value_w, pct_occ, pct_w}, with the attribute \code{currency}
-(\code{"records"}, or \code{"numbers"} when \code{count_col} is given).
+A \code{dietview_tree} data.frame: \verb{id, label, parent, rank, value_item, value_occ, value_w, pct_occ, pct_w}, with the attributes \code{currency}
+(\code{"records"}, or \code{"numbers"} when \code{count_col} is given) and \code{weight_type}.
 }
 \description{
 Aggregates a set of records into a node table spanning all ranks.

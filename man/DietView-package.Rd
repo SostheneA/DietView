@@ -4,7 +4,7 @@
 \name{DietView-package}
 \alias{DietView}
 \alias{DietView-package}
-\title{DietView: interactive, hierarchical visualization of predator stomach-content data}
+\title{DietView: interactive, hierarchical visualization of predator diet data}
 \description{
 DietView takes a long table of stomach-content records (one row per prey
 record), attaches a taxonomic lineage (from WoRMS, or from a lineage table
