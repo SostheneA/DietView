@@ -30,5 +30,11 @@
   metabarcoding diet of 4,625 Salish Sea harbour seal scats (Thomas et al.
   2022, CC0).
 * `dv_cache_clear()` gains `source = c("all", "worms", "gbif")`.
+* WoRMS ranks with a qualifier, such as `"Phylum (Division)"` for plants and
+  algae, are now read: Chlorophyta and other plant taxa keep their phylum.
+  Run `dv_cache_clear()` once if lineages were cached by an earlier build.
+* A WoRMS or GBIF cache written by an earlier build, with time stamps in
+  another format, no longer stops `dv_taxonomy_worms()`, `dv_taxonomy_gbif()`
+  or `dv_prepare()`: such entries are treated as expired and looked up again.
 * New article: "Beyond stomachs: DNA metabarcoding, scats and other
   compositional data".

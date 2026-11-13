@@ -1,0 +1,158 @@
+diff --git a/NEWS.md b/NEWS.md
+index 586ac1a..6b682f0 100644
+--- a/NEWS.md
++++ b/NEWS.md
+@@ -30,5 +30,11 @@
+   metabarcoding diet of 4,625 Salish Sea harbour seal scats (Thomas et al.
+   2022, CC0).
+ * `dv_cache_clear()` gains `source = c("all", "worms", "gbif")`.
++* WoRMS ranks with a qualifier, such as `"Phylum (Division)"` for plants and
++  algae, are now read: Chlorophyta and other plant taxa keep their phylum.
++  Run `dv_cache_clear()` once if lineages were cached by an earlier build.
++* A WoRMS or GBIF cache written by an earlier build, with time stamps in
++  another format, no longer stops `dv_taxonomy_worms()`, `dv_taxonomy_gbif()`
++  or `dv_prepare()`: such entries are treated as expired and looked up again.
+ * New article: "Beyond stomachs: DNA metabarcoding, scats and other
+   compositional data".
+diff --git a/R/dv_taxonomy.R b/R/dv_taxonomy.R
+index 2c5dd44..b7a4e03 100644
+--- a/R/dv_taxonomy.R
++++ b/R/dv_taxonomy.R
+@@ -127,9 +127,8 @@ dv_taxonomy_worms <- function(keys,
+   }
+   cache_get <- function(key) {
+     e <- cache[[key]]
+-    if (!is.list(e) || is.null(e$t)) return(NULL)     # missing or malformed (undated)
+-    age <- as.numeric(difftime(now, e$t, units = "days"))
+-    if (is.finite(cache_max_age) && age > cache_max_age) return(NULL)
++    age <- .dv_cache_age(e, now)                      # NA: missing or malformed
++    if (is.na(age) || (is.finite(cache_max_age) && age > cache_max_age)) return(NULL)
+     e
+   }
+   cache_set <- function(key, v) {
+@@ -192,7 +191,7 @@ dv_taxonomy_worms <- function(keys,
+         if (s == "ok") {
+           cl <- got$rows[got$rows$id == id, , drop = FALSE]
+           out <- stats::setNames(rep(NA_character_, length(ranks)), ranks)
+-          rk <- tolower(cl$rank)
++          rk <- .dv_norm_rank(cl$rank)
+           for (r in ranks) {
+             h <- cl$scientificname[rk == r]
+             if (length(h)) out[[r]] <- h[1]
+@@ -358,17 +357,32 @@ dv_taxonomy_worms <- function(keys,
+   if (is.list(x)) x else structure(list(), unreadable = TRUE)
+ }
+ 
+-# Internal: keep only dated entries no older than `max_age` days.
++# Internal: age in days of a cache entry, NA when the entry is not a list or
++# its time stamp is missing or unreadable (e.g. written by an older version).
++.dv_cache_age <- function(e, now) {
++  if (!is.list(e) || is.null(e$t) || length(e$t) != 1L) return(NA_real_)
++  t <- e$t
++  if (!inherits(t, c("POSIXt", "Date"))) return(NA_real_)
++  age <- tryCatch(as.numeric(difftime(now, t, units = "days")),
++                  error = function(err) NA_real_, warning = function(w) NA_real_)
++  if (length(age) != 1L || !is.finite(age)) NA_real_ else age
++}
++
++# Internal: keep only dated entries no older than `max_age` days. Entries with
++# an unreadable time stamp are dropped instead of stopping the lookup.
+ .dv_cache_prune <- function(cache, now, max_age) {
+   if (!length(cache)) return(cache)
+   keep <- vapply(cache, function(e) {
+-    if (!is.list(e) || is.null(e$t)) return(FALSE)
+-    !is.finite(max_age) ||
+-      as.numeric(difftime(now, e$t, units = "days")) <= max_age
++    age <- .dv_cache_age(e, now)
++    !is.na(age) && (!is.finite(max_age) || age <= max_age)
+   }, logical(1))
+   cache[keep]
+ }
+ 
++# Internal: WoRMS rank names to DietView rank names. WoRMS qualifies some
++# ranks, e.g. "Phylum (Division)" for plants and algae.
++.dv_norm_rank <- function(x) trimws(sub("\\s*\\(.*\\)\\s*$", "", tolower(as.character(x))))
++
+ # Internal: write to a temporary file first, so an interrupted write never
+ # leaves a truncated cache behind.
+ .dv_cache_write <- function(cache, file) {
+diff --git a/R/dv_taxonomy_gbif.R b/R/dv_taxonomy_gbif.R
+index 21696a0..205b9a7 100644
+--- a/R/dv_taxonomy_gbif.R
++++ b/R/dv_taxonomy_gbif.R
+@@ -115,9 +115,8 @@ dv_taxonomy_gbif <- function(keys,
+   }
+   cache_get <- function(key) {
+     e <- cache[[key]]
+-    if (!is.list(e) || is.null(e$t)) return(NULL)
+-    if (is.finite(cache_max_age) &&
+-        as.numeric(difftime(now, e$t, units = "days")) > cache_max_age) return(NULL)
++    age <- .dv_cache_age(e, now)                      # NA: missing or malformed
++    if (is.na(age) || (is.finite(cache_max_age) && age > cache_max_age)) return(NULL)
+     e
+   }
+   cache_set <- function(key, v) { cache[[key]] <<- list(v = v, t = now); dirty <<- TRUE }
+diff --git a/tests/testthat/test-taxonomy-worms.R b/tests/testthat/test-taxonomy-worms.R
+index e6f7c4b..7e39b7b 100644
+--- a/tests/testthat/test-taxonomy-worms.R
++++ b/tests/testthat/test-taxonomy-worms.R
+@@ -176,3 +176,59 @@ test_that("an AphiaID unknown to WoRMS falls back to the prey name", {
+                                              cache_dir = NULL, verbose = FALSE))
+   expect_equal(out2$match_type, "unresolved")
+ })
++
++# --- qualified WoRMS ranks and old cache entries ------------------------------
++
++test_that("qualified WoRMS ranks such as 'Phylum (Division)' are read", {
++  skip_if_not_installed("worrms")
++  local_worms(
++    record = function(id, ...) data.frame(AphiaID = id, scientificname = "Chlorophyta",
++                  status = "accepted", valid_AphiaID = id, valid_name = "Chlorophyta"),
++    classification = function(id, ...) data.frame(
++      rank = c("Kingdom", "Subkingdom", "Phylum (Division)"),
++      scientificname = c("Plantae", "Viridiplantae", "Chlorophyta")),
++    names = function(name, ...) stop("(204) No Content"),
++    taxamatch = function(name, ...) stop("(204) No Content"))
++  out <- dv_taxonomy_worms(data.frame(prey_id = 801L, prey_name = "Chlorophyta"),
++                           cache_dir = NULL, verbose = FALSE)
++  expect_equal(out$kingdom, "Plantae")
++  expect_equal(out$phylum, "Chlorophyta")
++  expect_equal(DietView:::.dv_norm_rank(c("Phylum (Division)", "Class", " Order ", "Subphylum (Subdivision)")),
++               c("phylum", "class", "order", "subphylum"))
++})
++
++test_that("cache entries with an unreadable time stamp are dropped, not fatal", {
++  now <- Sys.time()
++  cache <- list(
++    ok      = list(v = 1, t = now - 3600),
++    text    = list(v = 2, t = "03/11/2026 14:00"),    # written by an older version
++    null    = list(v = 3, t = NULL),
++    na      = list(v = 4, t = as.POSIXct(NA)),
++    old     = list(v = 5, t = now - 400 * 86400),
++    notlist = "x")
++  kept <- DietView:::.dv_cache_prune(cache, now, 180)
++  expect_equal(names(kept), "ok")
++  expect_equal(names(DietView:::.dv_cache_prune(cache, now, Inf)), c("ok", "old"))
++  expect_true(is.na(DietView:::.dv_cache_age(cache$text, now)))
++})
++
++test_that("a lookup runs on top of a cache file from an older version", {
++  skip_if_not_installed("worrms")
++  skip_if_not_installed("withr")
++  dir <- withr::local_tempdir()
++  saveRDS(list(`id:107649` = list(v = c(kingdom = "Animalia"), t = "03/11/2026 14:00")),
++          file.path(dir, "worms_lineage.rds"))
++  local_worms(
++    record = function(id, ...) data.frame(AphiaID = id, scientificname = "Pandalus borealis",
++                  status = "accepted", valid_AphiaID = id, valid_name = "Pandalus borealis"),
++    classification = function(id, ...) data.frame(
++      rank = c("Kingdom", "Phylum", "Class"),
++      scientificname = c("Animalia", "Arthropoda", "Malacostraca")),
++    names = function(name, ...) stop("(204) No Content"),
++    taxamatch = function(name, ...) stop("(204) No Content"))
++  out <- dv_taxonomy_worms(data.frame(prey_id = 107649L, prey_name = "Pandalus borealis"),
++                           cache_dir = dir, verbose = FALSE)
++  expect_equal(out$class, "Malacostraca")
++  cache <- readRDS(file.path(dir, "worms_lineage.rds"))
++  expect_true(all(vapply(cache, function(e) inherits(e$t, "POSIXt"), logical(1))))
++})
