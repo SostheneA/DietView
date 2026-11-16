@@ -176,3 +176,59 @@ test_that("an AphiaID unknown to WoRMS falls back to the prey name", {
                                              cache_dir = NULL, verbose = FALSE))
   expect_equal(out2$match_type, "unresolved")
 })
+
+# --- qualified WoRMS ranks and old cache entries ------------------------------
+
+test_that("qualified WoRMS ranks such as 'Phylum (Division)' are read", {
+  skip_if_not_installed("worrms")
+  local_worms(
+    record = function(id, ...) data.frame(AphiaID = id, scientificname = "Chlorophyta",
+                  status = "accepted", valid_AphiaID = id, valid_name = "Chlorophyta"),
+    classification = function(id, ...) data.frame(
+      rank = c("Kingdom", "Subkingdom", "Phylum (Division)"),
+      scientificname = c("Plantae", "Viridiplantae", "Chlorophyta")),
+    names = function(name, ...) stop("(204) No Content"),
+    taxamatch = function(name, ...) stop("(204) No Content"))
+  out <- dv_taxonomy_worms(data.frame(prey_id = 801L, prey_name = "Chlorophyta"),
+                           cache_dir = NULL, verbose = FALSE)
+  expect_equal(out$kingdom, "Plantae")
+  expect_equal(out$phylum, "Chlorophyta")
+  expect_equal(DietView:::.dv_norm_rank(c("Phylum (Division)", "Class", " Order ", "Subphylum (Subdivision)")),
+               c("phylum", "class", "order", "subphylum"))
+})
+
+test_that("cache entries with an unreadable time stamp are dropped, not fatal", {
+  now <- Sys.time()
+  cache <- list(
+    ok      = list(v = 1, t = now - 3600),
+    text    = list(v = 2, t = "03/11/2026 14:00"),    # written by an older version
+    null    = list(v = 3, t = NULL),
+    na      = list(v = 4, t = as.POSIXct(NA)),
+    old     = list(v = 5, t = now - 400 * 86400),
+    notlist = "x")
+  kept <- DietView:::.dv_cache_prune(cache, now, 180)
+  expect_equal(names(kept), "ok")
+  expect_equal(names(DietView:::.dv_cache_prune(cache, now, Inf)), c("ok", "old"))
+  expect_true(is.na(DietView:::.dv_cache_age(cache$text, now)))
+})
+
+test_that("a lookup runs on top of a cache file from an older version", {
+  skip_if_not_installed("worrms")
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  saveRDS(list(`id:107649` = list(v = c(kingdom = "Animalia"), t = "03/11/2026 14:00")),
+          file.path(dir, "worms_lineage.rds"))
+  local_worms(
+    record = function(id, ...) data.frame(AphiaID = id, scientificname = "Pandalus borealis",
+                  status = "accepted", valid_AphiaID = id, valid_name = "Pandalus borealis"),
+    classification = function(id, ...) data.frame(
+      rank = c("Kingdom", "Phylum", "Class"),
+      scientificname = c("Animalia", "Arthropoda", "Malacostraca")),
+    names = function(name, ...) stop("(204) No Content"),
+    taxamatch = function(name, ...) stop("(204) No Content"))
+  out <- dv_taxonomy_worms(data.frame(prey_id = 107649L, prey_name = "Pandalus borealis"),
+                           cache_dir = dir, verbose = FALSE)
+  expect_equal(out$class, "Malacostraca")
+  cache <- readRDS(file.path(dir, "worms_lineage.rds"))
+  expect_true(all(vapply(cache, function(e) inherits(e$t, "POSIXt"), logical(1))))
+})

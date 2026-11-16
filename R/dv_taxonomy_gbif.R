@@ -115,9 +115,8 @@ dv_taxonomy_gbif <- function(keys,
   }
   cache_get <- function(key) {
     e <- cache[[key]]
-    if (!is.list(e) || is.null(e$t)) return(NULL)
-    if (is.finite(cache_max_age) &&
-        as.numeric(difftime(now, e$t, units = "days")) > cache_max_age) return(NULL)
+    age <- .dv_cache_age(e, now)                      # NA: missing or malformed
+    if (is.na(age) || (is.finite(cache_max_age) && age > cache_max_age)) return(NULL)
     e
   }
   cache_set <- function(key, v) { cache[[key]] <<- list(v = v, t = now); dirty <<- TRUE }

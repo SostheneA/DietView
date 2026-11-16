@@ -4,11 +4,12 @@
 # records unidentified there giving NA. A lineage gap label at that rank
 # ("Polychaeta (no order)") is kept as a category.
 .dv_taxon_label <- function(data, ranks, rank = NULL) {
-  if (is.null(rank)) return(.dv_leaf_label(data, ranks))
+  if (is.null(rank))
+    return(.dv_disambiguate_taxa(data, ranks, .dv_leaf_label(data, ranks)))
   rank <- .dv_match_rank(rank, ranks)
   v <- as.character(data[[rank]])
   v[v == "" | v == "NA"] <- NA
-  v
+  .dv_disambiguate_taxa(data, ranks[seq_len(match(rank, ranks))], v)
 }
 
 # Internal: the finest resolved (deepest non-NA) rank label for each record.
@@ -21,6 +22,32 @@
     lab[ok] <- v[ok]          # later (finer) ranks overwrite -> deepest wins
   }
   lab
+}
+
+# A taxon label is not a unique taxonomic identifier: identical genus/family
+# names can be found below distinct ancestors. Keep short labels where they are
+# unambiguous, but qualify true homonyms when exporting analytical categories.
+.dv_taxon_paths <- function(data, ranks) {
+  if (!nrow(data)) return(character())
+  parts <- lapply(data[, ranks, drop = FALSE], function(x) {
+    x <- as.character(x)
+    x[is.na(x) | x == ""] <- "<unidentified>"
+    .dv_id_part(x)
+  })
+  do.call(paste, c(parts, sep = " > "))
+}
+
+.dv_disambiguate_taxa <- function(data, ranks, labels) {
+  if (!length(labels)) return(labels)
+  valid <- !is.na(labels) & nzchar(labels) & labels != "NA"
+  if (!any(valid)) return(labels)
+  path <- .dv_taxon_paths(data, ranks)
+  unique_pairs <- unique(data.frame(label = labels[valid], path = path[valid],
+                                   stringsAsFactors = FALSE))
+  homonyms <- unique(unique_pairs$label[duplicated(unique_pairs$label)])
+  hit <- valid & labels %in% homonyms
+  labels[hit] <- paste0(labels[hit], " [", path[hit], "]")
+  labels
 }
 
 #' Describe the sampled diet dataset
@@ -188,6 +215,12 @@ dv_summary <- function(prep, by = NULL, rank = NULL) {
 dv_prey_accumulation <- function(prep, by = NULL, rank = NULL,
                                  permutations = 100, seed = NULL) {
   stopifnot(inherits(prep, "dietview_prep"))
+  if (!is.numeric(permutations) || length(permutations) != 1L ||
+      is.na(permutations) || !is.finite(permutations) ||
+      permutations < 1 || permutations > .Machine$integer.max ||
+      permutations != floor(permutations))
+    stop("`permutations` must be a positive whole number.", call. = FALSE)
+  permutations <- as.integer(permutations)
   if (!is.null(seed)) {
     # use the seed for this call only: restore the user's random stream on exit
     if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
@@ -327,7 +360,7 @@ dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE,
     n_total <- if (denominator == "examined") sum(st_grp %in% gv)
                else length(unique(sid[gi]))
     for (r in ranks) {
-      lab <- as.character(d[[r]])[gi]
+      lab <- .dv_taxon_label(d, prep$ranks, r)[gi]
       if (include_na) lab[is.na(lab) | lab == ""] <- "NA"
       keep <- !is.na(lab)
       tab <- tapply(sid[gi][keep], lab[keep],
@@ -360,7 +393,10 @@ dv_fo_table <- function(prep, rank = NULL, by = NULL, include_na = TRUE,
 #' @param prep A `dietview_prep` from [dv_prepare()].
 #' @param category Column giving the prey category. Defaults to `prey_category`
 #'   (from [dv_aggregate_threshold()]) if present, otherwise the finest resolved
-#'   rank label. Ignored when `rank` is given.
+#'   rank label. Homonymous taxon labels are automatically qualified with their
+#'   lineage. Set `category = "prey_category_id"` after threshold aggregation
+#'   for a stable fully qualified category identifier across datasets.
+#'   Ignored when `rank` is given.
 #' @param unit Column giving the sampling unit. Defaults to the spec's stomach.
 #' @param rank Optional rank (one of `prep$ranks`, e.g. `"class"`;
 #'   case-insensitive): columns are
@@ -421,8 +457,12 @@ dv_matrix <- function(prep, category = NULL, unit = NULL, rank = NULL,
     if (is.null(category)) {
       category <- if ("prey_category" %in% names(d)) "prey_category" else NULL
     }
-    cat_vec <- if (is.null(category)) .dv_leaf_label(d, prep$ranks)
+    if (!is.null(category) && !category %in% names(d))
+      stop("`category` column not found: ", category, call. = FALSE)
+    cat_vec <- if (is.null(category)) .dv_taxon_label(d, prep$ranks)
                else as.character(d[[category]])
+    if (identical(category, "prey_category"))
+      cat_vec <- .dv_disambiguate_taxa(d, prep$ranks, cat_vec)
   }
   if (include_na) cat_vec[is.na(cat_vec) | cat_vec == ""] <- "NA"
 
@@ -443,10 +483,15 @@ dv_matrix <- function(prep, category = NULL, unit = NULL, rank = NULL,
   )
   val[is.na(val)] <- 0
 
-  m <- tapply(val, list(u, cat_vec), sum)
-  m[is.na(m)] <- 0
-  if (currency == "fo") m[m > 0] <- 1
-  storage.mode(m) <- "double"
+  if (!length(u)) {
+    m <- matrix(0, nrow = 0L, ncol = 0L,
+                dimnames = list(character(), character()))
+  } else {
+    m <- tapply(val, list(u, cat_vec), sum)
+    m[is.na(m)] <- 0
+    if (currency == "fo") m[m > 0] <- 1
+    storage.mode(m) <- "double"
+  }
   if (isTRUE(include_empty)) {
     st <- .dv_stomach_status(prep)
     empty <- setdiff(st[[unit]][st$status == "empty"], rownames(m))

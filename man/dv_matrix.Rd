@@ -19,7 +19,10 @@ dv_matrix(
 
 \item{category}{Column giving the prey category. Defaults to \code{prey_category}
 (from \code{\link[=dv_aggregate_threshold]{dv_aggregate_threshold()}}) if present, otherwise the finest resolved
-rank label. Ignored when \code{rank} is given.}
+rank label. Homonymous taxon labels are automatically qualified with their
+lineage. Set \code{category = "prey_category_id"} after threshold aggregation
+for a stable fully qualified category identifier across datasets.
+Ignored when \code{rank} is given.}
 
 \item{unit}{Column giving the sampling unit. Defaults to the spec's stomach.}
 

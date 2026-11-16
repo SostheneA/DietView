@@ -226,11 +226,14 @@ dv_from_wide <- function(x, taxa_in = c("rows", "columns"), id_cols,
     if (length(miss)) stop("`collapse_by` not in the data: ", paste(miss, collapse = ", "),
                            call. = FALSE)
     grp <- unique(c(sample_col, collapse_by))
-    g <- interaction(long[grp], drop = TRUE, lex.order = TRUE)
-    first <- !duplicated(g)
-    tot <- tapply(long[[value_col]], g, sum, na.rm = TRUE)
-    long <- long[first, c(grp, value_col), drop = FALSE]
-    long[[value_col]] <- as.numeric(tot[as.character(g[first])])
+    if (value_col %in% grp)
+      stop("`collapse_by` cannot contain the value column `", value_col, "`.",
+           call. = FALSE)
+    # Unlike interaction()/tapply(), dplyr retains NA-valued groups.
+    long <- as.data.frame(dplyr::summarise(
+      dplyr::group_by(long, dplyr::across(dplyr::all_of(grp))),
+      dplyr::across(dplyr::all_of(value_col), ~sum(.x, na.rm = TRUE)),
+      .groups = "drop"))
   }
 
   if (!is.null(meta)) {

@@ -127,9 +127,8 @@ dv_taxonomy_worms <- function(keys,
   }
   cache_get <- function(key) {
     e <- cache[[key]]
-    if (!is.list(e) || is.null(e$t)) return(NULL)     # missing or malformed (undated)
-    age <- as.numeric(difftime(now, e$t, units = "days"))
-    if (is.finite(cache_max_age) && age > cache_max_age) return(NULL)
+    age <- .dv_cache_age(e, now)                      # NA: missing or malformed
+    if (is.na(age) || (is.finite(cache_max_age) && age > cache_max_age)) return(NULL)
     e
   }
   cache_set <- function(key, v) {
@@ -192,7 +191,7 @@ dv_taxonomy_worms <- function(keys,
         if (s == "ok") {
           cl <- got$rows[got$rows$id == id, , drop = FALSE]
           out <- stats::setNames(rep(NA_character_, length(ranks)), ranks)
-          rk <- tolower(cl$rank)
+          rk <- .dv_norm_rank(cl$rank)
           for (r in ranks) {
             h <- cl$scientificname[rk == r]
             if (length(h)) out[[r]] <- h[1]
@@ -358,16 +357,31 @@ dv_taxonomy_worms <- function(keys,
   if (is.list(x)) x else structure(list(), unreadable = TRUE)
 }
 
-# Internal: keep only dated entries no older than `max_age` days.
+# Internal: age in days of a cache entry, NA when the entry is not a list or
+# its time stamp is missing or unreadable (e.g. written by an older version).
+.dv_cache_age <- function(e, now) {
+  if (!is.list(e) || is.null(e$t) || length(e$t) != 1L) return(NA_real_)
+  t <- e$t
+  if (!inherits(t, c("POSIXt", "Date"))) return(NA_real_)
+  age <- tryCatch(as.numeric(difftime(now, t, units = "days")),
+                  error = function(err) NA_real_, warning = function(w) NA_real_)
+  if (length(age) != 1L || !is.finite(age)) NA_real_ else age
+}
+
+# Internal: keep only dated entries no older than `max_age` days. Entries with
+# an unreadable time stamp are dropped instead of stopping the lookup.
 .dv_cache_prune <- function(cache, now, max_age) {
   if (!length(cache)) return(cache)
   keep <- vapply(cache, function(e) {
-    if (!is.list(e) || is.null(e$t)) return(FALSE)
-    !is.finite(max_age) ||
-      as.numeric(difftime(now, e$t, units = "days")) <= max_age
+    age <- .dv_cache_age(e, now)
+    !is.na(age) && (!is.finite(max_age) || age <= max_age)
   }, logical(1))
   cache[keep]
 }
+
+# Internal: WoRMS rank names to DietView rank names. WoRMS qualifies some
+# ranks, e.g. "Phylum (Division)" for plants and algae.
+.dv_norm_rank <- function(x) trimws(sub("\\s*\\(.*\\)\\s*$", "", tolower(as.character(x))))
 
 # Internal: write to a temporary file first, so an interrupted write never
 # leaves a truncated cache behind.
