@@ -40,5 +40,17 @@
   al. 2022, CC0).
 - [`dv_cache_clear()`](https://sosthenea.github.io/DietView/reference/dv_cache_clear.md)
   gains `source = c("all", "worms", "gbif")`.
+- WoRMS ranks with a qualifier, such as `"Phylum (Division)"` for plants
+  and algae, are now read: Chlorophyta and other plant taxa keep their
+  phylum. Run
+  [`dv_cache_clear()`](https://sosthenea.github.io/DietView/reference/dv_cache_clear.md)
+  once if lineages were cached by an earlier build.
+- A WoRMS or GBIF cache written by an earlier build, with time stamps in
+  another format, no longer stops
+  [`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.md),
+  [`dv_taxonomy_gbif()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.md)
+  or
+  [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md):
+  such entries are treated as expired and looked up again.
 - New article: “Beyond stomachs: DNA metabarcoding, scats and other
   compositional data”.

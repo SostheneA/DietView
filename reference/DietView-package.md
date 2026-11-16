@@ -45,4 +45,7 @@ Authors:
 
 Other contributors:
 
-- CADI Gulf Center \[funder\]
+- His Majesty the King in Right of Canada (Represented by the Minister
+  of the Department of Fisheries and Oceans) \[copyright holder\]
+
+- CADI Gulf Center \[contributor\]

@@ -32,8 +32,11 @@ dv_matrix(
 
   Column giving the prey category. Defaults to `prey_category` (from
   [`dv_aggregate_threshold()`](https://sosthenea.github.io/DietView/reference/dv_aggregate_threshold.md))
-  if present, otherwise the finest resolved rank label. Ignored when
-  `rank` is given.
+  if present, otherwise the finest resolved rank label. Homonymous taxon
+  labels are automatically qualified with their lineage. Set
+  `category = "prey_category_id"` after threshold aggregation for a
+  stable fully qualified category identifier across datasets. Ignored
+  when `rank` is given.
 
 - unit:
 

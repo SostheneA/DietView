@@ -99,8 +99,10 @@ ICES Stomach Content Database, ICES, Copenhagen
 (Lindmark 2026, <https://github.com/maxlindmark/stomachr>), which also
 built the WoRMS classification used in
 [ices_lineage](https://sosthenea.github.io/DietView/reference/ices_lineage.md).
-ICES data are free to use provided the source is acknowledged; see the
-ICES data policy.
+Public ICES data are licensed CC BY 4.0
+(<https://creativecommons.org/licenses/by/4.0/>). See
+<https://stomachdata.ices.dk/inventory> and the installed COPYRIGHTS
+notice for attribution, provenance and modifications.
 
 ## Details
 

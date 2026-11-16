@@ -4,7 +4,10 @@
 
 - **Sosthène A. V. Akia**. Author, maintainer.
 
-- **CADI Gulf Center**. Funder.
+- **His Majesty the King in Right of Canada**. Copyright holder.  
+  Represented by the Minister of the Department of Fisheries and Oceans
+
+- **CADI Gulf Center**. Contributor.
 
 ## Citation
 

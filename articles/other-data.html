@@ -257,14 +257,14 @@ and in %FO:</p>
 <span><span class="va">long</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_parse_lineage.html">dv_parse_lineage</a></span><span class="op">(</span><span class="va">long</span>, <span class="st">"taxonomy"</span><span class="op">)</span></span>
 <span><span class="va">long</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sample"</span>, <span class="st">"reads"</span>, <span class="st">"order"</span>, <span class="st">"genus"</span>, <span class="st">"species"</span>, <span class="st">"prey_name"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;    sample reads             order  genus         species         prey_name</span></span>
-<span><span class="co">#&gt; 1   scat1  6000        Gadiformes  Gadus    Gadus morhua      Gadus morhua</span></span>
-<span><span class="co">#&gt; 2   scat1   300 Pleuronectiformes   &lt;NA&gt;            &lt;NA&gt; Pleuronectiformes</span></span>
-<span><span class="co">#&gt; 3   scat1    40              &lt;NA&gt;   &lt;NA&gt;            &lt;NA&gt;              &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 1   scat1    40              &lt;NA&gt;   &lt;NA&gt;            &lt;NA&gt;              &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 2   scat1  6000        Gadiformes  Gadus    Gadus morhua      Gadus morhua</span></span>
+<span><span class="co">#&gt; 3   scat1   300 Pleuronectiformes   &lt;NA&gt;            &lt;NA&gt; Pleuronectiformes</span></span>
 <span><span class="co">#&gt; 4   scat2  6100      Clupeiformes Clupea Clupea harengus   Clupea harengus</span></span>
 <span><span class="co">#&gt; 5   scat2   900          Myopsida Loligo            &lt;NA&gt;            Loligo</span></span>
-<span><span class="co">#&gt; 6   scat3  1500        Gadiformes  Gadus    Gadus morhua      Gadus morhua</span></span>
+<span><span class="co">#&gt; 6   scat3    10              &lt;NA&gt;   &lt;NA&gt;            &lt;NA&gt;              &lt;NA&gt;</span></span>
 <span><span class="co">#&gt; 7   scat3  1500      Clupeiformes Clupea Clupea harengus   Clupea harengus</span></span>
-<span><span class="co">#&gt; 8   scat3    10              &lt;NA&gt;   &lt;NA&gt;            &lt;NA&gt;              &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 8   scat3  1500        Gadiformes  Gadus    Gadus morhua      Gadus morhua</span></span>
 <span><span class="co">#&gt; 9   scat4  2500 Pleuronectiformes   &lt;NA&gt;            &lt;NA&gt; Pleuronectiformes</span></span>
 <span><span class="co">#&gt; 10  scat4  2500          Myopsida Loligo            &lt;NA&gt;            Loligo</span></span></code></pre></div>
 <p>The empty fields (<code>f__</code>), the placeholder
@@ -429,7 +429,7 @@ convert sequence reads to dietary data? <em>Molecular Ecology</em>,
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia.</p>
 </div>
 
 <div class="pkgdown-footer-right">

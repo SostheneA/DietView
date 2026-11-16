@@ -100,7 +100,10 @@ tools that do.</p>
 <dt id="arg-category">category<a class="anchor" aria-label="anchor" href="#arg-category"></a></dt>
 <dd><p>Column giving the prey category. Defaults to <code>prey_category</code>
 (from <code><a href="dv_aggregate_threshold.html">dv_aggregate_threshold()</a></code>) if present, otherwise the finest resolved
-rank label. Ignored when <code>rank</code> is given.</p></dd>
+rank label. Homonymous taxon labels are automatically qualified with their
+lineage. Set <code>category = "prey_category_id"</code> after threshold aggregation
+for a stable fully qualified category identifier across datasets.
+Ignored when <code>rank</code> is given.</p></dd>
 
 
 <dt id="arg-unit">unit<a class="anchor" aria-label="anchor" href="#arg-unit"></a></dt>
@@ -174,7 +177,7 @@ stomachs with records.</p></dd>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia.</p>
 </div>
 
 <div class="pkgdown-footer-right">

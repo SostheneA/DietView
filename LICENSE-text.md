@@ -1,4 +1,4 @@
 # License
 
     YEAR: 2026
-    COPYRIGHT HOLDER: Sosthene A. V. Akia
+    COPYRIGHT HOLDER: His Majesty the King in Right of Canada, as represented by the Minister of the Department of Fisheries and Oceans

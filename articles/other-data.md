@@ -184,14 +184,14 @@ long <- dv_from_wide(asv, id_cols = c("asv", "taxonomy"), meta = meta,
 long <- dv_parse_lineage(long, "taxonomy")
 long[, c("sample", "reads", "order", "genus", "species", "prey_name")]
 #>    sample reads             order  genus         species         prey_name
-#> 1   scat1  6000        Gadiformes  Gadus    Gadus morhua      Gadus morhua
-#> 2   scat1   300 Pleuronectiformes   <NA>            <NA> Pleuronectiformes
-#> 3   scat1    40              <NA>   <NA>            <NA>              <NA>
+#> 1   scat1    40              <NA>   <NA>            <NA>              <NA>
+#> 2   scat1  6000        Gadiformes  Gadus    Gadus morhua      Gadus morhua
+#> 3   scat1   300 Pleuronectiformes   <NA>            <NA> Pleuronectiformes
 #> 4   scat2  6100      Clupeiformes Clupea Clupea harengus   Clupea harengus
 #> 5   scat2   900          Myopsida Loligo            <NA>            Loligo
-#> 6   scat3  1500        Gadiformes  Gadus    Gadus morhua      Gadus morhua
+#> 6   scat3    10              <NA>   <NA>            <NA>              <NA>
 #> 7   scat3  1500      Clupeiformes Clupea Clupea harengus   Clupea harengus
-#> 8   scat3    10              <NA>   <NA>            <NA>              <NA>
+#> 8   scat3  1500        Gadiformes  Gadus    Gadus morhua      Gadus morhua
 #> 9   scat4  2500 Pleuronectiformes   <NA>            <NA> Pleuronectiformes
 #> 10  scat4  2500          Myopsida Loligo            <NA>            Loligo
 ```

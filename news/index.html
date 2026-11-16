@@ -76,6 +76,8 @@
 <li>New example data: <code>salish_seal_dna</code> and <code>salish_seal_lineage</code>, the DNA metabarcoding diet of 4,625 Salish Sea harbour seal scats (Thomas et al. 2022, CC0).</li>
 <li>
 <code><a href="../reference/dv_cache_clear.html">dv_cache_clear()</a></code> gains <code>source = c("all", "worms", "gbif")</code>.</li>
+<li>WoRMS ranks with a qualifier, such as <code>"Phylum (Division)"</code> for plants and algae, are now read: Chlorophyta and other plant taxa keep their phylum. Run <code><a href="../reference/dv_cache_clear.html">dv_cache_clear()</a></code> once if lineages were cached by an earlier build.</li>
+<li>A WoRMS or GBIF cache written by an earlier build, with time stamps in another format, no longer stops <code><a href="../reference/dv_taxonomy_worms.html">dv_taxonomy_worms()</a></code>, <code><a href="../reference/dv_taxonomy_gbif.html">dv_taxonomy_gbif()</a></code> or <code><a href="../reference/dv_prepare.html">dv_prepare()</a></code>: such entries are treated as expired and looked up again.</li>
 <li>New article: “Beyond stomachs: DNA metabarcoding, scats and other compositional data”.</li>
 </ul></div>
 </div>
@@ -84,7 +86,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Sosthène A. V. Akia, CADI Gulf Center.</p>
+  <p>Developed by Sosthène A. V. Akia.</p>
 </div>
 
 <div class="pkgdown-footer-right">
