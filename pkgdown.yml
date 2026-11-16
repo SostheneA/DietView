@@ -2,7 +2,12 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
+  articles/case-study-asv-pipeline: case-study-asv-pipeline.html
+  articles/case-study-benthic-community: case-study-benthic-community.html
+  articles/case-study-dna-seals: case-study-dna-seals.html
   articles/case-study-ices: case-study-ices.html
+  articles/case-study-morphological-remains: case-study-morphological-remains.html
+  articles/case-study-survey-catch: case-study-survey-catch.html
   articles/covariates: covariates.html
   dashboard: dashboard.html
   data-model: data-model.html
@@ -12,13 +17,14 @@ articles:
   getting-started: getting-started.html
   known-diet: known-diet.html
   articles/other-data: other-data.html
+  articles/reporting-by-data-type: reporting-by-data-type.html
   articles/shiny-app: shiny-app.html
   articles/species-cards: species-cards.html
   taxonomy-worms: taxonomy-worms.html
   articles/technical-reference: technical-reference.html
   articles/tour: tour.html
   articles/within-rank-na: within-rank-na.html
-last_built: 2026-11-16T16:46Z
+last_built: 2026-11-16T23:37Z
 urls:
   reference: https://sosthenea.github.io/DietView/reference
   article: https://sosthenea.github.io/DietView/articles

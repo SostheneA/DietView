@@ -2,8 +2,18 @@
 
 ### All vignettes
 
+- [Complete case study: from an ASV table to a DNA diet
+  report](https://sosthenea.github.io/DietView/articles/case-study-asv-pipeline.md):
+- [Complete case study: benthic grab community
+  composition](https://sosthenea.github.io/DietView/articles/case-study-benthic-community.md):
+- [Complete case study: harbour seal scat DNA metabarcoding (Salish
+  Sea)](https://sosthenea.github.io/DietView/articles/case-study-dna-seals.md):
 - [Case study: a complete analysis of public ICES stomach
   data](https://sosthenea.github.io/DietView/articles/case-study-ices.md):
+- [Complete case study: morphological prey remains in pellets or
+  scats](https://sosthenea.github.io/DietView/articles/case-study-morphological-remains.md):
+- [Complete case study: fishery survey catch-composition
+  data](https://sosthenea.github.io/DietView/articles/case-study-survey-catch.md):
 - [Comparing diets across periods, sizes and
   regions](https://sosthenea.github.io/DietView/articles/covariates.md):
 - [Building a self-contained diet
@@ -22,6 +32,8 @@
   changes](https://sosthenea.github.io/DietView/articles/known-diet.md):
 - [Beyond stomachs: DNA metabarcoding, scats and other compositional
   data](https://sosthenea.github.io/DietView/articles/other-data.md):
+- [Choosing a DietView workflow: data types, estimands and
+  reporting](https://sosthenea.github.io/DietView/articles/reporting-by-data-type.md):
 - [The interactive Shiny
   explorer](https://sosthenea.github.io/DietView/articles/shiny-app.md):
 - [Species identification cards and
