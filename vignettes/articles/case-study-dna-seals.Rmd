@@ -1,0 +1,230 @@
+---
+title: "Complete case study: harbour seal scat DNA metabarcoding (Salish Sea)"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Complete case study: harbour seal scat DNA metabarcoding}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 8,
+                      fig.height = 5, warning = TRUE, message = FALSE)
+```
+
+## Question, source and sampling unit
+
+**Research question.** Which prey groups are detected in harbour seal scats,
+how does their *relative DNA signal* vary among groups of samples, and how
+much taxonomic information is lost at finer ranks? This is a descriptive
+worked analysis; it does not estimate ingested biomass or prove a difference
+between seasons or laboratories.
+
+We use the **real, packaged** `salish_seal_dna` data of Thomas et al. (2022):
+4,625 harbour seal (*Phoca vitulina*) scats from 52 Salish Sea haul-outs,
+2012–2018. Each row is a prey assignment **within one scat**. The measured
+`diet_fraction` is an already calculated within-scat DNA fraction, combining
+information from 16S and COI markers. The frozen WoRMS taxonomy,
+`salish_seal_lineage`, avoids live API lookups. The data source and CC0 status
+are documented in `?salish_seal_dna`.
+
+**Unit:** one `sample_id` (scat). **Taxon key:** `prey_label`. **Quantity:**
+`diet_fraction`, *not* prey grams. **Covariates:** site, year, season and lab.
+
+```{r data}
+library(DietView)
+dat <- salish_seal_dna
+lin <- salish_seal_lineage
+c(records = nrow(dat), scats = length(unique(dat$sample_id)),
+  prey_labels = length(unique(dat$prey_label)), sites = length(unique(dat$site)))
+head(dat[, c("sample_id", "prey_label", "diet_fraction", "season", "lab")])
+```
+
+## Audit the input before analysis
+
+A fraction should be finite, non-negative and, in these released data, sum to
+approximately one **within each positive scat**. These checks are diagnostic:
+they should not be used to silently remove unexpected values.
+
+```{r audit}
+stopifnot(!anyNA(dat$sample_id), !anyNA(dat$prey_label))
+stopifnot(all(is.finite(dat$diet_fraction)), all(dat$diet_fraction >= 0))
+scat_total <- tapply(dat$diet_fraction, dat$sample_id, sum)
+summary(scat_total)
+max(abs(scat_total - 1))
+```
+
+```{r sample-frame}
+frame <- unique(dat[, c("sample_id", "site", "year", "season", "lab")])
+stopifnot(!anyDuplicated(frame$sample_id))
+print(table(frame$season, useNA = "ifany"))
+print(table(frame$lab, useNA = "ifany"))
+```
+
+**Interpretation.** `frame` counts scats, not prey records. Samples can contain
+several prey detections. Without a complete list of *all scats processed* we
+cannot calculate a survey-wide negative-detection or extraction-failure rate:
+these released rows describe the samples represented in the published table.
+
+## Specify roles and freeze the taxonomy
+
+`weight_type = "rra"` asks DietView to normalize the quantity within each
+sample. Here the original fractions are already normalized; applying this
+operation again is effectively idempotent (apart from numeric rounding). For
+**raw** ASV read counts, the same argument first performs the normalization;
+see the separate [ASV case study](case-study-asv-pipeline.html).
+
+```{r prepare}
+spec <- dv_spec(
+  predator = "predator", stomach = "sample_id", prey_name = "prey_label",
+  weight = "diet_fraction", weight_type = "rra", unit_label = "scat",
+  covariates = c("site", "year", "season", "lab")
+)
+prep <- dv_prepare(dat, spec, taxonomy = "table", lineage = lin,
+                   verbose = FALSE)
+prep
+c(raw_quantity = "diet_fraction", normalized_column = prep$spec$weight)
+```
+
+```{r verify-normalization}
+normalized <- tapply(prep$data[[prep$spec$weight]], prep$data$sample_id, sum)
+summary(normalized)
+stopifnot(all(abs(normalized[scat_total > 0] - 1) < 1e-6))
+```
+
+The frozen classification retains the *shared* ranks for ambiguous assignments
+such as two alternative rockfish species, instead of choosing one arbitrarily.
+A prey label with more than one candidate is not a precise species
+identification.
+
+```{r ambiguity}
+head(lin[lin$n_candidates > 1,
+         c("prey_label", "family", "genus", "species", "n_candidates")])
+```
+
+## Describe the sample before the diet
+
+```{r summary}
+dv_summary(prep, by = "season")
+```
+
+The numbers describe this **collection of scats**, not a random sample of
+all seal feeding in the Salish Sea. Seasonal contrasts are confounded by site,
+year, laboratory and collection effort unless the design is addressed.
+
+## Calculate three different measures
+
+The three columns below measure **different** things. `pct_occ` is the share
+of *taxon–scat records*; it is not frequency of occurrence. `pct_w` is the
+sample-normalized **relative DNA read signal**. `pct_fo` is the proportion of
+represented scats in which a taxon was detected, at the requested rank.
+
+```{r family}
+tree <- dv_tree(prep)
+family <- dv_rank_table(tree, "Family")
+head(family[order(-family$pct_w),
+            c("label", "value_occ", "pct_occ", "pct_w")], 10)
+```
+
+```{r occurrence}
+fo <- dv_fo_table(prep, rank = "family", denominator = "nonempty")
+head(fo[order(-fo$pct_fo), c("taxon", "n_stomachs", "n_total", "pct_fo")], 10)
+```
+
+At each taxonomic rank, DietView retains an unidentified category. A family
+label `NA` may occur beneath *different* parent taxa; use the hierarchy when
+reading such cells rather than combining their labels indiscriminately.
+
+```{r rank-conservation}
+ranks <- unique(as.character(tree$rank))
+totals <- vapply(ranks, function(r) {
+  x <- tree[tree$rank == r, ]
+  sum(x$pct_w)
+}, numeric(1))
+round(totals, 6)
+stopifnot(all(abs(totals - 100) < 1e-4))
+```
+
+## Render and interpret a real interactive figure
+
+```{r plot-dna}
+dv_sunburst(tree, mode = "weight",
+            title = "Harbour seal scats — within-scat relative DNA signal",
+            subtitle = "Mean RRA, not prey biomass")
+```
+
+Read the rings from coarse to fine. Each ring partitions the same normalized
+DNA signal, with white segments for material not identified below a particular
+rank. A large wedge says **more DNA signal in these samples**, not necessarily
+more prey individuals, biomass or energy. Marker efficiency, primer bias,
+digestion, reference-library coverage and laboratory methods all matter.
+
+## Identification resolution and stratification
+
+```{r resolution}
+res <- dv_resolution(prep, by = "lab")
+head(res[, c("lab", "finest_rank", "n_records", "p_records", "p_weight")], 12)
+```
+
+As a descriptive comparison, prepare two sample-level strata from the frozen
+data. Do not interpret unadjusted contrasts as ecological trends.
+
+```{r strata}
+season_sizes <- sort(table(frame$season), decreasing = TRUE)
+season_sizes
+major <- names(season_sizes)[seq_len(min(2L, length(season_sizes)))]
+season_tables <- lapply(major, function(s) {
+  ds <- dat[!is.na(dat$season) & as.character(dat$season) == s, ]
+  ps <- dv_prepare(ds, spec, taxonomy = "table", lineage = lin,
+                   verbose = FALSE)
+  tb <- dv_rank_table(dv_tree(ps), "Family")
+  data.frame(season = s, tb[, c("label", "pct_w")])
+})
+head(do.call(rbind, season_tables), 12)
+```
+
+## Export data and prepare a dashboard
+
+`dv_matrix()` produces a **scat-by-taxon** numeric matrix for downstream
+analysis; rows are scats, not repeated prey records. The `weight` currency
+contains sample-normalized proportions here.
+
+```{r matrix}
+m <- dv_matrix(prep, rank = "family", currency = "weight")
+c(samples = nrow(m), families_and_unidentified = ncol(m))
+head(round(rowSums(m), 5))
+```
+
+```{r export}
+export <- file.path(tempdir(), "salish_seal_family_rra.csv")
+utils::write.csv(m, export, row.names = TRUE)
+file.exists(export)
+```
+
+Build a single-file HTML dashboard **on your own computer**. This optional
+step is not run while the vignette is built, since it writes a second large
+HTML file; run it interactively when you want to share the result.
+
+```{r dashboard, eval=FALSE}
+dv_build_html(prep,
+  output = file.path(getwd(), "salish_seal_dna_dashboard.html"),
+  bands = c("occurrence", "weight"), strata = c("season", "lab"),
+  min_stomachs = 25,
+  title = "Harbour seal DNA diet — Salish Sea (descriptive)")
+```
+
+## What to report, and what not to infer
+
+Report the source, license, date, marker and laboratory, sampling unit,
+preprocessing, unique sample count **per stratum**, treatment of ambiguous
+taxa, classification version, metric/denominator, and exclusions. In a
+scientific study, add sampling-design-aware uncertainty intervals and evaluate
+batch, site and year effects. Do not equate DNA reads or RRA to biomass or
+individual consumption; a detection in a scat is not proof of a particular
+meal size. This vignette describes detection patterns, not causal or
+population-level seasonal changes.
+
+**References:** Thomas et al. (2022), *Scientific Data* 9:68,
+<https://doi.org/10.1038/s41597-022-01152-5> (data CC0);
+Deagle et al. (2019), *Molecular Ecology* 28:391–406,
+<https://doi.org/10.1111/mec.14734>.

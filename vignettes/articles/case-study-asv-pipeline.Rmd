@@ -1,0 +1,221 @@
+---
+title: "Complete case study: from an ASV table to a DNA diet report"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Complete case study: from ASV table to DNA diet report}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 8,
+                      fig.height = 5, warning = TRUE, message = FALSE)
+```
+
+## The question and the raw export
+
+A sequencing pipeline often delivers **ASVs as rows, samples as columns** and
+one taxonomic lineage string per ASV. DietView needs **one record per
+prey assignment and sampling unit**. This full example converts the table,
+audits the quantities, retains unresolved sequences, distinguishes pooled read
+share from mean relative read abundance (RRA), and exports a figure, matrix
+and optional dashboard.
+
+**All numbers in this article are simulated for teaching.** They are not
+sequencing results and support no biological conclusion. For a real-data
+analysis, follow the [Salish Sea seal case](case-study-dna-seals.html).
+
+```{r data}
+library(DietView)
+asv <- data.frame(
+  asv = paste0("ASV", 1:8),
+  taxonomy = c(
+    "k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__Gadus;s__morhua",
+    "k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__Gadus;s__morhua",
+    "k__Animalia;p__Chordata;c__Actinopteri;o__Clupeiformes;f__Clupeidae;g__Clupea;s__harengus",
+    "k__Animalia;p__Chordata;c__Actinopteri;o__Pleuronectiformes;f__;g__;s__",
+    "k__Animalia;p__Arthropoda;c__Malacostraca;o__Euphausiacea;f__Euphausiidae;g__;s__",
+    "k__Animalia;p__Mollusca;c__Cephalopoda;o__Myopsida;f__Loliginidae;g__Loligo;s__Loligo sp.",
+    "k__Animalia;p__Chordata;c__Actinopteri;o__Gadiformes;f__Gadidae;g__;s__",
+    "Unassigned"
+  ),
+  S1 = c(120, 80, 0, 0, 20, 0, 5, 2),
+  S2 = c(0, 0, 520, 0, 25, 5, 0, 8),
+  S3 = c(75, 30, 0, 22, 0, 0, 10, 1),
+  S4 = c(0, 0, 90, 40, 60, 0, 0, 5),
+  S5 = c(0, 0, 0, 30, 0, 20, 0, 2),
+  S6 = c(400, 0, 150, 0, 0, 0, 12, 3)
+)
+meta <- data.frame(
+  sample = paste0("S", 1:6),
+  predator = rep("Illustrative marine predator", 6),
+  season = c("winter", "winter", "winter", "summer", "summer", "summer"),
+  site = c("A", "A", "B", "A", "B", "B")
+)
+head(asv[, 1:4])
+meta
+```
+
+**Unit:** one sample (`S1`–`S6`). **Quantity:** DNA read count.
+**Taxonomic source:** illustrative lineage labels, not verified WoRMS
+assignments. **Important prerequisite for real data:** quality-control reads,
+negative controls, remove non-target/host sequences, check contamination and
+assignment thresholds *before* the workflow below. DietView does not perform
+sequence denoising, primer filtering or taxonomic assignment.
+
+## Audit counts and sampling metadata
+
+```{r audit}
+reads <- as.matrix(asv[setdiff(names(asv), c("asv", "taxonomy"))])
+stopifnot(!anyNA(reads), all(reads >= 0), all(reads == round(reads)))
+stopifnot(!anyDuplicated(meta$sample), identical(colnames(reads), meta$sample))
+colSums(reads)
+sum(reads)
+```
+
+Read depths differ substantially. A pooled-read percentage gives a deep
+library more influence than a shallow one, whereas mean RRA gives each
+positive sample equal weight.
+
+## Convert ASVs into taxon–sample records
+
+ASV1 and ASV2 have identical taxonomy. For a report by assigned taxon, they
+must be aggregated **within each sample**; otherwise the record share would
+count one biological taxon twice. Keep the original ASV-level table separately
+for reproducibility.
+
+```{r long}
+long <- dv_from_wide(asv, taxa_in = "rows",
+                     id_cols = c("asv", "taxonomy"),
+                     sample_col = "sample", value_col = "reads",
+                     meta = meta, collapse_by = "taxonomy")
+head(long)
+stopifnot(sum(long$reads) == sum(reads))
+```
+
+The lineage parser handles rank prefixes, blank ranks, `sp.` and the
+`Unassigned` record. Missing taxonomic ranks become genuine `NA` values;
+unassigned DNA remains in the denominator rather than silently disappearing.
+
+```{r parse}
+long <- dv_parse_lineage(long, col = "taxonomy")
+head(long[, c("sample", "reads", "prey_name", "phylum",
+                "family", "species")], 10)
+```
+
+For real sequences, audit whether an ASV or several ASVs should count as one
+*taxon detection*. The decision depends on the reporting question and on the
+confidence of the reference classification. An unassigned record is a DNA
+observation but not a named prey species.
+
+## Declare the input contract and normalize within samples
+
+```{r prep}
+spec_rra <- dv_spec(
+  predator = "predator", stomach = "sample", prey_name = "prey_name",
+  weight = "reads", weight_type = "rra", unit_label = "sample",
+  covariates = c("season", "site")
+)
+prep <- dv_prepare(long, spec_rra, taxonomy = "columns", verbose = FALSE)
+prep
+```
+
+`dv_prepare()` keeps the original `reads` column and adds a sample-normalized
+column (`prep$spec$weight`). A sample's contributions should add to one, even
+when some reads cannot be named to species.
+
+```{r normalization}
+rra_col <- prep$spec$weight
+rra_totals <- tapply(prep$data[[rra_col]], prep$data$sample, sum)
+round(rra_totals, 8)
+stopifnot(all(abs(rra_totals - 1) < 1e-8))
+```
+
+### Pooled reads versus mean RRA
+
+Use **two distinct specifications**: `"reads"` keeps pooled read counts;
+`"rra"` standardizes each sample before pooling. `pct_w` is the percentage
+of the quantity declared in the specification, not a measure of prey mass.
+
+```{r currencies}
+spec_reads <- dv_spec(
+  predator = "predator", stomach = "sample", prey_name = "prey_name",
+  weight = "reads", weight_type = "reads", unit_label = "sample",
+  covariates = c("season", "site")
+)
+prep_reads <- dv_prepare(long, spec_reads, taxonomy = "columns",
+                         verbose = FALSE)
+pooled <- dv_rank_table(dv_tree(prep_reads), "Phylum")
+mean_rra <- dv_rank_table(dv_tree(prep), "Phylum")
+comparison <- merge(pooled[, c("label", "pct_w")],
+                    mean_rra[, c("label", "pct_w")], by = "label",
+                    suffixes = c("_pooled_reads", "_mean_rra"))
+comparison
+```
+
+These two percentages can differ because sequencing depth differs between
+samples; *neither* is a percentage of ingested biomass. Always state which was
+reported, and never mix them without a documented rationale.
+
+## Occurrence, rank uncertainty and visualization
+
+```{r statistics}
+tree <- dv_tree(prep)
+dv_rank_table(tree, "Family")
+dv_fo_table(prep, rank = "family")
+dv_resolution(prep)
+```
+
+`pct_occ` counts distinct taxon–sample rows after collapsing repeated ASVs.
+`pct_fo` is the proportion of positive sample IDs with a taxon detection; it
+is not a probability of feeding and need not sum to 100 across taxa. `pct_w`
+is mean RRA. The explicit unidentified node matters especially for the
+`Unassigned` reads and higher-rank matches.
+
+```{r figure}
+dv_sunburst(tree, mode = "weight", title = "Illustrative DNA diet",
+            subtitle = "Mean within-sample RRA; simulated ASV counts")
+```
+
+```{r by-season}
+res <- dv_resolution(prep, by = "season")
+res[, c("season", "finest_rank", "n_records", "p_weight")]
+```
+
+## Export a sample-by-taxon matrix
+
+```{r matrix}
+m <- dv_matrix(prep, rank = "family", currency = "weight")
+round(m, 3)
+stopifnot(nrow(m) == nrow(meta))
+utils::write.csv(m, file.path(tempdir(), "asv_example_family_rra.csv"))
+```
+
+A zero means no reported read assignment for that family in that sample; it
+is not a biological proof of absence. Preserve the ASV table, the control
+results, the filtering script, the reference taxonomy database and its
+version, and the software pipeline used for detection.
+
+```{r dashboard, eval=FALSE}
+dv_build_html(prep,
+  output = file.path(getwd(), "asv_demo_dashboard.html"),
+  strata = "season", bands = c("occurrence", "weight"),
+  title = "ASV tutorial: read-based diet (simulated)")
+```
+
+## Reporting checklist and limitations
+
+A complete report gives read-depth distributions, negative and positive
+controls, thresholds, sample exclusions, marker/primer targets, DNA extraction
+batch, taxonomy reference and version, unresolved fraction, sample-level
+replication, currency and denominator, and uncertainty from the sampling
+design. Do not read RRA as biomass, %FO as ingestion probability, or pooled
+read share as an unbiased estimate of the prey's importance.
+
+For a worked analysis of real scats, continue to
+[harbour seal DNA in the Salish Sea](case-study-dna-seals.html). For samples
+with **no prey sequence retained**, keep a separate sample inventory;
+otherwise a long table cannot reveal their existence.
+
+**Further reading:** Deagle et al. (2019), *Molecular Ecology* 28:391–406,
+<https://doi.org/10.1111/mec.14734>.
