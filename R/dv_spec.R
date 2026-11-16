@@ -139,6 +139,12 @@ dv_validate <- function(data, spec, strict_covariates = TRUE, quiet = FALSE) {
     stop("Missing required column(s): ", paste(miss_req, collapse = ", "), call. = FALSE)
   if (!any(c(spec$prey_id, spec$prey_name) %in% cols))
     stop("Neither the prey_id nor the prey_name column is in the data.", call. = FALSE)
+  # A missing unit ID would silently disappear in a unit-by-taxon matrix.
+  ids <- data[[spec$stomach]]
+  if (anyNA(ids) || any(!nzchar(trimws(as.character(ids)))))
+    stop("Sampling-unit column `", spec$stomach,
+         "` contains missing or blank identifiers; assign a unique ID before preparation.",
+         call. = FALSE)
 
   cov_miss <- setdiff(spec$covariates, cols)
   if (length(cov_miss)) {
@@ -186,9 +192,30 @@ dv_validate <- function(data, spec, strict_covariates = TRUE, quiet = FALSE) {
                            "count as 0.", call. = FALSE)
     if (any(w < 0, na.rm = TRUE))
       stop(sum(w < 0, na.rm = TRUE), " negative weight value(s).", call. = FALSE)
+    if (any(is.infinite(w)))
+      stop("Weight values must be finite or missing (NA).", call. = FALSE)
     n_w_missing <- sum(is.na(w))
   } else if (!quiet) {
     message("No weight column: weight-based views (%W) will be empty.")
+  }
+
+  # The 'numbers' currency represents individuals, not arbitrary scores.
+  if (!is.null(spec$count) && spec$count %in% cols) {
+    raw <- data[[spec$count]]
+    cnt <- suppressWarnings(as.numeric(as.character(raw)))
+    junk <- !is.na(raw) & nzchar(trimws(as.character(raw))) & is.na(cnt)
+    if (any(junk))
+      warning(sum(junk), " count value(s) are not numbers; they will count as 0.",
+              call. = FALSE)
+    if (any(cnt < 0, na.rm = TRUE))
+      stop(sum(cnt < 0, na.rm = TRUE), " negative count value(s).", call. = FALSE)
+    if (any(is.infinite(cnt)))
+      stop("Count values must be finite or missing (NA).", call. = FALSE)
+    fractional <- is.finite(cnt) & cnt != round(cnt)
+    fractional[is.na(fractional)] <- FALSE
+    if (any(fractional))
+      warning(sum(fractional), " count value(s) are not whole numbers; ",
+              "check whether they represent individual prey counts.", call. = FALSE)
   }
 
   # digestion

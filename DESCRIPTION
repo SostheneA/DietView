@@ -5,7 +5,10 @@ Authors@R: c(
     person(given = c("Sosthène", "A. V."), family = "Akia",
            email = "akiasosthene@gmail.com",
                       role = c("aut", "cre")),
-    person("CADI Gulf Center", role = "fnd"))
+    person(given = "His Majesty the King in Right of Canada",
+           role = "cph",
+           comment = "Represented by the Minister of the Department of Fisheries and Oceans"),
+    person("CADI Gulf Center", role = "ctb"))
 Description: Builds interactive, hierarchical views of predator diet from a
     long table of stomach-content records, one row per prey record. Prey are
     placed in a taxonomic hierarchy either by querying the World Register of

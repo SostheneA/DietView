@@ -1,6 +1,9 @@
 ^dev$
 ^vignettes/articles$
 ^DietView\.Rproj$
+^.*\.patch$
+^tatus$
+^audit_output$
 ^\.Rproj\.user$
 ^_pkgdown\.yml$
 ^docs$

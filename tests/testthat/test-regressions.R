@@ -183,5 +183,5 @@ test_that("per-predator '(other)' labels depend only on that predator's records"
 
 test_that("an NA threshold gives a clear error", {
   expect_error(dv_aggregate_threshold(example_prep(), threshold = NA_real_),
-               "single number >= 1")
+               "single finite number >= 1")
 })

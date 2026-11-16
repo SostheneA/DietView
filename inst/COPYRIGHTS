@@ -1,0 +1,42 @@
+Third-party datasets included in DietView
+========================================
+
+DietView source code: MIT License (see DESCRIPTION and LICENSE).
+This software license does not relicense data obtained from third parties.
+
+ICES stomach-content datasets
+-----------------------------
+Objects: ices_diet, ices_stomachs, ices_lineage, ices_lineage_raw.
+
+Observations are derived from a publicly downloadable ICES Stomach Content
+Database extract (2020-2024; Greater North Sea ecoregion). The official ICES
+Stomach Content Data inventory specifies Creative Commons Attribution 4.0
+International (CC BY 4.0) for public data:
+  https://stomachdata.ices.dk/inventory
+  https://creativecommons.org/licenses/by/4.0/
+
+Source attribution:
+  ICES Stomach Content Database. ICES, Copenhagen.
+  https://stomachdata.ices.dk/
+
+The source extract was redistributed in the MIT-licensed stomachr software
+project by Max Lindmark, from the public ICES API:
+  https://github.com/maxlindmark/stomachr
+
+Adaptations made for DietView include dropping empty-stomach placeholder prey
+rows; joining prey, predator, haul and submission information; standardising
+units; and deriving display columns. The ICES taxon keys were matched to a
+WoRMS lineage from stomachr. For three unaccepted AphiaIDs the accepted
+lineage is used in ices_lineage; the original lineage is also supplied.
+Details and a reproducible script are in data-raw/ices_data.R (source repo).
+
+The reporting organisations and source data providers retain their rights.
+DietView does not imply endorsement by ICES. Always consult ICES's current
+terms and any restrictions on specific data before redistributing additional
+ICES records. Historic terms shipped with this extract are retained under
+source-repository data-raw/ices/ICES_data_terms_Disclaimer.txt.
+
+Other example data
+------------------
+The Salish Sea harbour-seal DNA diet dataset is credited separately in
+R/data.R and its dataset documentation, under the original CC0 dedication.

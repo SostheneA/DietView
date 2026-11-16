@@ -1,6 +1,7 @@
 # MIT License
 
-Copyright (c) 2026 Sosthene A. V. Akia
+Copyright (c) 2026 His Majesty the King in Right of Canada,
+as represented by the Minister of the Department of Fisheries and Oceans
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

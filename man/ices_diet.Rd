@@ -37,8 +37,10 @@ when not reported).}
 ICES Stomach Content Database, ICES, Copenhagen
 (\url{https://stomachdata.ices.dk}), as extracted in the R package stomachr
 (Lindmark 2026, \url{https://github.com/maxlindmark/stomachr}), which also
-built the WoRMS classification used in \link{ices_lineage}. ICES data are
-free to use provided the source is acknowledged; see the ICES data policy.
+built the WoRMS classification used in \link{ices_lineage}. Public ICES data
+are licensed CC BY 4.0 (\url{https://creativecommons.org/licenses/by/4.0/}).
+See \url{https://stomachdata.ices.dk/inventory} and the installed COPYRIGHTS
+notice for attribution, provenance and modifications.
 }
 \usage{
 ices_diet

@@ -347,7 +347,9 @@ print.dietview_prep <- function(x, ...) {
   if (!sid %in% names(st))
     stop("`stomachs` must contain the stomach column `", sid, "`.", call. = FALSE)
   ids <- as.character(st[[sid]])
-  if (anyNA(ids)) stop("`stomachs` has stomachs without an identifier.", call. = FALSE)
+  if (anyNA(ids) || any(!nzchar(trimws(ids))))
+    stop("`stomachs` has stomachs without an identifier (missing or blank).",
+         call. = FALSE)
   dup <- unique(ids[duplicated(ids)])
   if (length(dup))
     stop("`stomachs` must have one row per stomach; duplicated: ",

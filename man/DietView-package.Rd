@@ -42,7 +42,8 @@ Authors:
 
 Other contributors:
 \itemize{
-  \item CADI Gulf Center [funder]
+  \item His Majesty the King in Right of Canada (Represented by the Minister of the Department of Fisheries and Oceans) [copyright holder]
+  \item CADI Gulf Center [contributor]
 }
 
 }

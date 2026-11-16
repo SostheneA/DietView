@@ -85,8 +85,12 @@ dv_aggregate_threshold <- function(prep, threshold,
   stopifnot(inherits(prep, "dietview_prep"))
   scope <- match.arg(scope)
   if (!is.numeric(threshold) || length(threshold) != 1L || is.na(threshold) ||
-      threshold < 1)
-    stop("`threshold` must be a single number >= 1.", call. = FALSE)
+      !is.finite(threshold) || threshold < 1)
+    stop("`threshold` must be a single finite number >= 1.", call. = FALSE)
+  if (!is.numeric(min_predators) || length(min_predators) != 1L ||
+      is.na(min_predators) || !is.finite(min_predators) || min_predators < 1 ||
+      min_predators != floor(min_predators))
+    stop("`min_predators` must be a positive whole number.", call. = FALSE)
 
   ranks <- prep$ranks
   d <- prep$data
@@ -194,12 +198,16 @@ dv_aggregate_threshold <- function(prep, threshold,
   lab_settled[need_other] <- other_label
   out$prey_category <- lab_settled
   out$prey_rank <- ifelse(is.na(settled), NA_character_, ranks[pmax(settled, 1L)])
+  # Stable, ancestry-qualified identifiers; labels remain unchanged for display.
+  paths <- .dv_taxon_paths(out, ranks)
+  out$prey_category_id <- ifelse(is.na(lab_settled), NA_character_,
+                                 paste0(paths, " :: ", lab_settled))
 
   res <- prep
   res$data <- out
   attr(res, "aggregation") <- list(threshold = threshold, scope = scope,
                                     min_predators = mp, other_label = other_label,
-                                    n_categories = length(unique(stats::na.omit(lab_settled))))
+                                    n_categories = length(unique(stats::na.omit(out$prey_category_id))))
   res
 }
 
