@@ -56,9 +56,9 @@ specification object. From there it offers:
 - **other data shapes**: wide sample-by-taxon tables (ASV/OTU tables,
   catch compositions) and pipeline lineage strings (QIIME 2, SILVA,
   MIDORI, BOLD) come in with
-  [`dv_from_wide()`](https://sosthenea.github.io/DietView/reference/dv_from_wide.md)
+  [`dv_from_wide()`](https://sosthenea.github.io/DietView/reference/dv_from_wide.html)
   and
-  [`dv_parse_lineage()`](https://sosthenea.github.io/DietView/reference/dv_parse_lineage.md);
+  [`dv_parse_lineage()`](https://sosthenea.github.io/DietView/reference/dv_parse_lineage.html);
   sequence reads are declared as such and summarized as relative read
   abundance (RRA);
 - **interactive sunbursts** (plotly), with one color per taxon kept the
@@ -81,13 +81,37 @@ sampled stomach, empty ones included) and `ices_lineage` (their frozen
 WoRMS classification). Source: ICES Stomach Content Database, ICES,
 Copenhagen; extract distributed with the R package stomachr (Lindmark
 2026). See
-[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md).
+[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.html).
 For DNA-based diet, it also ships `salish_seal_dna`, the metabarcoding
 diet of 4,625 harbour seal scats from the Salish Sea (Thomas et
 al. 2022, *Scientific Data*, CC0), with its frozen WoRMS lineage
 `salish_seal_lineage`.
 
 ## Documentation
+
+### Complete workflows by data type
+
+DietView now includes **22 vignettes**. Two full case studies use
+published, real data (ICES stomach contents and Salish Sea harbour seal
+DNA), while the ASV, morphological remains, survey-catch and benthic
+workflows are **simulated teaching examples**; the last two concern
+sample composition, **not predator diet**. In a DNA analysis, detections
+and relative read abundance (RRA) are not direct estimates of consumed
+biomass.
+
+| Type of input | Complete worked example | Source |
+|----|----|----|
+| Fish stomach contents | [ICES case study](https://sosthenea.github.io/DietView/articles/case-study-ices.html) | Real, public data |
+| Scat metabarcoding | [Salish Sea harbour seal DNA](https://sosthenea.github.io/DietView/articles/case-study-dna-seals.html) | Published data |
+| Raw ASV / OTU counts | [ASV-to-RRA pipeline](https://sosthenea.github.io/DietView/articles/case-study-asv-pipeline.html) | Simulated |
+| Pellets, scats, regurgitates | [Morphological prey remains](https://sosthenea.github.io/DietView/articles/case-study-morphological-remains.html) | Simulated |
+| Survey catches | [Catch composition](https://sosthenea.github.io/DietView/articles/case-study-survey-catch.html) | Simulated; **not diet** |
+| Benthic grabs | [Benthic community](https://sosthenea.github.io/DietView/articles/case-study-benthic-community.html) | Simulated; **not diet** |
+
+Start with the [workflow selection and reporting
+guide](https://sosthenea.github.io/DietView/articles/reporting-by-data-type.html)
+to choose a sampling unit, denominator, taxonomic rank and defensible
+measure.
 
 Everything lives on the **[documentation
 site](https://sosthenea.github.io/DietView/)**. The articles are
@@ -149,6 +173,7 @@ Install DietView from GitHub:
 
 ``` r
 
+
 # install.packages("pak")
 pak::pak("SostheneA/DietView")
 ```
@@ -160,6 +185,7 @@ package, only internet access. The HTML dashboard needs neither
 
 ``` r
 
+
 install.packages(c("worrms", "shiny", "DT"))
 ```
 
@@ -170,6 +196,7 @@ long table of prey records plus a frozen lineage lookup, so no internet
 is required):
 
 ``` r
+
 
 library(DietView)
 
@@ -264,13 +291,13 @@ how much, instead of hiding it.
 
 One row = **one prey record in one stomach**. Column names are free; you
 map them to DietView roles once via
-[`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md).
+[`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.html).
 The bundled `ices_diet` table is in this format: one row per prey
 record, with the stomach-level variables (predator, length, haul,
 region, year, …) repeated on each row, and its lineage lookup is
 `ices_lineage` (ICES Stomach Content Database, ICES, Copenhagen; extract
 distributed with the R package stomachr, Lindmark 2026; see
-[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)).
+[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.html)).
 The data dictionary (`inst/extdata/dietview_data_dictionary.md`) also
 documents the small 24-record example `dietview_example.csv` (base
 table) and `dietview_example_lineage.csv` (lineage lookup), kept for
@@ -284,6 +311,7 @@ quantity is and what a unit is, and every figure, table and dashboard
 follows:
 
 ``` r
+
 
 # DNA metabarcoding of harbour seal scats (bundled, CC0)
 spec <- dv_spec(predator = "predator", stomach = "sample_id",
@@ -320,6 +348,7 @@ tracker](https://github.com/SostheneA/DietView/issues).
 
 ``` r
 
+
 citation("DietView")
 ```
 
@@ -328,12 +357,12 @@ citation("DietView")
 DietView is a visualization and reporting layer; it does not model diet
 composition or fit selectivity. It complements diet-analysis workflows
 built on `vegan` (multivariate community statistics), to which
-[`dv_matrix()`](https://sosthenea.github.io/DietView/reference/dv_matrix.md)
+[`dv_matrix()`](https://sosthenea.github.io/DietView/reference/dv_matrix.html)
 is the direct bridge, the WoRMS toolchain (`worrms`), metabarcoding
 pipelines (QIIME 2, DADA2), whose outputs
-[`dv_from_wide()`](https://sosthenea.github.io/DietView/reference/dv_from_wide.md)
+[`dv_from_wide()`](https://sosthenea.github.io/DietView/reference/dv_from_wide.html)
 and
-[`dv_parse_lineage()`](https://sosthenea.github.io/DietView/reference/dv_parse_lineage.md)
+[`dv_parse_lineage()`](https://sosthenea.github.io/DietView/reference/dv_parse_lineage.html)
 read, and interactive graphics via `plotly` and `htmlwidgets`. The
 sunburst and dashboard design follow the southern Gulf of St. Lawrence
 (sGSL) diet dashboard it generalizes.

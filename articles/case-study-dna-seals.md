@@ -11,10 +11,12 @@ or prove a difference between seasons or laboratories.
 We use the **real, packaged** `salish_seal_dna` data of Thomas et
 al. (2022): 4,625 harbour seal (*Phoca vitulina*) scats from 52 Salish
 Sea haul-outs, 2012–2018. Each row is a prey assignment **within one
-scat**. The measured `diet_fraction` is an already calculated
-within-scat DNA fraction, combining information from 16S and COI
-markers. The frozen WoRMS taxonomy, `salish_seal_lineage`, avoids live
-API lookups. The data source and CC0 status are documented in
+scat**. This is a secondary analysis of the published taxon-level
+dataset, **not** a rerun of the raw-sequence pipeline. The released
+`diet_fraction` is an already calculated within-scat DNA fraction,
+combining information from 16S and COI markers. The frozen WoRMS
+taxonomy, `salish_seal_lineage`, avoids live API lookups. The data
+source and CC0 status are documented in
 [`?salish_seal_dna`](https://sosthenea.github.io/DietView/reference/salish_seal_dna.md).
 
 **Unit:** one `sample_id` (scat). **Taxon key:** `prey_label`.

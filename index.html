@@ -49,7 +49,15 @@
     <li><a class="dropdown-item" href="articles/getting-started.html">Getting started with DietView</a></li>
     <li><a class="dropdown-item" href="articles/tour.html">A guided tour: every flagship function, what it does, and why</a></li>
     <li><a class="dropdown-item" href="articles/data-model.html">The DietView data model and input contract</a></li>
-    <li><a class="dropdown-item" href="articles/case-study-ices.html">Case study: a complete analysis of public ICES stomach data</a></li>
+    <li><a class="dropdown-item" href="articles/reporting-by-data-type.html">Choose a complete workflow (data types, metrics and reporting)</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Complete case studies by data type</h6></li>
+    <li><a class="dropdown-item" href="articles/case-study-ices.html">Stomach contents — public ICES survey</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-dna-seals.html">Scat DNA metabarcoding — published Salish Sea study</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-asv-pipeline.html">Raw ASV / OTU data — simulated sequence counts</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-morphological-remains.html">Morphological scats, pellets and regurgitates — simulated</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-survey-catch.html">Fishery catch composition — simulated</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-benthic-community.html">Benthic community composition — simulated</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
@@ -88,6 +96,8 @@
 <img src="logo.png" class="logo" alt=""><h1 id="dietview-">DietView <a class="anchor" aria-label="anchor" href="#dietview-"></a>
 </h1>
 </div>
+<!-- badges: start -->
+
 <blockquote>
 <p>Interactive, hierarchical visualization of predator diet data</p>
 </blockquote>
@@ -122,18 +132,69 @@
 <strong>covariate stratification</strong> by any user-declared columns (period, year, size class, length bins, region, …), plus helpers to derive periods and length bins;</li>
 <li>an <strong>identification-resolution diagnostic</strong>: the finest rank each record reaches, by predator, method or any covariate, and by digestion stage, to show how identification degrades with digestion;</li>
 <li>
-<strong>other data shapes</strong>: wide sample-by-taxon tables (ASV/OTU tables, catch compositions) and pipeline lineage strings (QIIME 2, SILVA, MIDORI, BOLD) come in with <code><a href="reference/dv_from_wide.html">dv_from_wide()</a></code> and <code><a href="reference/dv_parse_lineage.html">dv_parse_lineage()</a></code>; sequence reads are declared as such and summarized as relative read abundance (RRA);</li>
+<strong>other data shapes</strong>: wide sample-by-taxon tables (ASV/OTU tables, catch compositions) and pipeline lineage strings (QIIME 2, SILVA, MIDORI, BOLD) come in with <a href="https://sosthenea.github.io/DietView/reference/dv_from_wide.html"><code>dv_from_wide()</code></a> and <a href="https://sosthenea.github.io/DietView/reference/dv_parse_lineage.html"><code>dv_parse_lineage()</code></a>; sequence reads are declared as such and summarized as relative read abundance (RRA);</li>
 <li>
 <strong>interactive sunbursts</strong> (plotly), with one color per taxon kept the same in every panel, so strata can be compared at a glance;</li>
 <li>three <strong>outputs</strong>: a <a href="https://shiny.posit.co/" class="external-link">Shiny</a> explorer, a self-contained HTML dashboard (searchable, sortable predator cards, with optional ID photos from iNaturalist or Wikimedia Commons, each credited with its author and license), or plain plotly figures;</li>
 <li>
 <strong>exploration &amp; reproducible aggregation</strong>: sample summaries, prey-accumulation curves for sampling sufficiency, classical per-rank frequency of occurrence, threshold-based aggregation that collapses rare prey upward to a reproducible resolution (pooled, cross-predator, and per-predator), and a sampling-unit by prey-category matrix export for multivariate analysis.</li>
 </ul>
-<p>The package ships real, public data to learn on: <code>ices_diet</code> (9,639 prey records from 4,231 stomachs of 22 fish species, North Sea, Skagerrak-Kattegat and Baltic Sea, 2020-2024), <code>ices_stomachs</code> (every sampled stomach, empty ones included) and <code>ices_lineage</code> (their frozen WoRMS classification). Source: ICES Stomach Content Database, ICES, Copenhagen; extract distributed with the R package stomachr (Lindmark 2026). See <code><a href="reference/ices_diet.html">?ices_diet</a></code>. For DNA-based diet, it also ships <code>salish_seal_dna</code>, the metabarcoding diet of 4,625 harbour seal scats from the Salish Sea (Thomas et al. 2022, <em>Scientific Data</em>, CC0), with its frozen WoRMS lineage <code>salish_seal_lineage</code>.</p>
+<p>The package ships real, public data to learn on: <code>ices_diet</code> (9,639 prey records from 4,231 stomachs of 22 fish species, North Sea, Skagerrak-Kattegat and Baltic Sea, 2020-2024), <code>ices_stomachs</code> (every sampled stomach, empty ones included) and <code>ices_lineage</code> (their frozen WoRMS classification). Source: ICES Stomach Content Database, ICES, Copenhagen; extract distributed with the R package stomachr (Lindmark 2026). See <a href="https://sosthenea.github.io/DietView/reference/ices_diet.html"><code>?ices_diet</code></a>. For DNA-based diet, it also ships <code>salish_seal_dna</code>, the metabarcoding diet of 4,625 harbour seal scats from the Salish Sea (Thomas et al. 2022, <em>Scientific Data</em>, CC0), with its frozen WoRMS lineage <code>salish_seal_lineage</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
+<div class="section level3">
+<h3 id="complete-workflows-by-data-type">Complete workflows by data type<a class="anchor" aria-label="anchor" href="#complete-workflows-by-data-type"></a>
+</h3>
+<p>DietView now includes <strong>22 vignettes</strong>. Two full case studies use published, real data (ICES stomach contents and Salish Sea harbour seal DNA), while the ASV, morphological remains, survey-catch and benthic workflows are <strong>simulated teaching examples</strong>; the last two concern sample composition, <strong>not predator diet</strong>. In a DNA analysis, detections and relative read abundance (RRA) are not direct estimates of consumed biomass.</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr>
+<th>Type of input</th>
+<th>Complete worked example</th>
+<th>Source</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Fish stomach contents</td>
+<td><a href="https://sosthenea.github.io/DietView/articles/case-study-ices.html">ICES case study</a></td>
+<td>Real, public data</td>
+</tr>
+<tr>
+<td>Scat metabarcoding</td>
+<td><a href="https://sosthenea.github.io/DietView/articles/case-study-dna-seals.html">Salish Sea harbour seal DNA</a></td>
+<td>Published data</td>
+</tr>
+<tr>
+<td>Raw ASV / OTU counts</td>
+<td><a href="https://sosthenea.github.io/DietView/articles/case-study-asv-pipeline.html">ASV-to-RRA pipeline</a></td>
+<td>Simulated</td>
+</tr>
+<tr>
+<td>Pellets, scats, regurgitates</td>
+<td><a href="https://sosthenea.github.io/DietView/articles/case-study-morphological-remains.html">Morphological prey remains</a></td>
+<td>Simulated</td>
+</tr>
+<tr>
+<td>Survey catches</td>
+<td><a href="https://sosthenea.github.io/DietView/articles/case-study-survey-catch.html">Catch composition</a></td>
+<td>Simulated; <strong>not diet</strong>
+</td>
+</tr>
+<tr>
+<td>Benthic grabs</td>
+<td><a href="https://sosthenea.github.io/DietView/articles/case-study-benthic-community.html">Benthic community</a></td>
+<td>Simulated; <strong>not diet</strong>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Start with the <a href="https://sosthenea.github.io/DietView/articles/reporting-by-data-type.html">workflow selection and reporting guide</a> to choose a sampling unit, denominator, taxonomic rank and defensible measure.</p>
 <p>Everything lives on the <strong><a href="https://sosthenea.github.io/DietView/">documentation site</a></strong>. The articles are rendered end-to-end on the bundled ICES stomach data (the known-diet article uses a simulated survey instead), so the tables and sunbursts you see there are real output.</p>
 <p><strong>Start here</strong></p>
 <table class="table">
@@ -269,23 +330,27 @@
 <p><strong><a href="https://sosthenea.github.io/DietView/articles/technical-reference.html">Read it online</a></strong> · <strong><a href="https://sosthenea.github.io/DietView/DietView-technical-reference.pdf">Download the PDF</a></strong></p>
 </blockquote>
 </div>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>Install DietView from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"SostheneA/DietView"</span><span class="op">)</span></span></code></pre></div>
 <p>Optional features need a few more packages: <code>worrms</code> (WoRMS taxonomy) and <code>shiny</code> + <code>DT</code> (interactive app). GBIF taxonomy needs no extra package, only internet access. The HTML dashboard needs neither <code>rmarkdown</code> nor pandoc.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"worrms"</span>, <span class="st">"shiny"</span>, <span class="st">"DT"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"worrms"</span>, <span class="st">"shiny"</span>, <span class="st">"DT"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="basic-use">Basic use<a class="anchor" aria-label="anchor" href="#basic-use"></a>
 </h2>
 <p>A minimal, fully offline workflow on the bundled ICES stomach data (a long table of prey records plus a frozen lineage lookup, so no internet is required):</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SostheneA/DietView" class="external-link">DietView</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SostheneA/DietView" class="external-link">DietView</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 1. base long table: one row per prey record, NO taxonomy columns</span></span>
 <span><span class="co">#    (drop non-food items and nematodes, which are mostly parasites, not prey)</span></span>
@@ -426,14 +491,15 @@
 <div class="section level2">
 <h2 id="input-format">Input format<a class="anchor" aria-label="anchor" href="#input-format"></a>
 </h2>
-<p>One row = <strong>one prey record in one stomach</strong>. Column names are free; you map them to DietView roles once via <code><a href="reference/dv_spec.html">dv_spec()</a></code>. The bundled <code>ices_diet</code> table is in this format: one row per prey record, with the stomach-level variables (predator, length, haul, region, year, …) repeated on each row, and its lineage lookup is <code>ices_lineage</code> (ICES Stomach Content Database, ICES, Copenhagen; extract distributed with the R package stomachr, Lindmark 2026; see <code><a href="reference/ices_diet.html">?ices_diet</a></code>). The data dictionary (<code>inst/extdata/dietview_data_dictionary.md</code>) also documents the small 24-record example <code>dietview_example.csv</code> (base table) and <code>dietview_example_lineage.csv</code> (lineage lookup), kept for tests and quick checks of the mechanics.</p>
+<p>One row = <strong>one prey record in one stomach</strong>. Column names are free; you map them to DietView roles once via <a href="https://sosthenea.github.io/DietView/reference/dv_spec.html"><code>dv_spec()</code></a>. The bundled <code>ices_diet</code> table is in this format: one row per prey record, with the stomach-level variables (predator, length, haul, region, year, …) repeated on each row, and its lineage lookup is <code>ices_lineage</code> (ICES Stomach Content Database, ICES, Copenhagen; extract distributed with the R package stomachr, Lindmark 2026; see <a href="https://sosthenea.github.io/DietView/reference/ices_diet.html"><code>?ices_diet</code></a>). The data dictionary (<code>inst/extdata/dietview_data_dictionary.md</code>) also documents the small 24-record example <code>dietview_example.csv</code> (base table) and <code>dietview_example_lineage.csv</code> (lineage lookup), kept for tests and quick checks of the mechanics.</p>
 </div>
 <div class="section level2">
 <h2 id="beyond-stomach-contents">Beyond stomach contents<a class="anchor" aria-label="anchor" href="#beyond-stomach-contents"></a>
 </h2>
 <p>The input contract is not tied to stomachs: any table of taxa with a quantity, inside sampling units, with covariates, fits. Declare what the quantity is and what a unit is, and every figure, table and dashboard follows:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># DNA metabarcoding of harbour seal scats (bundled, CC0)</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co"># DNA metabarcoding of harbour seal scats (bundled, CC0)</span></span>
 <span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/dv_spec.html">dv_spec</a></span><span class="op">(</span>predator <span class="op">=</span> <span class="st">"predator"</span>, stomach <span class="op">=</span> <span class="st">"sample_id"</span>,</span>
 <span>                prey_name <span class="op">=</span> <span class="st">"prey_label"</span>, weight <span class="op">=</span> <span class="st">"diet_fraction"</span>,</span>
 <span>                weight_type <span class="op">=</span> <span class="st">"rra"</span>,            <span class="co"># relative read abundance, not mass</span></span>
@@ -462,12 +528,13 @@
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"DietView"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"DietView"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="related-work">Related work<a class="anchor" aria-label="anchor" href="#related-work"></a>
 </h2>
-<p>DietView is a visualization and reporting layer; it does not model diet composition or fit selectivity. It complements diet-analysis workflows built on <code>vegan</code> (multivariate community statistics), to which <code><a href="reference/dv_matrix.html">dv_matrix()</a></code> is the direct bridge, the WoRMS toolchain (<code>worrms</code>), metabarcoding pipelines (QIIME 2, DADA2), whose outputs <code><a href="reference/dv_from_wide.html">dv_from_wide()</a></code> and <code><a href="reference/dv_parse_lineage.html">dv_parse_lineage()</a></code> read, and interactive graphics via <code>plotly</code> and <code>htmlwidgets</code>. The sunburst and dashboard design follow the southern Gulf of St. Lawrence (sGSL) diet dashboard it generalizes.</p>
+<p>DietView is a visualization and reporting layer; it does not model diet composition or fit selectivity. It complements diet-analysis workflows built on <code>vegan</code> (multivariate community statistics), to which <a href="https://sosthenea.github.io/DietView/reference/dv_matrix.html"><code>dv_matrix()</code></a> is the direct bridge, the WoRMS toolchain (<code>worrms</code>), metabarcoding pipelines (QIIME 2, DADA2), whose outputs <a href="https://sosthenea.github.io/DietView/reference/dv_from_wide.html"><code>dv_from_wide()</code></a> and <a href="https://sosthenea.github.io/DietView/reference/dv_parse_lineage.html"><code>dv_parse_lineage()</code></a> read, and interactive graphics via <code>plotly</code> and <code>htmlwidgets</code>. The sunburst and dashboard design follow the southern Gulf of St. Lawrence (sGSL) diet dashboard it generalizes.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

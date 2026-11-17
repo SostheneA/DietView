@@ -43,7 +43,7 @@ stomachs](https://sosthenea.github.io/DietView/articles/other-data.md).
 | What share of estimated **individuals**? | `dv_tree(prep, currency = "numbers")` then `pct_occ` | Sum of the declared integer `count` | Do not supply fragments, ASV reads or arbitrary scores as individuals |
 | What share of measured **mass**? | `pct_w` with `weight_type = "mass"` | Sum of the specified grams or kg | Recovered mass ≠ consumed biomass; survey catches require effort design |
 | What share of pooled sequence reads? | `pct_w` with `weight_type = "reads"` | All reads in the prepared records | High-depth libraries dominate |
-| What is the mean normalized DNA signal? | `pct_w` with `weight_type = "rra"` | Sample-level proportions normalized to one, then pooled | Same weight per positive sample, not a biomass estimate |
+| What is the mean normalized DNA signal? | `pct_w` with `weight_type = "rra"` | Sample-level proportions normalized to one, then pooled | Same weight per represented read-positive sample, not a biomass estimate; separate failed assays |
 | How finely is material identified? | `dv_resolution(prep)` | Record/quantity shares by finest rank | Resolution reflects methods, references and preservation |
 | Did a sample yield no prey data? | `dv_prepare(..., stomachs = inventory, empty_col = ...)` | All examined units, with statuses | Differentiate true empty, known zero and failed/unknown samples |
 
@@ -78,14 +78,15 @@ distinguishes them where possible.
 ## Minimum information for a publication-quality application
 
 A DietView application should archive the sampling unit and sampling
-frame, exact input and exclusion rules, taxonomic identifiers and
-authority/version, quantity units, zero/unknown handling, declared
-currency and %FO denominator, sample size by group, package version, R
-session information and reproducible code. For DNA work add library
-preparation, marker, primers, pipeline, controls, read filtering, batch
-and detection thresholds. For morphological remains add the basis for
-counts, preservation and digestion bias. For grabs and catches add
-area/effort, gear/catchability and survey design.
+frame, including evidence distinguishing true zeros, excluded samples
+and failed assays; exact input and exclusion rules, taxonomic
+identifiers and authority/version, quantity units, zero/unknown
+handling, declared currency and %FO denominator, sample size by group,
+package version, R session information and reproducible code. For DNA
+work add library preparation, marker, primers, pipeline, controls, read
+filtering, batch and detection thresholds. For morphological remains add
+the basis for counts, preservation and digestion bias. For grabs and
+catches add area/effort, gear/catchability and survey design.
 
 Present uncertainty appropriate to the **independent sampling unit**: a
 stomach, predator, scat, haul or grab may be correlated within sampling

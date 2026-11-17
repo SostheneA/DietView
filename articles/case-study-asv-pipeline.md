@@ -102,10 +102,13 @@ positive sample equal weight.
 
 ## Convert ASVs into taxon–sample records
 
-ASV1 and ASV2 have identical taxonomy. For a report by assigned taxon,
-they must be aggregated **within each sample**; otherwise the record
-share would count one biological taxon twice. Keep the original
-ASV-level table separately for reproducibility.
+ASV1 and ASV2 have the **same reported taxonomic assignment**. Here we
+aggregate their read counts **within sample** for a taxon-level summary,
+so that the taxon–sample record share is not inflated by multiple ASVs
+assigned to one named category. This does **not** imply that the
+original ASVs are biologically identical or interchangeable. Preserve
+the original ASV-level table for sequence-level questions and
+reproducibility.
 
 ``` r
 
@@ -312,10 +315,12 @@ stopifnot(nrow(m) == nrow(meta))
 utils::write.csv(m, file.path(tempdir(), "asv_example_family_rra.csv"))
 ```
 
-A zero means no reported read assignment for that family in that sample;
-it is not a biological proof of absence. Preserve the ASV table, the
-control results, the filtering script, the reference taxonomy database
-and its version, and the software pipeline used for detection.
+A zero means no **retained** read assignment for a family in that
+sample, not biological proof of absence. A read-positive sample defines
+a within-sample RRA denominator; failed or fully filtered assays need a
+separate sample inventory and should not be silently counted as
+negatives. Preserve the ASV table, controls, filtering script, reference
+taxonomy database and version, and the detection pipeline.
 
 ``` r
 
