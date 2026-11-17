@@ -2,21 +2,21 @@
 
 > Interactive, hierarchical visualization of predator diet data
 
-Stomach contents are identified to uneven depth: one prey is named to
-species, the next only to “Teleostei”, and some material cannot be
-placed at all. DietView keeps all of it. From a long table with one row
-per prey record, it attaches a taxonomic lineage (from WoRMS, the GBIF
-Backbone, or a lineage table you supply), keeps every record that
-stopped at a coarse rank as an explicit *unidentified* category below
-that rank, and shows the whole diet at every rank in one sunburst, by
-prey records or by weight. It also reports the classical frequency of
-occurrence, how identification depth changes with digestion, and can
-write the result to a single HTML file that opens in any browser. The
-same tools work beyond stomachs: DNA metabarcoding of scats or gut
-contents (sequence reads summarized as relative read abundance),
-pellets, regurgitates, and other compositional data such as catch or
-benthic samples. See the [documentation
-site](https://sosthenea.github.io/DietView/).
+A stomach-content sample may contain a shrimp identified to species, a
+fish fragment identified only to a broader group, and material that
+cannot be identified at all. DietView keeps these observations together.
+It attaches a taxonomic lineage to each record and shows how the
+recorded diet is distributed across ranks, without losing material
+identified only at a coarse level.
+
+Researchers can explore records, counts and measured quantities,
+calculate frequency of occurrence, examine taxonomic resolution and
+prepare interactive figures. Analyses can be shared as a standalone HTML
+dashboard. The same taxonomic workflow can also describe scat DNA
+detections, morphological remains, survey catches and benthic samples,
+provided the sampling unit and measure are reported appropriately. See
+the [documentation site](https://sosthenea.github.io/DietView/) for
+worked examples.
 
 ## Table of contents
 
@@ -34,9 +34,9 @@ site](https://sosthenea.github.io/DietView/).
 
 ## Overview
 
-DietView is built around a single input contract (*one row per prey
-record in a sampling unit*, usually a stomach) and one reusable
-specification object. From there it offers:
+DietView starts with a long table: one row for each recorded prey
+category within a sampling unit. A specification describes the columns,
+leaving the original data unchanged. The package provides:
 
 - **taxonomy on demand**: resolve prey against WoRMS by AphiaID
   (preferred) or name, following unaccepted names to their valid
@@ -91,13 +91,13 @@ al. 2022, *Scientific Data*, CC0), with its frozen WoRMS lineage
 
 ### Complete workflows by data type
 
-DietView now includes **22 vignettes**. Two full case studies use
-published, real data (ICES stomach contents and Salish Sea harbour seal
-DNA), while the ASV, morphological remains, survey-catch and benthic
-workflows are **simulated teaching examples**; the last two concern
-sample composition, **not predator diet**. In a DNA analysis, detections
-and relative read abundance (RRA) are not direct estimates of consumed
-biomass.
+The documentation includes 22 vignettes. The ICES stomach-content and
+Salish Sea harbour seal examples use published data. The ASV,
+morphological-remains, survey-catch and benthic examples use simulated
+data to illustrate complete workflows. Catch and benthic composition are
+applications of the taxonomic tools, rather than studies of predator
+diet. DNA detections and relative read abundance (RRA) describe
+molecular observations, not consumed biomass.
 
 | Type of input | Complete worked example | Source |
 |----|----|----|
@@ -113,26 +113,26 @@ guide](https://sosthenea.github.io/DietView/articles/reporting-by-data-type.html
 to choose a sampling unit, denominator, taxonomic rank and defensible
 measure.
 
-Everything lives on the **[documentation
-site](https://sosthenea.github.io/DietView/)**. The articles are
-rendered end-to-end on the bundled ICES stomach data (the known-diet
-article uses a simulated survey instead), so the tables and sunbursts
-you see there are real output.
+All guides and case studies are available on the [documentation
+site](https://sosthenea.github.io/DietView/). Examples using published
+data are identified as such, and simulated exercises are labelled
+throughout. Their tables and figures are generated from the data
+specified in each vignette.
 
-**Start here**
+### Start here
 
 |  | Article | What it covers |
 |----|----|----|
 | 1 | [Getting started](https://sosthenea.github.io/DietView/articles/getting-started.html) | the whole pipeline, end to end, offline |
 | 2 | [Data model & input contract](https://sosthenea.github.io/DietView/articles/data-model.html) | one row per prey record; mapping your columns |
 
-**Case study**
+### ICES case study
 
 |  | Article | What it covers |
 |----|----|----|
 | 3 | [Case study: a complete analysis of public ICES stomach data](https://sosthenea.github.io/DietView/articles/case-study-ices.html) | a full worked analysis of the bundled ICES data, from the raw records to figures and a dashboard |
 
-**Core concepts**
+### Core concepts
 
 |  | Article | What it covers |
 |----|----|----|
@@ -144,7 +144,7 @@ you see there are real output.
 | 8 | [Exploring & aggregating diet data](https://sosthenea.github.io/DietView/articles/exploration.html) | sample summary, prey-accumulation, true %FO, threshold aggregation, set x category matrix |
 | 9 | [A known diet](https://sosthenea.github.io/DietView/articles/known-diet.html) | a simulated survey: what keeping or dropping unidentified prey does |
 
-**Outputs & extension**
+### Outputs and extension
 
 |  | Article | What it covers |
 |----|----|----|

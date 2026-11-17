@@ -1,12 +1,13 @@
 # Exploring and aggregating diet data
 
-This article covers the functions you use before drawing a diet: a few
-descriptive summaries, a prey accumulation curve, the classical
-frequency of occurrence, aggregation of rare prey to a stated threshold,
-and export of a stomach-by-prey matrix. It runs on the public ICES
-stomach data that ship with the package (ICES Stomach Content Database,
-ICES, Copenhagen; extract distributed with the R package stomachr,
-Lindmark 2026; see
+Before comparing diet figures, it helps to know how many stomachs were
+sampled, how frequently prey groups occurred and whether the available
+data capture much of the observed taxonomic diversity. This article
+works through those checks, then shows how to aggregate infrequent
+categories and export a stomach-by-taxon matrix. It runs on the public
+ICES stomach data that ship with the package (ICES Stomach Content
+Database, ICES, Copenhagen; extract distributed with the R package
+stomachr, Lindmark 2026; see
 [`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)),
 prepared with the standard set-up used throughout the documentation.
 

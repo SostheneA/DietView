@@ -2,17 +2,18 @@
 
 ## The question and the raw export
 
-A sequencing pipeline often delivers **ASVs as rows, samples as
-columns** and one taxonomic lineage string per ASV. DietView needs **one
-record per prey assignment and sampling unit**. This full example
-converts the table, audits the quantities, retains unresolved sequences,
-distinguishes pooled read share from mean relative read abundance (RRA),
-and exports a figure, matrix and optional dashboard.
+Sequencing pipelines often export a table with ASVs in rows and samples
+in columns, alongside a taxonomic assignment for each sequence variant.
+This example reshapes that output for DietView, checks the read totals
+and retains unresolved assignments. It compares pooled read proportions
+with mean relative read abundance (RRA), then produces a figure, a
+sample matrix and an optional dashboard.
 
-**All numbers in this article are simulated for teaching.** They are not
-sequencing results and support no biological conclusion. For a real-data
-analysis, follow the [Salish Sea seal
-case](https://sosthenea.github.io/DietView/articles/case-study-dna-seals.md).
+The read counts in this example are simulated to illustrate the
+workflow. They cannot support biological conclusions. The [Salish Sea
+harbour seal
+case](https://sosthenea.github.io/DietView/articles/case-study-dna-seals.md)
+uses published data.
 
 ``` r
 

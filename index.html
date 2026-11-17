@@ -52,12 +52,12 @@
     <li><a class="dropdown-item" href="articles/reporting-by-data-type.html">Choose a complete workflow (data types, metrics and reporting)</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Complete case studies by data type</h6></li>
-    <li><a class="dropdown-item" href="articles/case-study-ices.html">Stomach contents — public ICES survey</a></li>
-    <li><a class="dropdown-item" href="articles/case-study-dna-seals.html">Scat DNA metabarcoding — published Salish Sea study</a></li>
-    <li><a class="dropdown-item" href="articles/case-study-asv-pipeline.html">Raw ASV / OTU data — simulated sequence counts</a></li>
-    <li><a class="dropdown-item" href="articles/case-study-morphological-remains.html">Morphological scats, pellets and regurgitates — simulated</a></li>
-    <li><a class="dropdown-item" href="articles/case-study-survey-catch.html">Fishery catch composition — simulated</a></li>
-    <li><a class="dropdown-item" href="articles/case-study-benthic-community.html">Benthic community composition — simulated</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-ices.html">Stomach contents: public ICES survey</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-dna-seals.html">Scat DNA metabarcoding: Salish Sea study</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-asv-pipeline.html">ASV / OTU data: simulated read counts</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-morphological-remains.html">Morphological remains: simulated pellets and scats</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-survey-catch.html">Fishery catch composition: simulated</a></li>
+    <li><a class="dropdown-item" href="articles/case-study-benthic-community.html">Benthic community composition: simulated</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
@@ -101,7 +101,8 @@
 <blockquote>
 <p>Interactive, hierarchical visualization of predator diet data</p>
 </blockquote>
-<p>Stomach contents are identified to uneven depth: one prey is named to species, the next only to “Teleostei”, and some material cannot be placed at all. DietView keeps all of it. From a long table with one row per prey record, it attaches a taxonomic lineage (from WoRMS, the GBIF Backbone, or a lineage table you supply), keeps every record that stopped at a coarse rank as an explicit <em>unidentified</em> category below that rank, and shows the whole diet at every rank in one sunburst, by prey records or by weight. It also reports the classical frequency of occurrence, how identification depth changes with digestion, and can write the result to a single HTML file that opens in any browser. The same tools work beyond stomachs: DNA metabarcoding of scats or gut contents (sequence reads summarized as relative read abundance), pellets, regurgitates, and other compositional data such as catch or benthic samples. See the <a href="https://sosthenea.github.io/DietView/">documentation site</a>.</p>
+<p>A stomach-content sample may contain a shrimp identified to species, a fish fragment identified only to a broader group, and material that cannot be identified at all. DietView keeps these observations together. It attaches a taxonomic lineage to each record and shows how the recorded diet is distributed across ranks, without losing material identified only at a coarse level.</p>
+<p>Researchers can explore records, counts and measured quantities, calculate frequency of occurrence, examine taxonomic resolution and prepare interactive figures. Analyses can be shared as a standalone HTML dashboard. The same taxonomic workflow can also describe scat DNA detections, morphological remains, survey catches and benthic samples, provided the sampling unit and measure are reported appropriately. See the <a href="https://sosthenea.github.io/DietView/">documentation site</a> for worked examples.</p>
 <div class="section level2">
 <h2 id="table-of-contents">Table of contents<a class="anchor" aria-label="anchor" href="#table-of-contents"></a>
 </h2>
@@ -122,7 +123,7 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>DietView is built around a single input contract (<em>one row per prey record in a sampling unit</em>, usually a stomach) and one reusable specification object. From there it offers:</p>
+<p>DietView starts with a long table: one row for each recorded prey category within a sampling unit. A specification describes the columns, leaving the original data unchanged. The package provides:</p>
 <ul>
 <li>
 <strong>taxonomy on demand</strong>: resolve prey against WoRMS by AphiaID (preferred) or name, following unaccepted names to their valid AphiaID, with exact matching first, then WoRMS TAXAMATCH for misspellings, and a provenance log to review; resolve terrestrial and freshwater prey against the GBIF Backbone with the same rules; or join a lineage table for a fully offline, reproducible run;</li>
@@ -147,7 +148,7 @@
 <div class="section level3">
 <h3 id="complete-workflows-by-data-type">Complete workflows by data type<a class="anchor" aria-label="anchor" href="#complete-workflows-by-data-type"></a>
 </h3>
-<p>DietView now includes <strong>22 vignettes</strong>. Two full case studies use published, real data (ICES stomach contents and Salish Sea harbour seal DNA), while the ASV, morphological remains, survey-catch and benthic workflows are <strong>simulated teaching examples</strong>; the last two concern sample composition, <strong>not predator diet</strong>. In a DNA analysis, detections and relative read abundance (RRA) are not direct estimates of consumed biomass.</p>
+<p>The documentation includes 22 vignettes. The ICES stomach-content and Salish Sea harbour seal examples use published data. The ASV, morphological-remains, survey-catch and benthic examples use simulated data to illustrate complete workflows. Catch and benthic composition are applications of the taxonomic tools, rather than studies of predator diet. DNA detections and relative read abundance (RRA) describe molecular observations, not consumed biomass.</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -195,8 +196,11 @@
 </tbody>
 </table>
 <p>Start with the <a href="https://sosthenea.github.io/DietView/articles/reporting-by-data-type.html">workflow selection and reporting guide</a> to choose a sampling unit, denominator, taxonomic rank and defensible measure.</p>
-<p>Everything lives on the <strong><a href="https://sosthenea.github.io/DietView/">documentation site</a></strong>. The articles are rendered end-to-end on the bundled ICES stomach data (the known-diet article uses a simulated survey instead), so the tables and sunbursts you see there are real output.</p>
-<p><strong>Start here</strong></p>
+<p>All guides and case studies are available on the <a href="https://sosthenea.github.io/DietView/">documentation site</a>. Examples using published data are identified as such, and simulated exercises are labelled throughout. Their tables and figures are generated from the data specified in each vignette.</p>
+</div>
+<div class="section level3">
+<h3 id="start-here">Start here<a class="anchor" aria-label="anchor" href="#start-here"></a>
+</h3>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -221,7 +225,10 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Case study</strong></p>
+</div>
+<div class="section level3">
+<h3 id="ices-case-study">ICES case study<a class="anchor" aria-label="anchor" href="#ices-case-study"></a>
+</h3>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -239,7 +246,10 @@
 <td>a full worked analysis of the bundled ICES data, from the raw records to figures and a dashboard</td>
 </tr></tbody>
 </table>
-<p><strong>Core concepts</strong></p>
+</div>
+<div class="section level3">
+<h3 id="core-concepts">Core concepts<a class="anchor" aria-label="anchor" href="#core-concepts"></a>
+</h3>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -289,7 +299,10 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Outputs &amp; extension</strong></p>
+</div>
+<div class="section level3">
+<h3 id="outputs-and-extension">Outputs and extension<a class="anchor" aria-label="anchor" href="#outputs-and-extension"></a>
+</h3>
 <table class="table">
 <colgroup>
 <col width="33%">

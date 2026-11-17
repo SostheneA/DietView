@@ -1,17 +1,16 @@
 # Case study: a complete analysis of public ICES stomach data
 
-This article is a complete diet study, from the raw table to the
-figures, the tables and a dashboard, done only with DietView and a
-little base R. The data are real: a public extract of the ICES Stomach
-Content Database for fishes of the North Sea, the Skagerrak-Kattegat and
-the Baltic Sea. The question is simple and classical: **what do the four
-best-sampled predators in this extract (Atlantic mackerel, Atlantic cod,
-European plaice and whiting) eat, how well do we know it, and how much
-do their diets overlap?**
+This case study follows four well-sampled predators in a public extract
+of the ICES Stomach Content Database: Atlantic mackerel, Atlantic cod,
+European plaice and whiting. Their stomach records come from the North
+Sea, the Skagerrak-Kattegat and the Baltic Sea. We examine which prey
+groups were recorded, how much of the material could be identified, and
+how similar the observed diets appear. The analysis proceeds from the
+source tables through cleaning, taxonomy, summaries and figures to a
+shareable dashboard.
 
-The sections follow the order of a real study. Each one opens with the
-question it answers. Every number in the text is computed by the code
-shown.
+The sections follow the analysis in order. Reported numerical summaries
+are calculated from the data using the accompanying code.
 
 1.  [The question and the data](#data)
 2.  [Checks and cleaning decisions](#cleaning)
@@ -24,7 +23,7 @@ shown.
 9.  [Sampling sufficiency](#sufficiency)
 10. [Resolution-robust aggregation and diet overlap](#aggregation)
 11. [Outputs: dashboard, species cards, app](#outputs)
-12. [What we learned, and the limits](#learned)
+12. [Findings and limitations](#learned)
 
 ``` r
 
@@ -1033,7 +1032,7 @@ dv_build_html(prep4, output = out,
 c(MB = round(file.size(out) / 1e6, 1),
   seconds = round(as.numeric(Sys.time() - t0, units = "secs")))
 #>      MB seconds 
-#>     3.9     3.0
+#>     3.9     4.0
 ```
 
 The file is written to
@@ -1065,7 +1064,7 @@ object:
 run_dietview(prep4)
 ```
 
-## 12. What we learned, and the limits
+## 12. Findings and limitations
 
 *What do the numbers say about these four predators, and how far can we
 trust them?*
@@ -1109,4 +1108,4 @@ The limits are those of the data, and they bound every sentence above:
   and take percentile intervals of `pct_occ` and `pct_w`), or over hauls
   when fish from one haul share a meal.
 
-*This article ran in about 12 seconds.*
+*This article ran in about 17 seconds.*

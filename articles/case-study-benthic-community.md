@@ -2,16 +2,16 @@
 
 ## When can community data use a diet-visualization package?
 
-DietView’s **taxonomic composition and resolution** machinery also works
-for benthic grabs, plankton nets and other sample-by-taxon matrices. But
-a benthic taxon is not necessarily prey, and the result must **not** be
-called a predator diet. This end-to-end example uses simulated
-macrofaunal grabs with counts, measured wet mass and a frozen local
-lineage. No real environmental effect is being claimed.
+Taxonomic composition can also be described for benthic grabs, plankton
+samples and other community surveys. This example follows simulated
+macrofaunal grab samples with organism counts, wet mass and a local
+taxonomic classification. It demonstrates DietView’s hierarchy and
+reporting tools for community composition. The observations are not
+predator diet records, and the example makes no claim about
+environmental differences.
 
-**Question:** How is recorded macrofaunal abundance and wet biomass
-partitioned among taxa, and how much remains identified only to broad
-taxonomic ranks?
+We examine how the recorded abundance and wet mass are distributed among
+taxa and how much material remains identified only to a broad rank.
 
 **Unit:** one grab of **0.1 m²** in this synthetic survey. **Quantity:**
 individuals (numbers currency) and wet grams (mass currency).
@@ -145,7 +145,7 @@ questions and may give different rankings.
 ``` r
 
 dv_sunburst(by_individuals, mode = "occurrence",
-            title = "Benthic grabs — simulated individuals",
+            title = "Benthic grabs: simulated individual counts",
             subtitle = "Numerical abundance, not predator diet")
 ```
 

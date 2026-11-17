@@ -1,10 +1,10 @@
 # A guided tour of the main functions
 
-This article goes through the package one function at a time. For each
-function it says why you would use it, what it does, what it returns,
-and which arguments change the answer. It ends with three short
-applications that show how much a result moves when you change the
-currency or the rank you report at.
+This tour follows a diet analysis from the input table to the figures
+and exports. Along the way, it explains when to use each function, which
+choices affect the result, and how to interpret the returned objects.
+Three examples at the end compare results across quantities, taxonomic
+ranks and levels of identification.
 
 ``` r
 
@@ -107,14 +107,13 @@ predators ate.
 
 ## `dv_spec()`: declare your columns once
 
-**Why.** Every survey names its columns differently. Instead of renaming
-them before the analysis, which leaves published code working on a table
-that no longer matches the archived data, you record which column plays
-which role. The original table stays as it is, and the specification can
-be printed, archived and compared between studies.
+Every survey names its columns differently. Instead of renaming them
+before the analysis, which leaves published code working on a table that
+no longer matches the archived data, you record which column plays which
+role. The original table stays as it is, and the specification can be
+printed, archived and compared between studies.
 
-**What it does.** It stores the mapping and nothing else. Your data are
-not touched.
+It stores the mapping and nothing else. Your data are not touched.
 
 ``` r
 
@@ -146,8 +145,6 @@ str(spec)
 #>  $ unit_label    : chr "stomach"
 #>  - attr(*, "class")= chr "dietview_spec"
 ```
-
-**Arguments that matter.**
 
 *`prey_id` is used before `prey_name`.* Give both when you have both.
 The ID is used for the lookup, and the name lets DietView check that the
@@ -201,25 +198,25 @@ unidentified material, a name), and stomach IDs are unique across
 predators. More than half the stomachs hold a single prey record, which
 matters for every statistic that counts stomachs.
 
-**What you get back.** The data, invisibly, with the counts in the
-`dv_report` attribute. The information is in the messages and warnings.
+The data, invisibly, with the counts in the `dv_report` attribute. The
+information is in the messages and warnings.
 
-**Arguments that matter.** With `strict_covariates = FALSE`, a declared
-covariate missing from the data is dropped from the specification with a
-warning instead of stopping.
+With `strict_covariates = FALSE`, a declared covariate missing from the
+data is dropped from the specification with a warning instead of
+stopping.
 [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)
 takes the same argument.
 
 ## `dv_prepare()`: attach the taxonomy, and log how
 
-**Why.** Here prey are placed in a taxonomic hierarchy taken from an
-external authority or from a lineage table you supply, instead of being
-grouped by hand. Two surveys prepared against the same authority can
-then be compared without recoding.
+Here prey are placed in a taxonomic hierarchy taken from an external
+authority or from a lineage table you supply, instead of being grouped
+by hand. Two surveys prepared against the same authority can then be
+compared without recoding.
 
-**What it does.** It validates the table, looks up each distinct prey
-key, joins the lineage back to every record, and leaves the ranks below
-the last identified rank empty.
+It validates the table, looks up each distinct prey key, joins the
+lineage back to every record, and leaves the ranks below the last
+identified rank empty.
 
 ``` r
 
@@ -240,7 +237,7 @@ prep
 #>   source    : table
 ```
 
-**What you get back.** A `dietview_prep` list. Its main components are:
+A `dietview_prep` list. Its main components are:
 
 - `data`: your table plus one column per rank;
 - `spec`: the specification;
@@ -268,8 +265,6 @@ prep$data[ex, c("prey_name", prep$ranks)]
 The brown shrimp is resolved to species. Sandeels (Ammodytidae) stop at
 family, “Pisces” (a WoRMS superclass) stops at phylum, and unidentified
 material has no rank at all.
-
-**Arguments that matter.**
 
 *`taxonomy` chooses the source.*
 
@@ -300,11 +295,11 @@ AphiaIDs, so a WoRMS run needs that many lookups.
 
 ## `dv_taxonomy_report()`: read the log before you plot
 
-**Why.** Fuzzy and unresolved matches are where a diet description most
-often goes wrong without anyone noticing.
+Fuzzy and unresolved matches are where a diet description most often
+goes wrong without anyone noticing.
 
-**What it does.** It returns the rows of the matching log that need a
-look, largest number of records first.
+It returns the rows of the matching log that need a look, largest number
+of records first.
 
 ``` r
 
@@ -336,14 +331,14 @@ The unresolved prey you did not expect are the ones to chase.
 
 ## `dv_build_tree()` and `dv_tree()`: count the diet at every rank
 
-**Why.** This is where the shares at every rank are computed.
+This is where the shares at every rank are computed.
 
-**What it does.** It counts at the finest rank and adds up toward the
-kingdom. Each node carries three values: `value_item` (the number of
-distinct prey items below it), `value_occ` (the number of prey records)
-and `value_w` (the summed weight). Dividing by the total gives `pct_occ`
-and `pct_w`. `dv_tree(prep)` is the short form that reads the columns
-from the specification.
+It counts at the finest rank and adds up toward the kingdom. Each node
+carries three values: `value_item` (the number of distinct prey items
+below it), `value_occ` (the number of prey records) and `value_w` (the
+summed weight). Dividing by the total gives `pct_occ` and `pct_w`.
+`dv_tree(prep)` is the short form that reads the columns from the
+specification.
 
 ``` r
 
@@ -368,9 +363,8 @@ head(tree, 4)
 #> 4 5.092694e+00
 ```
 
-**What you get back.** A `dietview_tree` data frame with `id`, `label`,
-`parent`, `rank`, the three values and the two shares; here 701 nodes
-over seven rings.
+A `dietview_tree` data frame with `id`, `label`, `parent`, `rank`, the
+three values and the two shares; here 701 nodes over seven rings.
 
 Every record has one place in every ring: under the taxon it was
 identified to at that rank or, if identification stopped earlier, in an
@@ -394,8 +388,6 @@ max(abs(tree$value_occ[match(parents, tree$id)] - kid_sums[parents]))
 The first lets you read any ring on its own. The second is what lets the
 rings nest in a sunburst. Because every ring holds the same records, the
 denominator is the same at every rank: here all 8,530 records.
-
-**Arguments that matter.**
 
 *`weight_col = NULL` is allowed* and leaves the weight view empty. The
 share of prey records still works. Use it when weights are too sparse to
@@ -432,10 +424,10 @@ for %FO, and report each quantity under its own name.
 
 ## `dv_rank_table()`: the numbers behind one ring
 
-**Why.** A figure is for looking; a table is for reporting and checking.
+A figure is for looking; a table is for reporting and checking.
 
-**What it does.** It returns the rows of one rank, sorted by share of
-prey records, with the unidentified rows included.
+It returns the rows of one rank, sorted by share of prey records, with
+the unidentified rows included.
 
 ``` r
 
@@ -485,11 +477,11 @@ rows.
 
 ## `dv_sunburst()`: the whole diet in one figure
 
-**Why.** A taxonomy is a hierarchy, and a bar chart shows one rank at a
-time. A sunburst shows every rank at once.
+A taxonomy is a hierarchy, and a bar chart shows one rank at a time. A
+sunburst shows every rank at once.
 
-**What it does.** It draws the tree, with records unidentified at a rank
-in white wedges with gray edges.
+It draws the tree, with records unidentified at a rank in white wedges
+with gray edges.
 
 ``` r
 
@@ -511,8 +503,6 @@ tree_cod <- dv_tree(prep_cod)
 dv_sunburst(tree_cod, mode = "weight", title = "Atlantic cod",
             subtitle = "share of prey weight")
 ```
-
-**Arguments that matter.**
 
 *`mode` chooses what sizes the wedges:* `"occurrence"` is the
 **default** (share of prey records, or share of individuals when the
@@ -554,10 +544,9 @@ gap. Use color, not position, to find a taxon across panels.
 
 ## `dv_palette()` and `dv_palette_tree()`: colors, and white for unidentified records
 
-**Why.** Across panels, a taxon is recognized by its color, and
-unidentified records need to look different from everything else.
+Across panels, a taxon is recognized by its color, and unidentified
+records need to look different from everything else.
 
-**What it does.**
 [`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md)
 gives each label a color from a 20-color palette and makes `"NA"` white.
 The pooled ICES tree has 402 distinct taxon names, so each color is
@@ -583,8 +572,8 @@ is keyed by node id, so it works for any tree built with the same ranks.
 
 ## `dv_add_period()` and `dv_size_bins()`: covariates in one line
 
-**Why.** Predator size is one of the strongest structuring variables in
-fish diets, partly through gape limitation (Scharf et al. 2000). A diet
+Predator size is one of the strongest structuring variables in fish
+diets, partly through gape limitation (Scharf et al. 2000). A diet
 averaged over a predator’s whole size range mixes what small and large
 individuals eat, so it is worth splitting by size. Years are grouped
 into periods for the same reason: a single year rarely holds enough
@@ -615,7 +604,6 @@ lower break 2021.5 leaves those records without a period (`NA`) rather
 than letting them fall silently into the first level, which the default
 breaks `c(2021, 2022, 2024)` would do.
 
-**Arguments that matter.**
 [`dv_add_period()`](https://sosthenea.github.io/DietView/reference/dv_add_period.md)
 labels each period with the years it contains, such as `"2023-2024"`,
 unless you pass `labels`; a year equal to an inner break belongs to the
@@ -630,12 +618,12 @@ uses these columns.
 
 ## `dv_digestion_diagnostic()`: identification depth and digestion
 
-**Why.** Digestion affects both what can still be identified and what is
-left to weigh. A table of identification depth by digestion score is
-what Buckland et al. (2017) asked diet studies to report.
+Digestion affects both what can still be identified and what is left to
+weigh. A table of identification depth by digestion score is what
+Buckland et al. (2017) asked diet studies to report.
 
-**What it does.** It cross-tabulates the digestion score against the
-deepest rank each record was identified to, in records and in weight.
+It cross-tabulates the digestion score against the deepest rank each
+record was identified to, in records and in weight.
 
 ``` r
 
@@ -670,27 +658,26 @@ mind, the profile is steep: 39% of the pristine records reach species,
 against 5.7% of the skeletal remains, most of which stop at class or
 phylum.
 
-**What you get back.** A data frame with `digestion`, `finest_rank`,
-`n_records`, `weight`, and the percentages within each digestion score,
-`p_records` and `p_weight`.
+A data frame with `digestion`, `finest_rank`, `n_records`, `weight`, and
+the percentages within each digestion score, `p_records` and `p_weight`.
 
-**Arguments that matter.** Percentages are computed within each
-digestion score, so each score adds up to 100 whatever its sample size;
-always read them next to `n_records` (here only 561 records are
-pristine). Pass `by` to split the table by a covariate when you suspect
-the profile differs between strata. A steep profile is a reason to be
-cautious with the weight currency in particular. The vignette
-“Identification depth and digestion” explains how to read the table.
+Percentages are computed within each digestion score, so each score adds
+up to 100 whatever its sample size; always read them next to `n_records`
+(here only 561 records are pristine). Pass `by` to split the table by a
+covariate when you suspect the profile differs between strata. A steep
+profile is a reason to be cautious with the weight currency in
+particular. The vignette “Identification depth and digestion” explains
+how to read the table.
 
 ## `dv_taxonomy_worms()`: the WoRMS lookup on its own
 
-**Why.** `dv_prepare(taxonomy = "worms")` calls it for you. Call it
-directly to build the lineage table you will freeze.
+`dv_prepare(taxonomy = "worms")` calls it for you. Call it directly to
+build the lineage table you will freeze.
 
-**What it does.** It takes a data frame of distinct prey keys and
-returns their lineages and how each was matched. It tries, in order:
-retrieval by AphiaID, the accepted ID behind an unaccepted name, exact
-name match, then fuzzy match.
+It takes a data frame of distinct prey keys and returns their lineages
+and how each was matched. It tries, in order: retrieval by AphiaID, the
+accepted ID behind an unaccepted name, exact name match, then fuzzy
+match.
 
 ``` r
 
@@ -703,18 +690,17 @@ table(tax$match_type)
 write.csv(tax, "my_lineage.csv", row.names = FALSE)   # freeze it
 ```
 
-**Arguments that matter.** It expects columns named `prey_id` and
-`prey_name`, one row per distinct prey, not your full record table. Each
-row carries its `match_type` and `matched_name`, so you can correct a
-fuzzy match by hand before you save the lineage. Successful lookups are
-cached under `cache_dir`, so a rerun after correcting a spelling only
-queries what changed. Failed lookups are not cached.
+It expects columns named `prey_id` and `prey_name`, one row per distinct
+prey, not your full record table. Each row carries its `match_type` and
+`matched_name`, so you can correct a fuzzy match by hand before you save
+the lineage. Successful lookups are cached under `cache_dir`, so a rerun
+after correcting a spelling only queries what changed. Failed lookups
+are not cached.
 
 ## `dv_species_card_assets()`: a photo and a description for a predator
 
-**Why.** People who read a dashboard often need to recognize the
-predators, not only read their diets: technicians, students new to the
-fauna, managers.
+People who read a dashboard often need to recognize the predators, not
+only read their diets: technicians, students new to the fauna, managers.
 
 ``` r
 
@@ -726,20 +712,19 @@ dv_species_card_assets(
 )
 ```
 
-**Arguments that matter.** It works for one predator at a time.
-`photo_source` is `"none"` (the default), `"inaturalist"` or
-`"wikipedia"`; with `"none"` the card has no photo and no description
-unless you supply them in `species_info`. With iNaturalist, only photos
-whose license is in `licenses` (by default CC0, CC BY, CC BY-SA) are
-used, and the result carries the photographer, the license and the
-photo’s page. Photos are embedded in the HTML file, so the dashboard
-keeps working when `image_dir` is deleted. The article on species cards
-covers image licenses.
+It works for one predator at a time. `photo_source` is `"none"` (the
+default), `"inaturalist"` or `"wikipedia"`; with `"none"` the card has
+no photo and no description unless you supply them in `species_info`.
+With iNaturalist, only photos whose license is in `licenses` (by default
+CC0, CC BY, CC BY-SA) are used, and the result carries the photographer,
+the license and the photo’s page. Photos are embedded in the HTML file,
+so the dashboard keeps working when `image_dir` is deleted. The article
+on species cards covers image licenses.
 
 ## `dv_build_html()`, `run_dietview()`, `dv_deploy()`: sharing the result
 
-**Why.** Many of the people who need a diet description do not use R. A
-single HTML file reaches them without a running R session.
+Many of the people who need a diet description do not use R. A single
+HTML file reaches them without a running R session.
 
 ``` r
 
@@ -756,11 +741,10 @@ dv_build_html(
 run_dietview(prep)
 ```
 
-**Arguments that matter.** `cross = list(c(inner, outer))` reads “inner
-within outer”: one row per level of `outer`, one sunburst per level of
-`inner`. Crossing multiplies panels: three regions and four quarters
-give up to twelve sunbursts per predator, several of them empty or
-nearly so.
+`cross = list(c(inner, outer))` reads “inner within outer”: one row per
+level of `outer`, one sunburst per level of `inner`. Crossing multiplies
+panels: three regions and four quarters give up to twelve sunbursts per
+predator, several of them empty or nearly so.
 
 A dashboard is a snapshot: it holds the data as they were when you built
 it. That is a limit for monitoring and an advantage for archiving.

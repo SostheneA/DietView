@@ -1,11 +1,12 @@
 # The interactive Shiny explorer
 
+The [Shiny](https://shiny.posit.co/) explorer lets you examine a
+prepared diet dataset before selecting the figures and summaries to
+report. Launch it with
 [`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md)
-opens an interactive [Shiny](https://shiny.posit.co/) app on a prepared
-dataset. Use it to explore a diet on your own machine before you fix the
-figures you will report. The chunks here are shown but not run, because
-the app needs an interactive R session, the `shiny` package and, for the
-table, `DT`.
+in an interactive R session. The examples in this guide are displayed
+but not run during vignette building; the app requires `shiny` and uses
+`DT` for its data table.
 
 ``` r
 

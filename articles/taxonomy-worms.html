@@ -47,12 +47,12 @@
     <li><a class="dropdown-item" href="../articles/reporting-by-data-type.html">Choose a complete workflow (data types, metrics and reporting)</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Complete case studies by data type</h6></li>
-    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Stomach contents — public ICES survey</a></li>
-    <li><a class="dropdown-item" href="../articles/case-study-dna-seals.html">Scat DNA metabarcoding — published Salish Sea study</a></li>
-    <li><a class="dropdown-item" href="../articles/case-study-asv-pipeline.html">Raw ASV / OTU data — simulated sequence counts</a></li>
-    <li><a class="dropdown-item" href="../articles/case-study-morphological-remains.html">Morphological scats, pellets and regurgitates — simulated</a></li>
-    <li><a class="dropdown-item" href="../articles/case-study-survey-catch.html">Fishery catch composition — simulated</a></li>
-    <li><a class="dropdown-item" href="../articles/case-study-benthic-community.html">Benthic community composition — simulated</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Stomach contents: public ICES survey</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-dna-seals.html">Scat DNA metabarcoding: Salish Sea study</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-asv-pipeline.html">ASV / OTU data: simulated read counts</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-morphological-remains.html">Morphological remains: simulated pellets and scats</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-survey-catch.html">Fishery catch composition: simulated</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-benthic-community.html">Benthic community composition: simulated</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
@@ -100,17 +100,15 @@
 
     
     
-<p>DietView can attach a taxonomic lineage to every prey by querying the
-<a href="https://www.marinespecies.org/" class="external-link">World Register of Marine
-Species (WoRMS)</a>. This vignette shows how to run the lookup, how to
-read the log of how each prey was matched, and how to freeze the result
-so that later runs need no network. The lookup chunks are shown but not
-run, because they need the <code>worrms</code> package and an internet
-connection. Everything else runs on the public ICES stomach-content
-extract that ships with the package (ICES Stomach Content Database,
-ICES, Copenhagen; extract distributed with the R package stomachr,
-Lindmark 2026; see <code><a href="../reference/ices_diet.html">?ices_diet</a></code>) and on its frozen lineage,
-<code>ices_lineage</code>.</p>
+<p>A taxonomic lookup provides the lineage needed to compare prey
+records at different ranks. DietView can obtain it from the <a href="https://www.marinespecies.org/" class="external-link">World Register of Marine Species
+(WoRMS)</a> and keeps a record of how each name or identifier was
+matched. This guide shows how to inspect those matches and save a
+lineage for later analyses. Live lookup examples are not executed when
+the vignette is built because they require <code>worrms</code> and an
+internet connection. The remaining examples use the public ICES extract
+and its packaged lineage, <code>ices_lineage</code> (see
+<code><a href="../reference/ices_diet.html">?ices_diet</a></code> for the data source).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SostheneA/DietView" class="external-link">DietView</a></span><span class="op">)</span></span>
 <span></span>

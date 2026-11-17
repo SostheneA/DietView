@@ -1,11 +1,12 @@
 # Beyond stomachs: DNA metabarcoding, scats and other compositional data
 
-DietView was written for stomach contents, but what it needs is more
-general: a taxon name with a quantity, inside a sampling unit, with
-covariates. The same structure describes diet from DNA metabarcoding of
-scats or gut contents, pellets and regurgitates, catch composition from
-a survey haul, or a benthic grab. This article shows how such data come
-in:
+The DietView input format is useful beyond dissected stomachs. DNA
+metabarcoding, morphological remains, survey catches and benthic grabs
+can all be organised as taxonomic observations within sampling units.
+The ecological interpretation changes with the method: a DNA detection,
+a recovered bone and a recorded catch mass describe different
+quantities. This article explains how to represent each type of
+observation:
 
 - `dv_spec(weight_type = , unit_label = )` says what the quantity is
   (prey mass, sequence reads, or relative read abundance) and what one

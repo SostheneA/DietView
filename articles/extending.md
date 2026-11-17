@@ -1,15 +1,14 @@
 # Adapting DietView to your own survey
 
-DietView makes few assumptions about your data: one row per prey record,
-a predator column, a stomach column and a prey key. Everything else is
-declared. This article goes through the choices you make when you bring
-a survey of your own, in the order you meet them. The worked example is
-the public ICES stomach data that ship with the package (ICES Stomach
-Content Database, ICES, Copenhagen; extract distributed with the R
-package stomachr, Lindmark 2026; see
-[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)):
-a real survey export, with its own column names and codes, that was not
-designed for DietView.
+Adapting DietView to another survey begins with a few practical
+decisions: which rows represent observations, how sampling units are
+identified, which columns contain prey information, and where the
+taxonomy comes from. This guide follows those decisions using the
+packaged public ICES stomach data. The source table retains its survey
+column names and codes, illustrating how to declare column roles without
+restructuring the original records (see
+[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)
+for provenance).
 
 ``` r
 

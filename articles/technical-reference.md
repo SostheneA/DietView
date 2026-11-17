@@ -1,32 +1,32 @@
 # DietView technical reference
 
-This is the **technical companion** to DietView. It is distinct from the
-journal article — which argues *why* the package matters — and from the
-auto-generated [function
-reference](https://sosthenea.github.io/DietView/reference/index.md). It
-explains, in one place, what the package really contains: every exported
-function, the logic of the code, the data structures it passes around,
-and the design decisions behind them.
+This guide describes the architecture, data structures and exported
+functions of DietView. It complements the journal article and the
+[function
+reference](https://sosthenea.github.io/DietView/reference/index.md) by
+explaining how the main components fit together and why particular
+design choices were made.
 
 ## What DietView is
 
-DietView turns a **plain long table of diet records** — one row per prey
-record in a sampling unit (a stomach, a scat, a pellet, a DNA sample),
-with columns for the predator, the unit, the prey, an optional quantity,
-and any covariates — into interactive, taxonomically complete
-**sunburst** views of predator diet. The input table carries *no
-taxonomy*: DietView adds the seven flagship Linnaean ranks (kingdom to
-species) itself, from WoRMS (marine prey), the GBIF Backbone (all
-kingdoms), lineage strings already in the data, or a lineage table you
-supply. From that single input it produces per-taxon importance in two
-currencies, an explicit “NA” category for unidentified prey, covariate
-stratified views, an identification-resolution diagnostic (by any
-grouping, and by digestion stage), and three outputs (a Shiny explorer,
-a self-contained HTML dashboard, and plain plotly figures). The quantity
-can be prey mass, sequence reads, or relative read abundance (RRA), and
-every label follows.
+DietView takes a long table with one record for each taxonomic
+observation within a sampling unit, such as a stomach, scat, pellet or
+DNA sample. The table identifies the predator or assemblage, the sample,
+the observed taxon and any measured quantity or covariates. DietView
+uses this information to build interactive sunbursts showing the
+taxonomic composition. The input table carries *no taxonomy*: DietView
+adds the seven flagship Linnaean ranks (kingdom to species) itself, from
+WoRMS (marine prey), the GBIF Backbone (all kingdoms), lineage strings
+already in the data, or a lineage table you supply. From that single
+input it produces per-taxon importance in two currencies, an explicit
+“NA” category for unidentified prey, covariate stratified views, an
+identification-resolution diagnostic (by any grouping, and by digestion
+stage), and three outputs (a Shiny explorer, a self-contained HTML
+dashboard, and plain plotly figures). The quantity can be prey mass,
+sequence reads, or relative read abundance (RRA), and every label
+follows.
 
-## Design principles (the why behind the code)
+## Design principles
 
 **One input contract, spec-driven.** DietView never hard-codes column
 names. You describe the roles of your columns once, with
@@ -34,11 +34,11 @@ names. You describe the roles of your columns once, with
 and every other function reads that spec. This is what lets the same
 code serve any survey.
 
-**Taxonomy on demand, provenance-logged, never silently guessed.** Prey
-are resolved to WoRMS or to the GBIF Backbone in a strict order — known
-ID, exact name, then optionally fuzzy name (GBIF adds a higher-rank
-match), then unresolved — and every prey carries a provenance record.
-Fuzzy, higher-rank, low-confidence and homonym matches are flagged, and
+**Taxonomy with documented provenance.** Prey are resolved using known
+identifiers first, followed by exact names and, when requested,
+approximate names. GBIF can also return a higher-rank match. Unresolved
+records remain visible, and the matching route is recorded. Fuzzy,
+higher-rank, low-confidence and homonym matches are flagged, and
 [`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md)
 surfaces exactly what needs a human eye. Unaccepted names are followed
 to their valid taxon; results are cached, one file per authority. A GBIF
@@ -53,15 +53,16 @@ category (white). Two consequences: within-rank percentages still sum to
 100 %, and identification gaps stay visible instead of being absorbed
 into a functional grouping.
 
-**Within-rank importance as a genuine partition.** Importance is the
-share of each node within its own rank, so every rank sums to 100 %
-independently — the NA node included. Each ring of the sunburst is its
-own complete pie.
+**Within-rank percentages.** Importance is the share of each node within
+its own rank, so every rank sums to 100 % independently, including the
+unidentified category. Each ring of the sunburst is its own complete
+pie.
 
-**Two currencies.** Every view can be expressed by occurrence (how
-often) or weight (how much biomass); they routinely disagree, and
-showing both is part of an honest diet description. A `count` mode sizes
-segments by distinct diet items.
+**Different measures.** Diet records, individual counts and measured
+quantities answer different questions. A taxon can account for many
+records without contributing much mass, so it is useful to compare
+measures while stating their denominators. A `count` mode sizes segments
+by distinct diet items.
 
 **Say what the quantity is.** Sequence reads are not biomass.
 `dv_spec(weight_type =)` declares the weight column as prey mass
@@ -114,27 +115,40 @@ can be frozen into a lineage table for a fully offline run.
       dv_sunburst()      dv_rank_table()   dv_resolution() / dv_digestion_diagnostic()
       dv_build_html()/dv_deploy()/run_dietview()
 
-The stages: (0) reshape other data shapes — `dv_from_wide`,
-`dv_parse_lineage`; (1) declare & validate — `dv_spec`, `dv_validate`;
-(2) attach taxonomy — `dv_prepare`, `dv_taxonomy_worms`,
-`dv_taxonomy_gbif`, `dv_taxonomy_report`, `dv_lineage_check`; (3) build
-covariates — `dv_add_period`, `dv_size_bins`; (4) compute metrics —
-`dv_build_tree`, `dv_tree`, `dv_rank_table`; (5) draw figures —
-`dv_sunburst`, `dv_palette`; (6) identification resolution —
-`dv_resolution`, `dv_digestion_diagnostic`; (7) species cards —
-`dv_species_card_assets`; (8) ship — `dv_build_html`, `dv_deploy`,
-`run_dietview`, `dv_script`; (9) explore and export — `dv_summary`,
-`dv_prey_accumulation`, `dv_fo_table`, `dv_aggregate_threshold`,
-`dv_matrix`.
+A typical analysis begins by reshaping data, where necessary, with
+[`dv_from_wide()`](https://sosthenea.github.io/DietView/reference/dv_from_wide.md)
+or
+[`dv_parse_lineage()`](https://sosthenea.github.io/DietView/reference/dv_parse_lineage.md).
+Column roles are declared with
+[`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)
+and checked with
+[`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.md).
+[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)
+attaches taxonomy; WoRMS, GBIF, matching reports and lineage checks
+support that step.
+[`dv_add_period()`](https://sosthenea.github.io/DietView/reference/dv_add_period.md)
+and
+[`dv_size_bins()`](https://sosthenea.github.io/DietView/reference/dv_size_bins.md)
+provide grouping variables, while
+[`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)
+and
+[`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md)
+calculate summaries. Figures and interactive outputs use
+[`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md),
+[`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md)
+or
+[`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md).
+The remaining functions handle taxonomic resolution, digestion, species
+cards, sampling summaries, aggregation and export.
 
 ## Data structures
 
 **`dietview_spec`** (from
 [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)):
-the role → column mapping plus display ranks — `predator`, `stomach`,
-`prey_name`/`prey_id`, `weight`, `count`, `digestion`, `covariates`,
-`ranks`, `predator_latin`, `weight_type` (`"mass"`, `"reads"`, `"rra"`)
-and `unit_label`. After
+the column-role mapping and display ranks, including `predator`,
+`stomach`, `prey_name`/`prey_id`, `weight`, `count`, `digestion`,
+`covariates`, `ranks`, `predator_latin`, `weight_type` (`"mass"`,
+`"reads"`, `"rra"`) and `unit_label`. After
 [`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)
 with `weight_type = "rra"`, `weight` names the new proportion column and
 `weight_raw` the original reads.
@@ -150,7 +164,7 @@ counts (in the spec’s unit), ranks, covariates, and the match breakdown.
 
 **`dietview_tree`** (from
 [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)):
-one row per sunburst node — `id`, `label`, `parent`, `rank`,
+one row per sunburst node, with `id`, `label`, `parent`, `rank`,
 `value_item`, `value_occ`, `value_w`, `pct_occ`, `pct_w` (each rank’s
 percentages sum to 100), with the attributes `currency` and
 `weight_type`.
@@ -161,73 +175,73 @@ The complete per-argument reference lives on the [reference
 index](https://sosthenea.github.io/DietView/reference/index.md). In
 brief:
 
-- **[`dv_from_wide()`](https://sosthenea.github.io/DietView/reference/dv_from_wide.md)**
-  — pivot a wide sample-by-taxon table (taxa in rows or in columns) to
-  the long format, drop zeros, join sample metadata, and optionally sum
-  the rows of one taxon within a unit (`collapse_by`).
-- **[`dv_parse_lineage()`](https://sosthenea.github.io/DietView/reference/dv_parse_lineage.md)**
-  — split pipeline lineage strings into rank columns: prefixed (`k__`,
+- **[`dv_from_wide()`](https://sosthenea.github.io/DietView/reference/dv_from_wide.md)**:
+  pivot a wide sample-by-taxon table (taxa in rows or in columns) to the
+  long format, drop zeros, join sample metadata, and optionally sum the
+  rows of one taxon within a unit (`collapse_by`).
+- **[`dv_parse_lineage()`](https://sosthenea.github.io/DietView/reference/dv_parse_lineage.md)**:
+  split pipeline lineage strings into rank columns: prefixed (`k__`,
   `p__`…) or positional fields, placeholders and `sp.` to `NA`, NCBI tax
   IDs and underscores cleaned, `s__epithet` completed with its genus;
   adds the deepest name as `prey_name`.
-- **[`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)**
-  — declare column roles once, with the quantity type and the unit
-  label; a defensive constructor that errors if no prey key is given, or
-  if reads are declared without a weight column.
-- **[`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.md)**
-  — check a table against a spec; hard errors on missing required
-  columns, soft warnings on missing weight/digestion.
-- **[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)**
-  — validate + attach lineage via `columns` / `table` / `worms` / `gbif`
-  / `auto`; normalise “NA”/“” to real `NA`; label lineage gaps; turn
-  reads into RRA when asked.
-- **[`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.md)**
-  — resolve prey to WoRMS (id/exact/fuzzy/unresolved), follow unaccepted
+- **[`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md)**:
+  declare column roles once, with the quantity type and the unit label;
+  a defensive constructor that errors if no prey key is given, or if
+  reads are declared without a weight column.
+- **[`dv_validate()`](https://sosthenea.github.io/DietView/reference/dv_validate.md)**:
+  check a table against a spec; hard errors on missing required columns,
+  soft warnings on missing weight/digestion.
+- **[`dv_prepare()`](https://sosthenea.github.io/DietView/reference/dv_prepare.md)**:
+  validate + attach lineage via `columns` / `table` / `worms` / `gbif` /
+  `auto`; normalise “NA”/“” to real `NA`; label lineage gaps; turn reads
+  into RRA when asked.
+- **[`dv_taxonomy_worms()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_worms.md)**:
+  resolve prey to WoRMS (id/exact/fuzzy/unresolved), follow unaccepted
   names to valid AphiaID, cache, log provenance.
-- **[`dv_taxonomy_gbif()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.md)**
-  — the same for the GBIF Backbone (all kingdoms), over the public GBIF
+- **[`dv_taxonomy_gbif()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_gbif.md)**:
+  the same for the GBIF Backbone (all kingdoms), over the public GBIF
   API with no extra package: key, exact, fuzzy, higher-rank, homonyms
   settled from GBIF’s alternatives when one exact accepted candidate
   exists; a step up to a kingdom alone counts as no match.
-- **[`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md)**
-  — return the matches to review (fuzzy, higher rank, low confidence,
+- **[`dv_taxonomy_report()`](https://sosthenea.github.io/DietView/reference/dv_taxonomy_report.md)**:
+  return the matches to review (fuzzy, higher rank, low confidence,
   homonyms, unresolved, synonyms), sorted by records affected; optional
   CSV.
 - **[`dv_add_period()`](https://sosthenea.github.io/DietView/reference/dv_add_period.md)
   /
-  [`dv_size_bins()`](https://sosthenea.github.io/DietView/reference/dv_size_bins.md)**
-  — derive period and length-bin covariates with auto labels.
-- **[`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)**
-  — the metrics core: roll leaves up rank by rank, guarantee the total
+  [`dv_size_bins()`](https://sosthenea.github.io/DietView/reference/dv_size_bins.md)**:
+  derive period and length-bin covariates with auto labels.
+- **[`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)**:
+  the metrics core: roll leaves up rank by rank, guarantee the total
   invariant, compute within-rank shares in both currencies.
-- **[`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md)**
-  — the sorted importance table for one rank, NA included.
-- **[`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md)**
-  — render the multi-rank sunburst; fixed orientation,
-  currency-dependent sizing and hover.
-- **[`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md)**
-  — stable label → colour dictionary; NA forced white.
-- **[`dv_resolution()`](https://sosthenea.github.io/DietView/reference/dv_resolution.md)**
-  — finest-resolved-rank shares of records and weight (via a `max.col`
+- **[`dv_rank_table()`](https://sosthenea.github.io/DietView/reference/dv_rank_table.md)**:
+  the sorted importance table for one rank, NA included.
+- **[`dv_sunburst()`](https://sosthenea.github.io/DietView/reference/dv_sunburst.md)**:
+  render the multi-rank sunburst; fixed orientation, currency-dependent
+  sizing and hover.
+- **[`dv_palette()`](https://sosthenea.github.io/DietView/reference/dv_palette.md)**:
+  stable label → colour dictionary; NA forced white.
+- **[`dv_resolution()`](https://sosthenea.github.io/DietView/reference/dv_resolution.md)**:
+  finest-resolved-rank shares of records and weight (via a `max.col`
   trick), overall or by any grouping columns; needs no digestion column.
-- **[`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md)**
-  — the same by digestion level, optionally crossed with a covariate.
-- **[`dv_species_card_assets()`](https://sosthenea.github.io/DietView/reference/dv_species_card_assets.md)**
-  — resolve an ID photo + description as a base64 data URI; graceful
+- **[`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md)**:
+  the same by digestion level, optionally crossed with a covariate.
+- **[`dv_species_card_assets()`](https://sosthenea.github.io/DietView/reference/dv_species_card_assets.md)**:
+  resolve an ID photo + description as a base64 data URI; graceful
   offline fallback.
 - **[`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md)
   /
-  [`dv_deploy()`](https://sosthenea.github.io/DietView/reference/dv_deploy.md)**
-  — assemble and render the self-contained dashboard (searchable cards +
+  [`dv_deploy()`](https://sosthenea.github.io/DietView/reference/dv_deploy.md)**:
+  assemble and render the self-contained dashboard (searchable cards +
   per-predator tabs, up to three bands).
-- **[`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md)**
-  — the interactive Shiny explorer.
-- **`print.dietview_prep()`** — compact console summary.
+- **[`run_dietview()`](https://sosthenea.github.io/DietView/reference/run_dietview.md)**:
+  the interactive Shiny explorer.
+- **`print.dietview_prep()`**: compact console summary.
 
 ### The metrics core, in detail
 
 [`dv_build_tree()`](https://sosthenea.github.io/DietView/reference/dv_build_tree.md)
-carries three quantities through the tree — `value_item` (distinct
+carries three quantities through the tree: `value_item` (distinct
 items), `value_occ` (occurrence), `value_w` (weight). Missing ranks are
 filled with the explicit “NA” string so they become real nodes. Records
 are summarised at the finest rank into leaves, then the function loops

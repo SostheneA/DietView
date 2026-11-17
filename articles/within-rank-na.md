@@ -1,14 +1,14 @@
 # Reading the rings: denominators and unidentified prey
 
-A DietView sunburst shows the diet at seven ranks at once, from kingdom
-at the center to species at the edge. This article explains what a
-percentage in any ring is a percentage of, and why prey that could not
-be identified to a given rank stay in the figure instead of being
-dropped. It uses the Atlantic cod records of the public ICES stomach
-data that ship with the package (ICES Stomach Content Database, ICES,
-Copenhagen; extract distributed with the R package stomachr, Lindmark
-2026; see
-[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)).
+Each ring of a DietView sunburst summarises the same observations at a
+different taxonomic rank, from kingdom toward species. When
+identification stops at a coarse rank, the record remains in the finer
+rings as unidentified material. This article uses Atlantic cod records
+from the packaged ICES stomach-content extract to explain the
+denominators and show how including those records affects the reported
+shares (see
+[`?ices_diet`](https://sosthenea.github.io/DietView/reference/ices_diet.md)
+for provenance).
 
 ``` r
 

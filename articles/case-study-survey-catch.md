@@ -2,16 +2,15 @@
 
 ## Why use DietView for survey catches?
 
-A catch matrix is *not* a predator diet, but it still describes the
-composition of identified taxa within a sampling unit. This complete
-**simulated** exercise starts with hauls as rows and taxa as columns,
-passes through an explicit checked taxonomy, and ends with a
-hierarchical figure, haul-occurrence table, sample matrix and optional
-HTML dashboard.
+Survey catches provide a different application of DietView’s
+compositional tools. This simulated example starts with a haul-by-taxon
+mass table, attaches a checked classification and produces a
+hierarchical figure, a haul-occurrence table, a sample matrix and an
+optional HTML dashboard. These outputs describe recorded catches, rather
+than predator diet.
 
-**Question:** What proportion of the **recorded catch mass** belongs to
-each taxon in this synthetic haul survey, and which taxa are
-unidentified?
+The question is how the recorded catch mass is distributed among taxa
+and how much of the catch has only a coarse identification.
 
 **Unit:** one haul. **Quantity:** catch mass in kg. **Pseudo-predator
 role:** a constant label `"Survey catch"` required by the DietView API;
@@ -197,7 +196,7 @@ catchability corrections.
 dv_build_html(prep,
   output = file.path(getwd(), "survey_catch_demo.html"),
   bands = c("occurrence", "weight"), strata = "region",
-  title = "Simulated survey catch composition — not a diet")
+  title = "Simulated catch composition (not predator diet)")
 ```
 
 A scientific report should state the target population, sample

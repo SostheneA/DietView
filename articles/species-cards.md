@@ -1,11 +1,12 @@
 # Species identification cards and photos
 
-Each predator in the dashboard gets a card with a photo and a short
-description.
+A dashboard can include a short identification card for each predator.
+The
 [`dv_species_card_assets()`](https://sosthenea.github.io/DietView/reference/dv_species_card_assets.md)
-finds those for one predator and returns the photo as a data URI, so the
-dashboard stays a single file. Cards exist for predators only; prey have
-no cards.
+function prepares the description and, when a suitable image is
+available, embeds it as a data URI so the dashboard can remain
+self-contained. Species cards describe predators; individual prey taxa
+are not given cards.
 
 The examples use the predators of the public ICES stomach data that ship
 with the package (ICES Stomach Content Database, ICES, Copenhagen;

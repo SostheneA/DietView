@@ -121,7 +121,9 @@ The finest rank each record reaches, overall or by any grouping
 - [`dv_species_card_assets()`](https://sosthenea.github.io/DietView/reference/dv_species_card_assets.md)
   : Resolve an identification photo and description for a predator
 
-## 8 · Ship a dashboard or explore interactively
+## 
+
+Share a dashboard or explore interactively
 
 A self-contained HTML dashboard, a deploy wrapper, and a Shiny explorer.
 
@@ -134,7 +136,9 @@ A self-contained HTML dashboard, a deploy wrapper, and a Shiny explorer.
 - [`dv_script()`](https://sosthenea.github.io/DietView/reference/dv_script.md)
   : Write a reproducible R script for one DietView analysis
 
-## 9 · Explore, aggregate, and export
+## 
+
+Explore, aggregate, and export
 
 Describe the sample, check sampling sufficiency, report classical
 frequency of occurrence, aggregate rare prey upward to a reproducible

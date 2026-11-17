@@ -1,13 +1,13 @@
 # Comparing diets across periods, sizes and regions
 
-Most diet questions are comparisons: before and after a change in the
-ecosystem, small and large predators, one region and another. In
-DietView a comparison starts with a covariate, a column you declare in
+Comparing diets across periods, predator sizes or regions requires more
+than placing figures side by side. The sampling units and the number of
+records in each group also matter. In DietView, grouping variables are
+declared as covariates in
 [`dv_spec()`](https://sosthenea.github.io/DietView/reference/dv_spec.md).
-This article shows how to build covariates from years and lengths, how
-to count what each level holds before reading it, how to draw one
-sunburst per level so the panels can be compared, and how to cross two
-covariates.
+This article shows how to derive periods and length classes, inspect
+group sizes, draw comparable panels and combine two covariates when the
+data permit.
 
 It uses the public ICES stomach data that ship with the package (ICES
 Stomach Content Database, ICES, Copenhagen; extract distributed with the

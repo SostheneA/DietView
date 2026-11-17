@@ -47,12 +47,12 @@
     <li><a class="dropdown-item" href="../articles/reporting-by-data-type.html">Choose a complete workflow (data types, metrics and reporting)</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Complete case studies by data type</h6></li>
-    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Stomach contents — public ICES survey</a></li>
-    <li><a class="dropdown-item" href="../articles/case-study-dna-seals.html">Scat DNA metabarcoding — published Salish Sea study</a></li>
-    <li><a class="dropdown-item" href="../articles/case-study-asv-pipeline.html">Raw ASV / OTU data — simulated sequence counts</a></li>
-    <li><a class="dropdown-item" href="../articles/case-study-morphological-remains.html">Morphological scats, pellets and regurgitates — simulated</a></li>
-    <li><a class="dropdown-item" href="../articles/case-study-survey-catch.html">Fishery catch composition — simulated</a></li>
-    <li><a class="dropdown-item" href="../articles/case-study-benthic-community.html">Benthic community composition — simulated</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-ices.html">Stomach contents: public ICES survey</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-dna-seals.html">Scat DNA metabarcoding: Salish Sea study</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-asv-pipeline.html">ASV / OTU data: simulated read counts</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-morphological-remains.html">Morphological remains: simulated pellets and scats</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-survey-catch.html">Fishery catch composition: simulated</a></li>
+    <li><a class="dropdown-item" href="../articles/case-study-benthic-community.html">Benthic community composition: simulated</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Core concepts</h6></li>
     <li><a class="dropdown-item" href="../articles/within-rank-na.html">Within-rank importance and the explicit-NA philosophy</a></li>
@@ -103,16 +103,16 @@
 <div class="section level2">
 <h2 id="start-with-the-observation-not-the-plotting-function">Start with the <em>observation</em>, not the plotting function<a class="anchor" aria-label="anchor" href="#start-with-the-observation-not-the-plotting-function"></a>
 </h2>
-<p>DietView visualizes a <strong>taxonomic composition inside a sampling
-unit</strong>. It cannot, by itself, establish that a detection equals
-an ingested amount or that a sample distribution represents a
-population. Before applying the functions, specify what each row means,
-the sampling unit, the unit of the quantity, how a missing observation
-was handled, and the ecological estimand.</p>
-<p>This guide is a companion to the full case studies below, which use
-the <strong>same sequence</strong>: question, sample frame, raw
-structure, validation, taxonomic mapping, explicit unknowns, metrics,
-figure, matrix/HTML output and limitations.</p>
+<p>Choosing the appropriate DietView workflow begins with the
+observation. A stomach record, a DNA detection and a survey catch have
+different meanings, even when they can be organised in the same
+taxonomic table. Define the sampling unit, measured quantity, treatment
+of missing observations and scientific question before choosing a
+summary or figure. Descriptive composition alone does not estimate
+consumed biomass or a population total.</p>
+<p>The case studies below show these decisions in practice, from sample
+inventories and taxonomic assignments to measures, figures, exports and
+reporting limitations.</p>
 </div>
 <div class="section level2">
 <h2 id="select-an-end-to-end-case-study">Select an end-to-end case study<a class="anchor" aria-label="anchor" href="#select-an-end-to-end-case-study"></a>
@@ -264,7 +264,7 @@ noun, and label scientific tables with the actual study unit. Do not
 rename a survey catch as a feeding interaction.</p>
 </div>
 <div class="section level2">
-<h2 id="three-rules-that-prevent-misleading-percentages">Three rules that prevent misleading percentages<a class="anchor" aria-label="anchor" href="#three-rules-that-prevent-misleading-percentages"></a>
+<h2 id="interpreting-percentages">Interpreting percentages<a class="anchor" aria-label="anchor" href="#interpreting-percentages"></a>
 </h2>
 <p><strong>1. Always state the currency.</strong> A within-rank
 percentage may be based on record counts, individual counts, wet weight,

@@ -2,17 +2,15 @@
 
 ## Research question, sample frame and limitations
 
-**Question:** Which identifiable prey remains are present in a
-collection of pellets, and how does the taxonomic picture change when
-records, estimated prey individuals, and sample-based occurrence are
-separated?
+This example asks which prey remains were recorded in a collection of
+pellets and how the picture changes when we distinguish records,
+estimated numbers of individuals and sample-based occurrence.
 
-This demonstration uses a **fully simulated** pellet survey. The numbers
-do not represent any real bird species, region or feeding process.
-Pellets, regurgitates, morphological scats and stomachs share a data
-structure, but **their recovery and digestion biases are not
-interchangeable**. Prey remains are not a complete census of ingested
-biomass.
+The pellet survey is simulated; its observations do not describe a real
+predator, location or feeding process. Pellets, regurgitates, scats and
+stomachs can share a data structure, although preservation and digestion
+affect each material differently. Recovered remains therefore cannot be
+treated as a complete measure of ingested biomass.
 
 **Sampling unit:** one pellet, with a unique `pellet_id` even when the
 same bird or site was sampled repeatedly. **Record:** one prey category

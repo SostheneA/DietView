@@ -1,14 +1,13 @@
 # Identification depth and digestion
 
-The more digested a prey item, the coarser the rank it can be named to.
-That matters because digestion is not even across prey. Soft-bodied prey
-lose their identifying features faster than fish with otoliths or
-crustaceans with hard parts, so the material that can still be
-identified to species is a biased sample of what was eaten. Buckland et
-al. (2017) asked diet studies to report how prey condition affected
-identification.
+Digestion can make prey harder to identify, but the effect depends on
+the type of prey and the structures that survive. Soft-bodied organisms
+may lose diagnostic features sooner than prey with otoliths or hard
+external parts. The identifiable fraction of a stomach sample can
+therefore differ from its original composition. Following the concern
+raised by Buckland et al. (2017),
 [`dv_digestion_diagnostic()`](https://sosthenea.github.io/DietView/reference/dv_digestion_diagnostic.md)
-gives you that table.
+summarises taxonomic resolution by recorded digestion stage.
 
 The data are the public ICES stomach-content extract that ships with the
 package (ICES Stomach Content Database, ICES, Copenhagen; extract

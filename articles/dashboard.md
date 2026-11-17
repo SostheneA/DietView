@@ -1,15 +1,14 @@
 # Building a self-contained diet dashboard
 
+The
 [`dv_build_html()`](https://sosthenea.github.io/DietView/reference/dv_build_html.md)
-writes a single HTML file with one page per predator, modeled on the
-diet dashboard built for the southern Gulf of St. Lawrence. The landing
-page shows one card per predator, with its stomach count and, if you
-give a length column, its length range. Each predator page shows the
-diet in bands of sunbursts: by default prey records (% of all records)
-and weight (% of total weight); add `bands = "count"` for distinct prey
-items. Every band has the same layout: one sunburst for all the
-predator’s records, one row of sunbursts per covariate you choose, and,
-if you ask for them, crossed rows.
+function creates a dashboard that can be opened in a browser without an
+R session. Its landing page lists the predators and their sample sizes,
+with length ranges when available. Each predator has figures for the
+selected measures, including prey-record shares and recorded mass. You
+can compare groups using declared covariates and, where appropriate,
+cross two grouping variables. A distinct-item view is available with
+`bands = "count"`.
 
 The data are the public ICES stomach-content extract that ships with the
 package (ICES Stomach Content Database, ICES, Copenhagen; extract
