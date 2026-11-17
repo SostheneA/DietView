@@ -702,10 +702,16 @@ iso <- names(which.min(omax)); iso_max <- min(omax)
 By records, the most similar pair is `r rownames(o)[mx[1]]` and
 `r colnames(o)[mx[2]]` (`r o[mx[1], mx[2]]`), the least similar
 `r rownames(o)[mn[1]]` and `r colnames(o)[mn[2]]` (`r o[mn[1], mn[2]]`).
-Values below about 0.6 are conventionally read as no biologically
-significant overlap. The same matrix at the stomach level (`m_st`) is what a
-multivariate analysis would start from, for instance with
-`vegan::vegdist(m_st, "bray")`.
+An overlap value, including a value below about 0.6, describes **relative
+similarity for this particular taxonomic resolution and currency**. Numerical
+cut-offs sometimes used as heuristics are **not** universal boundaries of
+biological significance, and Schoener overlap is not itself a statistical
+test. Interpretation depends on sampling coverage, taxonomic aggregation and
+how unidentified prey were retained. No uncertainty interval for overlap is
+estimated here. A stomach-level matrix (`m_st`) could support a separately
+designed multivariate analysis (for example, using
+`vegan::vegdist(m_st, "bray")`), after assessing the sampling design,
+non-independence and zero structure.
 
 ## 11. Outputs: dashboard, species cards, app {#outputs}
 

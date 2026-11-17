@@ -247,9 +247,14 @@ other fish) and *Aphia minuta* (transparent goby) are frequent enough to stay
 on their own. The `r format(sum(is.na(agg$data$prey_rank)), big.mark = ",")`
 records with no prey placement at all stay unidentified (`NA`).
 
-The result is a `dietview_prep` again: ranks finer than the rank each record
-settled at are set to `NA`, so it goes straight back into the usual functions,
-and the sunburst then has no category rarer than the threshold.
+The result is a `dietview_prep` again: ranks finer than each record's retained
+classification are set to `NA`, so the usual tree and figure functions can be
+used. **Scope matters:** by default, `scope = "pooled"` applies the threshold
+to the pooled set of sampling units. A category retained across all predators
+may still occur in fewer than `threshold` stomachs within a particular
+predator or covariate stratum. Use `scope = "per_predator"` for a
+predator-specific aggregation rule, and report that choice. The pooled rule
+must not be interpreted as a guarantee for every displayed subgroup.
 
 ```{r aggregate-tree}
 tree_agg <- dv_build_tree(agg$data[agg$data$predator_common == "Atlantic cod", ],

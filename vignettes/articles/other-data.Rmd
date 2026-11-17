@@ -30,6 +30,14 @@ grab. This article shows how such data come in:
   against the GBIF Backbone Taxonomy, with the same rules and review log as
   WoRMS.
 
+For end-to-end applications rather than short format examples, see the
+[real harbour-seal DNA case](case-study-dna-seals.html), the
+[simulated raw ASV workflow](case-study-asv-pipeline.html), the
+[simulated morphological-remains case](case-study-morphological-remains.html),
+the [simulated catch survey](case-study-survey-catch.html), the
+[simulated benthic survey](case-study-benthic-community.html), and the
+[metrics and reporting guide](reporting-by-data-type.html).
+
 ```{r setup}
 library(DietView)
 ```
@@ -62,10 +70,13 @@ seal
 
 ### Occurrence and relative read abundance
 
-Two views answer different questions. The share of prey records (with one
-record per taxon and scat) and the frequency of occurrence say how often a
-prey is eaten; the mean RRA says how much of the diet it makes up, each scat
-weighing the same:
+These views answer **different descriptive questions**. The prey-record
+share counts taxon--scat records; frequency of occurrence (%FO) counts the
+represented scats in which a taxon was **detected**. Neither directly measures
+how often a seal consumed the prey. Mean relative read abundance (RRA)
+represents the sample-normalized **DNA signal**, with each represented positive
+scat receiving equal total weight. RRA is not prey biomass or the fraction of
+ingested food:
 
 ```{r seal-tree}
 tree_seal <- dv_tree(seal)
@@ -75,9 +86,11 @@ fo <- dv_fo_table(seal, rank = "species")
 head(fo[order(-fo$pct_fo), c("taxon", "n_stomachs", "pct_fo")], 6)
 ```
 
-Pacific herring is found in more scats than Pacific hake, but hake makes up
-more of the diet when it is eaten: the two currencies rank them differently,
-which is why DietView keeps both.
+Pacific herring and Pacific hake may rank differently according to the
+number of scats with a taxon detection and the relative DNA signal attributed
+to that taxon. This is a contrast between **detection frequency** and **mean
+RRA**, not evidence about how much of either prey was ingested. DietView
+retains the two currencies so they are not conflated.
 
 ```{r seal-sunburst, eval = FALSE}
 dv_sunburst(tree_seal, mode = "weight", title = "Harbour seal, Salish Sea (mean RRA)")
