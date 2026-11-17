@@ -35,8 +35,22 @@ navbar:
         href: articles/tour.html
       - text: The DietView data model and input contract
         href: articles/data-model.html
-      - text: "Case study: a complete analysis of public ICES stomach data"
+      - text: "Choose a complete workflow (data types, metrics and reporting)"
+        href: articles/reporting-by-data-type.html
+      - text: "-------"
+      - text: "Complete case studies by data type"
+      - text: "Stomach contents — public ICES survey"
         href: articles/case-study-ices.html
+      - text: "Scat DNA metabarcoding — published Salish Sea study"
+        href: articles/case-study-dna-seals.html
+      - text: "Raw ASV / OTU data — simulated sequence counts"
+        href: articles/case-study-asv-pipeline.html
+      - text: "Morphological scats, pellets and regurgitates — simulated"
+        href: articles/case-study-morphological-remains.html
+      - text: "Fishery catch composition — simulated"
+        href: articles/case-study-survey-catch.html
+      - text: "Benthic community composition — simulated"
+        href: articles/case-study-benthic-community.html
       - text: "-------"
       - text: "Core concepts"
       - text: Within-rank importance and the explicit-NA philosophy
