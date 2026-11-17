@@ -180,10 +180,11 @@ finest rank and rolled up, so a parent’s value equals the sum of its
 children; a unit test guards it. The sunburst passes only the leaf
 values to plotly (<code>branchvalues = "remainder"</code>, parents at
 0), so the wedge sizes cannot drift from the table.</p>
-<p><strong>Fixed orientation for comparability.</strong> Sunbursts use
-<code>sort = FALSE</code> and a fixed start angle, so a taxon sits in
-the same place across covariate cells and cells can be compared
-directly.</p>
+<p><strong>Consistent orientation for comparability.</strong> Sunbursts
+use <code>sort = FALSE</code> and a fixed start angle, preserving a
+shared ordering convention across covariate cells. However, taxon angles
+and positions can change with relative shares and represented taxa;
+comparison requires a shared palette and the actual values.</p>
 <p><strong>Self-contained, reproducible outputs.</strong> The HTML
 dashboard embeds images as base64 and can render a single self-contained
 file; taxonomy can be frozen into a lineage table for a fully offline
@@ -379,13 +380,20 @@ within its rank.</p>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">plot_ly</span><span class="op">(</span><span class="va">tree</span>, ids <span class="op">=</span> <span class="op">~</span><span class="va">id</span>, labels <span class="op">=</span> <span class="op">~</span><span class="va">label</span>, parents <span class="op">=</span> <span class="op">~</span><span class="va">parent</span>, values <span class="op">=</span> <span class="va">size_vals</span>,</span>
-<span>        type <span class="op">=</span> <span class="st">'sunburst'</span>, branchvalues <span class="op">=</span> <span class="st">'total'</span>, sort <span class="op">=</span> <span class="cn">FALSE</span>, rotation <span class="op">=</span> <span class="va">rotation</span>,</span>
+<span>        type <span class="op">=</span> <span class="st">'sunburst'</span>, branchvalues <span class="op">=</span> <span class="st">'remainder'</span>, sort <span class="op">=</span> <span class="cn">FALSE</span>, rotation <span class="op">=</span> <span class="va">rotation</span>,</span>
 <span>        textinfo <span class="op">=</span> <span class="st">'text'</span>, text <span class="op">=</span> <span class="op">~</span><span class="va">text</span>,   <span class="co"># blank on unidentified ("NA") wedges</span></span>
 <span>        hovertext <span class="op">=</span> <span class="op">~</span><span class="va">hovertext</span>, hovertemplate <span class="op">=</span> <span class="st">'%{hovertext}&lt;extra&gt;&lt;/extra&gt;'</span>,</span>
 <span>        marker <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>colors <span class="op">=</span> <span class="op">~</span><span class="va">color</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><code>sort = FALSE</code> plus a fixed <code>rotation</code> keep the
-reading order and start angle identical across covariate cells — what
-makes side-by-side comparison meaningful.</p>
+<p><code>branchvalues = "remainder"</code> reflects the implemented
+<strong>leaf-only</strong> plotting strategy: the non-zero values are
+supplied at terminal nodes, while the parents’ supplied values are zero
+and Plotly rolls the leaves up. Using
+<code>branchvalues = "total"</code> in this example would not describe
+the actual call. <code>sort = FALSE</code> and a fixed
+<code>rotation</code> maintain the ordering convention and starting
+angle across panels, but <strong>do not</strong> guarantee identical
+taxon wedge positions when compositions differ. Use consistent colors
+and values.</p>
 </div>
 <div class="section level3">
 <h3 id="the-resolution-trick">The resolution trick<a class="anchor" aria-label="anchor" href="#the-resolution-trick"></a>

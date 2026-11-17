@@ -126,6 +126,13 @@ pipelines report into rank columns;</li>
 marine realm against the GBIF Backbone Taxonomy, with the same rules and
 review log as WoRMS.</li>
 </ul>
+<p>For end-to-end applications rather than short format examples, see
+the <a href="case-study-dna-seals.html">real harbour-seal DNA case</a>,
+the <a href="case-study-asv-pipeline.html">simulated raw ASV
+workflow</a>, the <a href="case-study-morphological-remains.html">simulated
+morphological-remains case</a>, the <a href="case-study-survey-catch.html">simulated catch survey</a>, the <a href="case-study-benthic-community.html">simulated benthic survey</a>,
+and the <a href="reporting-by-data-type.html">metrics and reporting
+guide</a>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SostheneA/DietView" class="external-link">DietView</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
@@ -168,10 +175,14 @@ weight:</p>
 <div class="section level3">
 <h3 id="occurrence-and-relative-read-abundance">Occurrence and relative read abundance<a class="anchor" aria-label="anchor" href="#occurrence-and-relative-read-abundance"></a>
 </h3>
-<p>Two views answer different questions. The share of prey records (with
-one record per taxon and scat) and the frequency of occurrence say how
-often a prey is eaten; the mean RRA says how much of the diet it makes
-up, each scat weighing the same:</p>
+<p>These views answer <strong>different descriptive questions</strong>.
+The prey-record share counts taxon–scat records; frequency of occurrence
+(%FO) counts the represented scats in which a taxon was
+<strong>detected</strong>. Neither directly measures how often a seal
+consumed the prey. Mean relative read abundance (RRA) represents the
+sample-normalized <strong>DNA signal</strong>, with each represented
+positive scat receiving equal total weight. RRA is not prey biomass or
+the fraction of ingested food:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tree_seal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_tree.html">dv_tree</a></span><span class="op">(</span><span class="va">seal</span><span class="op">)</span></span>
 <span><span class="va">fam</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/dv_rank_table.html">dv_rank_table</a></span><span class="op">(</span><span class="va">tree_seal</span>, <span class="st">"Family"</span><span class="op">)</span></span>
@@ -192,9 +203,12 @@ up, each scat weighing the same:</p>
 <span><span class="co">#&gt; 4 Oncorhynchus tshawytscha        591  12.78</span></span>
 <span><span class="co">#&gt; 5      Gadus chalcogrammus        578  12.50</span></span>
 <span><span class="co">#&gt; 6   Cymatogaster aggregata        575  12.43</span></span></code></pre></div>
-<p>Pacific herring is found in more scats than Pacific hake, but hake
-makes up more of the diet when it is eaten: the two currencies rank them
-differently, which is why DietView keeps both.</p>
+<p>Pacific herring and Pacific hake may rank differently according to
+the number of scats with a taxon detection and the relative DNA signal
+attributed to that taxon. This is a contrast between <strong>detection
+frequency</strong> and <strong>mean RRA</strong>, not evidence about how
+much of either prey was ingested. DietView retains the two currencies so
+they are not conflated.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/dv_sunburst.html">dv_sunburst</a></span><span class="op">(</span><span class="va">tree_seal</span>, mode <span class="op">=</span> <span class="st">"weight"</span>, title <span class="op">=</span> <span class="st">"Harbour seal, Salish Sea (mean RRA)"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/dv_build_html.html">dv_build_html</a></span><span class="op">(</span><span class="va">seal</span>, output <span class="op">=</span> <span class="st">"salish_seal.html"</span>, cross <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"season"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>

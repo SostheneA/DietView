@@ -951,11 +951,17 @@ schoener <- function(m) {
 ```
 
 By records, the most similar pair is Whiting and Atlantic cod (0.52),
-the least similar European plaice and Atlantic mackerel (0.02). Values
-below about 0.6 are conventionally read as no biologically significant
-overlap. The same matrix at the stomach level (`m_st`) is what a
-multivariate analysis would start from, for instance with
-`vegan::vegdist(m_st, "bray")`.
+the least similar European plaice and Atlantic mackerel (0.02). An
+overlap value, including a value below about 0.6, describes **relative
+similarity for this particular taxonomic resolution and currency**.
+Numerical cut-offs sometimes used as heuristics are **not** universal
+boundaries of biological significance, and Schoener overlap is not
+itself a statistical test. Interpretation depends on sampling coverage,
+taxonomic aggregation and how unidentified prey were retained. No
+uncertainty interval for overlap is estimated here. A stomach-level
+matrix (`m_st`) could support a separately designed multivariate
+analysis (for example, using `vegan::vegdist(m_st, "bray")`), after
+assessing the sampling design, non-independence and zero structure.
 
 ## 11. Outputs: dashboard, species cards, app
 
@@ -1103,4 +1109,4 @@ The limits are those of the data, and they bound every sentence above:
   and take percentile intervals of `pct_occ` and `pct_w`), or over hauls
   when fish from one haul share a meal.
 
-*This article ran in about 11 seconds.*
+*This article ran in about 12 seconds.*

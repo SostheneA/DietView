@@ -84,9 +84,11 @@ test guards it. The sunburst passes only the leaf values to plotly
 (`branchvalues = "remainder"`, parents at 0), so the wedge sizes cannot
 drift from the table.
 
-**Fixed orientation for comparability.** Sunbursts use `sort = FALSE`
-and a fixed start angle, so a taxon sits in the same place across
-covariate cells and cells can be compared directly.
+**Consistent orientation for comparability.** Sunbursts use
+`sort = FALSE` and a fixed start angle, preserving a shared ordering
+convention across covariate cells. However, taxon angles and positions
+can change with relative shares and represented taxa; comparison
+requires a shared palette and the actual values.
 
 **Self-contained, reproducible outputs.** The HTML dashboard embeds
 images as base64 and can render a single self-contained file; taxonomy
@@ -257,15 +259,20 @@ and `pct_w` give each node’s share within its rank.
 ``` r
 
 plot_ly(tree, ids = ~id, labels = ~label, parents = ~parent, values = size_vals,
-        type = 'sunburst', branchvalues = 'total', sort = FALSE, rotation = rotation,
+        type = 'sunburst', branchvalues = 'remainder', sort = FALSE, rotation = rotation,
         textinfo = 'text', text = ~text,   # blank on unidentified ("NA") wedges
         hovertext = ~hovertext, hovertemplate = '%{hovertext}<extra></extra>',
         marker = list(colors = ~color))
 ```
 
-`sort = FALSE` plus a fixed `rotation` keep the reading order and start
-angle identical across covariate cells — what makes side-by-side
-comparison meaningful.
+`branchvalues = "remainder"` reflects the implemented **leaf-only**
+plotting strategy: the non-zero values are supplied at terminal nodes,
+while the parents’ supplied values are zero and Plotly rolls the leaves
+up. Using `branchvalues = "total"` in this example would not describe
+the actual call. `sort = FALSE` and a fixed `rotation` maintain the
+ordering convention and starting angle across panels, but **do not**
+guarantee identical taxon wedge positions when compositions differ. Use
+consistent colors and values.
 
 ### The resolution trick
 

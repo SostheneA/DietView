@@ -514,10 +514,13 @@ dv_sunburst(tree_cod, mode = "weight", title = "Atlantic cod",
 
 **Arguments that matter.**
 
-*`mode` chooses what sizes the wedges:* `"count"` (the default: distinct
-prey items), `"occurrence"` (prey records) or `"weight"`. Records and
-weight rank prey very differently in cod (see Application 1), so look at
-both.
+*`mode` chooses what sizes the wedges:* `"occurrence"` is the
+**default** (share of prey records, or share of individuals when the
+tree uses the `"numbers"` currency); `"count"` counts distinct prey
+items; and `"weight"` uses the declared mass, reads or sample-normalized
+relative DNA signal. These measures can rank prey differently (see
+Application 1), so report the currency explicitly rather than treating
+the views as interchangeable.
 
 *`colors` matters as soon as you compare panels.* Left `NULL`, each call
 builds its own palette from its own labels, so two panels can give the

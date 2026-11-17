@@ -22,6 +22,20 @@ in:
   against the GBIF Backbone Taxonomy, with the same rules and review log
   as WoRMS.
 
+For end-to-end applications rather than short format examples, see the
+[real harbour-seal DNA
+case](https://sosthenea.github.io/DietView/articles/case-study-dna-seals.md),
+the [simulated raw ASV
+workflow](https://sosthenea.github.io/DietView/articles/case-study-asv-pipeline.md),
+the [simulated morphological-remains
+case](https://sosthenea.github.io/DietView/articles/case-study-morphological-remains.md),
+the [simulated catch
+survey](https://sosthenea.github.io/DietView/articles/case-study-survey-catch.md),
+the [simulated benthic
+survey](https://sosthenea.github.io/DietView/articles/case-study-benthic-community.md),
+and the [metrics and reporting
+guide](https://sosthenea.github.io/DietView/articles/reporting-by-data-type.md).
+
 ``` r
 
 library(DietView)
@@ -72,10 +86,13 @@ seal
 
 ### Occurrence and relative read abundance
 
-Two views answer different questions. The share of prey records (with
-one record per taxon and scat) and the frequency of occurrence say how
-often a prey is eaten; the mean RRA says how much of the diet it makes
-up, each scat weighing the same:
+These views answer **different descriptive questions**. The prey-record
+share counts taxon–scat records; frequency of occurrence (%FO) counts
+the represented scats in which a taxon was **detected**. Neither
+directly measures how often a seal consumed the prey. Mean relative read
+abundance (RRA) represents the sample-normalized **DNA signal**, with
+each represented positive scat receiving equal total weight. RRA is not
+prey biomass or the fraction of ingested food:
 
 ``` r
 
@@ -100,9 +117,12 @@ head(fo[order(-fo$pct_fo), c("taxon", "n_stomachs", "pct_fo")], 6)
 #> 6   Cymatogaster aggregata        575  12.43
 ```
 
-Pacific herring is found in more scats than Pacific hake, but hake makes
-up more of the diet when it is eaten: the two currencies rank them
-differently, which is why DietView keeps both.
+Pacific herring and Pacific hake may rank differently according to the
+number of scats with a taxon detection and the relative DNA signal
+attributed to that taxon. This is a contrast between **detection
+frequency** and **mean RRA**, not evidence about how much of either prey
+was ingested. DietView retains the two currencies so they are not
+conflated.
 
 ``` r
 

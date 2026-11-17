@@ -265,12 +265,16 @@ dv_sunburst(dv_tree(prep_cod), mode = "occurrence",
             title = "Atlantic cod, share of prey records")
 ```
 
-The figure is interactive, so it is drawn on the package website rather
-than in this installed vignette. The center is the kingdom ring and each
-ring outward is one rank finer. White wedges with gray edges are records
-not identified at that rank. Hovering shows the count and the share.
-When you compare panels, build one palette from the pooled data and pass
-it to every panel (see the article on covariates).
+The interactive figure above can be explored by hovering over wedges.
+The center is the kingdom ring and each ring outward is one rank finer.
+White wedges with gray edges are records not identified at that rank.
+The reported percentages partition **included prey records**; they are
+not sample-level frequency of occurrence (%FO), prey biomass, or
+prey-consumption estimates. When comparing strata, build a shared
+palette from the pooled data and pass it to every panel (see the article
+on covariates). For guidance on other sample types and denominators, see
+the [reporting
+guide](https://sosthenea.github.io/DietView/articles/reporting-by-data-type.md).
 
 ## 7. Digestion
 
