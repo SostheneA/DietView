@@ -39,17 +39,17 @@ navbar:
         href: articles/reporting-by-data-type.html
       - text: "-------"
       - text: "Complete case studies by data type"
-      - text: "Stomach contents — public ICES survey"
+      - text: "Stomach contents: public ICES survey"
         href: articles/case-study-ices.html
-      - text: "Scat DNA metabarcoding — published Salish Sea study"
+      - text: "Scat DNA metabarcoding: Salish Sea study"
         href: articles/case-study-dna-seals.html
-      - text: "Raw ASV / OTU data — simulated sequence counts"
+      - text: "ASV / OTU data: simulated read counts"
         href: articles/case-study-asv-pipeline.html
-      - text: "Morphological scats, pellets and regurgitates — simulated"
+      - text: "Morphological remains: simulated pellets and scats"
         href: articles/case-study-morphological-remains.html
-      - text: "Fishery catch composition — simulated"
+      - text: "Fishery catch composition: simulated"
         href: articles/case-study-survey-catch.html
-      - text: "Benthic community composition — simulated"
+      - text: "Benthic community composition: simulated"
         href: articles/case-study-benthic-community.html
       - text: "-------"
       - text: "Core concepts"
@@ -165,7 +165,7 @@ reference:
   contents:
   - dv_species_card_assets
 
-- title: 8 · Ship a dashboard or explore interactively
+- title: 8. Share a dashboard or explore interactively
   desc: A self-contained HTML dashboard, a deploy wrapper, and a Shiny explorer.
   contents:
   - dv_build_html
@@ -173,7 +173,7 @@ reference:
   - run_dietview
   - dv_script
 
-- title: 9 · Explore, aggregate, and export
+- title: 9. Explore, aggregate, and export
   desc: >
     Describe the sample, check sampling sufficiency, report classical
     frequency of occurrence, aggregate rare prey upward to a reproducible

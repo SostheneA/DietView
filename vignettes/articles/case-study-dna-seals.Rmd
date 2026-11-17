@@ -14,13 +14,13 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 8,
 
 ## Question, source and sampling unit
 
-**Research question.** Which prey groups are detected in harbour seal scats,
-how does their *relative DNA signal* vary among groups of samples, and how
-much taxonomic information is lost at finer ranks? This is a descriptive
-worked analysis; it does not estimate ingested biomass or prove a difference
-between seasons or laboratories.
+Harbour seal scat samples provide evidence of which prey groups were detected
+by DNA metabarcoding. Here we describe those detections, compare their relative
+DNA signal across sample groups and examine the resolution of taxonomic
+assignments. The analysis is descriptive. It does not estimate consumed
+biomass or establish seasonal or laboratory effects.
 
-We use the **real, packaged** `salish_seal_dna` data of Thomas et al. (2022):
+We use the published `salish_seal_dna` data of Thomas et al. (2022):
 4,625 harbour seal (*Phoca vitulina*) scats from 52 Salish Sea haul-outs,
 2012–2018. Each row is a prey assignment **within one scat**. This is a secondary
 analysis of the published taxon-level dataset, **not** a rerun of the
@@ -151,7 +151,7 @@ stopifnot(all(abs(totals - 100) < 1e-4))
 
 ```{r plot-dna}
 dv_sunburst(tree, mode = "weight",
-            title = "Harbour seal scats — within-scat relative DNA signal",
+            title = "Harbour seal scats: relative DNA signal by sample",
             subtitle = "Mean RRA, not prey biomass")
 ```
 
@@ -212,10 +212,10 @@ dv_build_html(prep,
   output = file.path(getwd(), "salish_seal_dna_dashboard.html"),
   bands = c("occurrence", "weight"), strata = c("season", "lab"),
   min_stomachs = 25,
-  title = "Harbour seal DNA diet — Salish Sea (descriptive)")
+  title = "Harbour seal DNA composition: Salish Sea (descriptive)")
 ```
 
-## What to report, and what not to infer
+## Reporting and interpretation
 
 Report the source, license, date, marker and laboratory, sampling unit,
 preprocessing, unique sample count **per stratum**, treatment of ambiguous

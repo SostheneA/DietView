@@ -13,10 +13,11 @@ big <- function(x) format(x, big.mark = ",")
 pct <- function(x, d = 1) format(round(x, d), nsmall = d)
 ```
 
-This vignette shows how to describe your own table to DietView. DietView needs
-one thing from your data: one row per prey record, that is, one prey taxon
-found in one stomach. Taxonomy, tables, figures and dashboards are all built
-from that table and from a specification that says which column is which.
+To use DietView with a new dataset, begin by identifying the sampling unit
+and the columns that describe each taxonomic observation. Stomach-content
+data are usually organised as one row per recorded prey category in a
+stomach. A specification links those columns to DietView's functions for
+taxonomy, summaries, figures and dashboards.
 
 The example is the public ICES stomach-content extract that ships with the
 package (ICES Stomach Content Database, ICES, Copenhagen; extract distributed

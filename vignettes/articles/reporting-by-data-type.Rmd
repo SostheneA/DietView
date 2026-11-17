@@ -13,16 +13,16 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", warning = FALSE)
 
 ## Start with the *observation*, not the plotting function
 
-DietView visualizes a **taxonomic composition inside a sampling unit**. It
-cannot, by itself, establish that a detection equals an ingested amount or
-that a sample distribution represents a population. Before applying the
-functions, specify what each row means, the sampling unit, the unit of the
-quantity, how a missing observation was handled, and the ecological estimand.
+Choosing the appropriate DietView workflow begins with the observation.
+A stomach record, a DNA detection and a survey catch have different meanings,
+even when they can be organised in the same taxonomic table. Define the
+sampling unit, measured quantity, treatment of missing observations and
+scientific question before choosing a summary or figure. Descriptive
+composition alone does not estimate consumed biomass or a population total.
 
-This guide is a companion to the full case studies below, which use the **same
-sequence**: question, sample frame, raw structure, validation, taxonomic
-mapping, explicit unknowns, metrics, figure, matrix/HTML output and
-limitations.
+The case studies below show these decisions in practice, from sample
+inventories and taxonomic assignments to measures, figures, exports and
+reporting limitations.
 
 ## Select an end-to-end case study
 
@@ -58,7 +58,7 @@ they mean the **declared sampling unit** and **taxonomic category**. Set
 `unit_label` to display the correct noun, and label scientific tables with
 the actual study unit. Do not rename a survey catch as a feeding interaction.
 
-## Three rules that prevent misleading percentages
+## Interpreting percentages
 
 **1. Always state the currency.** A within-rank percentage may be based on
 record counts, individual counts, wet weight, pooled reads or within-sample

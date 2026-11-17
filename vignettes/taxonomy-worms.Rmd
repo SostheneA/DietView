@@ -12,15 +12,15 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 big <- function(x) format(x, big.mark = ",")
 ```
 
-DietView can attach a taxonomic lineage to every prey by querying the
-[World Register of Marine Species (WoRMS)](https://www.marinespecies.org/). This
-vignette shows how to run the lookup, how to read the log of how each prey was
-matched, and how to freeze the result so that later runs need no network. The
-lookup chunks are shown but not run, because they need the `worrms` package and
-an internet connection. Everything else runs on the public ICES stomach-content
-extract that ships with the package (ICES Stomach Content Database, ICES,
-Copenhagen; extract distributed with the R package stomachr, Lindmark 2026; see
-`?ices_diet`) and on its frozen lineage, `ices_lineage`.
+A taxonomic lookup provides the lineage needed to compare prey records at
+different ranks. DietView can obtain it from the
+[World Register of Marine Species (WoRMS)](https://www.marinespecies.org/)
+and keeps a record of how each name or identifier was matched. This guide
+shows how to inspect those matches and save a lineage for later analyses.
+Live lookup examples are not executed when the vignette is built because they
+require `worrms` and an internet connection. The remaining examples use
+the public ICES extract and its packaged lineage, `ices_lineage`
+(see `?ices_diet` for the data source).
 
 ```{r setup}
 library(DietView)

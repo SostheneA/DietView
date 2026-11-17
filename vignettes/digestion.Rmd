@@ -13,13 +13,13 @@ pct <- function(x, d = 1) format(round(x, d), nsmall = d)
 big <- function(x) format(x, big.mark = ",")
 ```
 
-The more digested a prey item, the coarser the rank it can be named to. That
-matters because digestion is not even across prey. Soft-bodied prey lose their
-identifying features faster than fish with otoliths or crustaceans with hard
-parts, so the material that can still be identified to species is a biased
-sample of what was eaten. Buckland et al. (2017) asked diet studies to report
-how prey condition affected identification. `dv_digestion_diagnostic()` gives
-you that table.
+Digestion can make prey harder to identify, but the effect depends on the
+type of prey and the structures that survive. Soft-bodied organisms may lose
+diagnostic features sooner than prey with otoliths or hard external parts.
+The identifiable fraction of a stomach sample can therefore differ from its
+original composition. Following the concern raised by Buckland et al. (2017),
+`dv_digestion_diagnostic()` summarises taxonomic resolution by recorded
+digestion stage.
 
 The data are the public ICES stomach-content extract that ships with the
 package (ICES Stomach Content Database, ICES, Copenhagen; extract distributed

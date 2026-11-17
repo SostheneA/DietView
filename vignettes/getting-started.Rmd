@@ -13,11 +13,11 @@ pct <- function(x, d = 1) format(round(x, d), nsmall = d)
 big <- function(x) format(x, big.mark = ",")
 ```
 
-Stomach contents are rarely identified to a single depth. A shrimp may be named
-to species, a fish fragment only to "Pisces", and a bolus of digested tissue
-to nothing at all. DietView keeps every one of those records, attaches a
-taxonomic lineage to it, and lets you look at the diet at all ranks at once,
-with the material that could not be identified below a given rank kept in view.
+A stomach sample can contain a shrimp identified to species, fish material
+identified only to a broad group, and tissue that cannot be assigned to a
+taxon. DietView includes all three. It attaches a lineage to each record and
+shows the composition at successive taxonomic ranks while retaining the
+material whose identification stopped earlier.
 
 ```{r setup}
 library(DietView)
