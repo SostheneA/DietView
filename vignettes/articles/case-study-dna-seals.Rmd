@@ -2,7 +2,7 @@
 title: "Complete case study: harbour seal scat DNA metabarcoding (Salish Sea)"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Complete case study: harbour seal scat DNA metabarcoding}
+  %\VignetteIndexEntry{Complete case study: harbour seal scat DNA metabarcoding (Salish Sea)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

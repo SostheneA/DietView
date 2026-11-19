@@ -2,7 +2,7 @@
 title: "Complete case study: from an ASV table to a DNA diet report"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Complete case study: from ASV table to DNA diet report}
+  %\VignetteIndexEntry{Complete case study: from an ASV table to a DNA diet report}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
